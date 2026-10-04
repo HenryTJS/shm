@@ -117,7 +117,7 @@
         </div>
       </div>
       <div class="gauge-foot">
-        <div class="gf"><label>峰值 D</label><b id="dMax">0.000</b></div>
+        <div class="gf"><label id="dMaxLbl">峰值 D</label><b id="dMax">0.000</b></div>
         <div class="gf"><label>寿命进度</label><b id="dLife">0.0%</b></div>
         <div class="gf"><label id="dMarginLbl">剩余裕度</label><b id="dMargin">1.000</b></div>
       </div>
@@ -148,17 +148,17 @@
       <div class="lamps">
         <div class="lamp" data-lv="1">
           <span class="lp lp1"></span>
-          <div class="lt"><b>注 意</b><i>D ≥ 0.25</i></div>
+          <div class="lt"><b>注 意</b><i id="thLv1">D ≥ 0.25</i></div>
           <div class="lv-time" id="tLv1">--</div>
         </div>
         <div class="lamp" data-lv="2">
           <span class="lp lp2"></span>
-          <div class="lt"><b>预 警</b><i>D ≥ 0.55</i></div>
+          <div class="lt"><b>预 警</b><i id="thLv2">D ≥ 0.55</i></div>
           <div class="lv-time" id="tLv2">--</div>
         </div>
         <div class="lamp" data-lv="3">
           <span class="lp lp3"></span>
-          <div class="lt"><b>临 危</b><i>D ≥ 0.85</i></div>
+          <div class="lt"><b>临 危</b><i id="thLv3">D ≥ 0.85</i></div>
           <div class="lv-time" id="tLv3">--</div>
         </div>
       </div>
@@ -167,7 +167,7 @@
         <div class="verdict-val" id="verdict">系统待机</div>
         <div class="verdict-sub" id="verdictSub">等待开始监测指令</div>
       </div>
-      <div class="bars">
+      <div class="bars" id="evBars">
         <div class="bar-row">
           <span>e_ae 声发射证据</span>
           <div class="bar"><i id="barAE"></i></div><b id="valAE">0.000</b>
@@ -279,6 +279,7 @@
 <script src="data/index.js"></script>
 <script src="data/index_l1.js"></script>
 <script src="data/index_l1v2.js"></script>
+<script src="data/index_l1v3.js"></script>
 <script src="assets/dashboard.js"></script>
 </body>
 </html>

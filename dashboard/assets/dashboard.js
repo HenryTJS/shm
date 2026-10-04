@@ -17,9 +17,9 @@
   var LV_NAMES = ['正常', '注意', '预警', '临危'];
   var LV_DESC = [
     ['结构状态正常', '损伤度位于安全区间，各源信号平稳'],
-    ['注意级 · 损伤累积启动', 'D 越过 0.25，建议提高巡检频次'],
-    ['预警级 · 损伤加速扩展', 'D 越过 0.55，请安排停机检查'],
-    ['临危级 · 逼近结构失效', 'D 越过 0.85，立即停机并隔离试件']
+    ['注意级 · 损伤累积启动', '{T} 越过 0.25，建议提高巡检频次'],
+    ['预警级 · 损伤加速扩展', '{T} 越过 0.55，请安排停机检查'],
+    ['临危级 · 逼近结构失效', '{T} 越过 0.85，立即停机并隔离试件']
   ];
   var FO_COLORS = ['#25d4f0', '#7c9dff', '#b07cff', '#ff9de2', '#5fe08a',
     '#ffd166', '#ef6f6c', '#8bd450', '#f78fb3', '#6ad4dd'];
@@ -41,10 +41,11 @@
     'speedSeg', 'seek', 'tlPct', 'tNow', 'tTotal', 'roIdx', 'roAe', 'roRate',
     'gaugeArc', 'gaugeMark25', 'gaugeMark55', 'gaugeMark85', 'dVal', 'dBadge', 'dMax', 'dLife',
     'dMargin', 'gaugeTag', 'tLv1', 'tLv2', 'tLv3', 'verdict', 'verdictSub',
-    'barAE', 'barST', 'barRK', 'valAE', 'valST', 'valRK',
+    'barAE', 'barST', 'barRK', 'valAE', 'valST', 'valRK', 'evBars',
     'vAE', 'vFO', 'vST', 'vEV', 'logList', 'logCount', 'hAEn', 'hFOn', 'hSTn', 'hDIn',
     'hFOc', 'hFOs', 'chanBody', 'equipRig', 'equipMode', 'tAE', 'tFO', 'tST', 'boot', 'bootText',
-    'tDmg', 'tTrend', 'dUnit', 'lgD', 'dMarginLbl',
+    'tDmg', 'tTrend', 'dUnit', 'lgD', 'dMarginLbl', 'thLv1', 'thLv2', 'thLv3',
+    'dMaxLbl', 'algoInfo',
     'dfosRow', 'tDF', 'vDF', 'cvDFHeat', 'cvDFProf',
     'cvTrend', 'cvAE', 'cvFO', 'cvST', 'cvEV', 'lgB2', 'lgB3', 'lgC0', 'lgRef'
   ].forEach(function (k) { el[k] = $(k); });
@@ -56,7 +57,9 @@
     tTrend: el.tTrend ? el.tTrend.textContent : '',
     dUnit: el.dUnit ? el.dUnit.textContent : '',
     lgD: el.lgD ? el.lgD.textContent : '',
-    dMarginLbl: el.dMarginLbl ? el.dMarginLbl.textContent : ''
+    dMarginLbl: el.dMarginLbl ? el.dMarginLbl.textContent : '',
+    dMaxLbl: el.dMaxLbl ? el.dMaxLbl.textContent : '',
+    algoInfo: el.algoInfo ? el.algoInfo.textContent : ''
   };
 
   /* ============================================================
@@ -239,6 +242,10 @@
       c.D = dec(d.D, 1000); c.risk = dec(d.risk, 1000);
       c.hiF = (d.hiF && d.hiF.length) ? dec(d.hiF, 1000) : null;
       c.eae = dec(d.eae, 1000); c.est = dec(d.est, 1000);
+      // 可选：数据包自带的证据通道数组（L1 第三批用，除 eae/est 外多一条 Fano）
+      c.indics = (d.indics && d.indics.length) ? d.indics.map(function (o) {
+        return { key: o.key, name: o.name, color: o.color, s: dec(o.series, 1000) };
+      }) : null;
       c.st = dec(d.st, 100);
       c.ael = dec(d.ael, 1000);
       c.fo = {};
@@ -405,8 +412,10 @@
       var lgHIt = document.getElementById('lgHIt');
       if (lgHIt && c.hiF) {
         var lp = (d.meta && d.meta.hiLeadPt != null) ? d.meta.hiLeadPt : null;
+        // 主指标名各数据集不同（D(t) / HI_AE / HI_hit）⇒ 别把 'D' 写死
+        var mainLbl = (d.labels && d.labels.legend) || '主曲线';
         lgHIt.textContent = '论文 HI_F 参考（离线）' +
-          (lp != null ? ' · D 早 ' + Number(lp).toFixed(1) + ' 个百分点' : '');
+          (lp != null ? ' · ' + mainLbl + ' 早 ' + Number(lp).toFixed(1) + ' 个百分点' : '');
       }
     }
     // 光标
@@ -555,10 +564,21 @@
     hline(ctx, b, yOf(.25, 0, 1, b), 'rgba(255,201,60,.35)', [3, 3]);
     hline(ctx, b, yOf(.55, 0, 1, b), 'rgba(255,138,31,.35)', [3, 3]);
     hline(ctx, b, yOf(.85, 0, 1, b), 'rgba(255,59,71,.4)', [3, 3]);
-    plotLine(ctx, b, c.eae, i0, i1, 0, 1, 'rgba(255,208,138,.9)', { width: 1.1 });
-    plotLine(ctx, b, c.est, i0, i1, 0, 1, 'rgba(0,227,154,.85)', { width: 1.1 });
-    plotLine(ctx, b, c.risk, i0, i1, 0, 1, C_RISK, { width: 1.8, glow: 7 });
-    var lg = [['e_ae', 'rgba(255,208,138,.95)'], ['e_st', 'rgba(0,227,154,.95)'], ['risk', C_RISK]];
+    var lg;
+    if (c.indics && c.indics.length) {
+      // 数据包声明的证据通道（L1 第三批：AE 活动度 / FBG 剖面漂移 / Fano 簇状性）
+      c.indics.forEach(function (p) {
+        plotLine(ctx, b, p.s, i0, i1, 0, 1, p.color, { width: 1.1 });
+      });
+      plotLine(ctx, b, c.risk, i0, i1, 0, 1, C_RISK, { width: 1.8, glow: 7 });
+      lg = c.indics.map(function (p) { return [p.key, p.color]; });
+      lg.push(['risk', C_RISK]);
+    } else {
+      plotLine(ctx, b, c.eae, i0, i1, 0, 1, 'rgba(255,208,138,.9)', { width: 1.1 });
+      plotLine(ctx, b, c.est, i0, i1, 0, 1, 'rgba(0,227,154,.85)', { width: 1.1 });
+      plotLine(ctx, b, c.risk, i0, i1, 0, 1, C_RISK, { width: 1.8, glow: 7 });
+      lg = [['e_ae', 'rgba(255,208,138,.95)'], ['e_st', 'rgba(0,227,154,.95)'], ['risk', C_RISK]];
+    }
     ctx.font = '9px "Cascadia Mono",Consolas,monospace';
     ctx.textBaseline = 'bottom';
     lg.forEach(function (p, idx) {
@@ -769,15 +789,72 @@
     var nm = LV_NAMES[lv];
     el.verdict.textContent = (lv > 0 ? '● ' : '○ ') + LV_DESC[lv][0];
     el.verdict.style.color = lv > 0 ? LV_COLORS[lv] : 'var(--txt)';
-    el.verdictSub.textContent = LV_DESC[lv][1];
+    el.verdictSub.textContent = LV_DESC[lv][1].replace(/\{T\}/g, S.thrName || 'D');
 
     var eae = c.eae[f], est = c.est[f], rk = c.risk[f];
-    el.barAE.style.width = (eae * 100).toFixed(1) + '%';
-    el.barST.style.width = (est * 100).toFixed(1) + '%';
-    el.barRK.style.width = (rk * 100).toFixed(1) + '%';
-    el.valAE.textContent = eae.toFixed(3);
-    el.valST.textContent = est.toFixed(3);
-    el.valRK.textContent = rk.toFixed(3);
+    if (S.barRefs) {
+      // 数据包声明的证据通道（动态横条；声明时原来三行已被替换掉）
+      c.indics.forEach(function (o, i) {
+        var r = S.barRefs[i]; if (!r) return;
+        var v = o.s[f] || 0;
+        r.bar.style.width = (v * 100).toFixed(1) + '%';
+        r.val.textContent = v.toFixed(3);
+      });
+      var rr = S.barRefs.risk;
+      if (rr) {
+        rr.bar.style.width = (rk * 100).toFixed(1) + '%';
+        rr.val.textContent = rk.toFixed(3);
+      }
+    } else {
+      if (el.barAE) el.barAE.style.width = (eae * 100).toFixed(1) + '%';
+      if (el.barST) el.barST.style.width = (est * 100).toFixed(1) + '%';
+      if (el.barRK) el.barRK.style.width = (rk * 100).toFixed(1) + '%';
+      if (el.valAE) el.valAE.textContent = eae.toFixed(3);
+      if (el.valST) el.valST.textContent = est.toFixed(3);
+      if (el.valRK) el.valRK.textContent = rk.toFixed(3);
+    }
+  }
+
+  /* ---- 证据横条: 由数据包 indics 驱动; 未声明时还原原来的三行 ---- */
+  var BARS_HTML0 = null;                 // 默认三行(首次构建时缓存)
+  function buildBars(d) {
+    if (!el.evBars) { S.barRefs = null; return; }
+    if (BARS_HTML0 === null) BARS_HTML0 = el.evBars.innerHTML;
+    if (!d.indics || !d.indics.length) {  // 主样本 / l1 / l1v2: 还原默认三行
+      el.evBars.innerHTML = BARS_HTML0;
+      ['barAE', 'barST', 'barRK', 'valAE', 'valST', 'valRK'].forEach(function (k) {
+        el[k] = $(k);
+      });
+      S.barRefs = null;
+      return;
+    }
+    el.evBars.innerHTML = '';
+    S.barRefs = d.indics.map(function (o) {
+      var row = document.createElement('div');
+      row.className = 'bar-row';
+      var sp = document.createElement('span');
+      sp.textContent = o.name;
+      var bx = document.createElement('div');
+      bx.className = 'bar';
+      var bi = document.createElement('i');
+      bi.style.background = o.color;
+      bx.appendChild(bi);
+      var bb = document.createElement('b');
+      bb.textContent = '0.000';
+      row.appendChild(sp); row.appendChild(bx); row.appendChild(bb);
+      el.evBars.appendChild(row);
+      return { bar: bi, val: bb };
+    });
+    // risk 那行始终保留在末尾
+    var row = document.createElement('div');
+    row.className = 'bar-row';
+    var sp = document.createElement('span'); sp.textContent = 'risk 融合风险';
+    var bx = document.createElement('div'); bx.className = 'bar';
+    var bi = document.createElement('i'); bi.className = 'risk'; bx.appendChild(bi);
+    var bb = document.createElement('b'); bb.textContent = '0.000';
+    row.appendChild(sp); row.appendChild(bx); row.appendChild(bb);
+    el.evBars.appendChild(row);
+    S.barRefs.risk = { bar: bi, val: bb };
   }
 
   /* ---- 通道健康表: 由数据包 chans 驱动(L1); 主样本还原静态行 ---- */
@@ -1033,13 +1110,30 @@
       if (el.dUnit) el.dUnit.textContent = LB.unit || DEF_LB.dUnit;
       if (el.lgD) el.lgD.textContent = LB.legend || DEF_LB.lgD;
       if (el.dMarginLbl) el.dMarginLbl.textContent = LB.margin || DEF_LB.dMarginLbl;
+      // 分级行的阈值标签：各数据集主指标名不同（D(t) / HI_AE / HI_hit），
+      // 未提供 thrName 时回落到 D，保持主样本与既有数据集不变。
+      var thr = LB.thrName || DEF_LB.thrName || 'D';
+      [['thLv1', '0.25'], ['thLv2', '0.55'], ['thLv3', '0.85']].forEach(function (p) {
+        if (el[p[0]]) el[p[0]].textContent = thr + ' ≥ ' + p[1];
+      });
+      // KPI 里的「峰值 D」与底部算法说明同样跟着主指标走
+      if (el.dMaxLbl) el.dMaxLbl.textContent = LB.peak || DEF_LB.dMaxLbl;
+      if (el.algoInfo) {
+        el.algoInfo.textContent = (LB.foot || DEF_LB.algoInfo)
+          .replace(/\{T\}/g, thr);
+      }
+      S.thrName = thr;
       buildChanTable(d);
+      buildBars(d);
       var TT = isCycle()
         ? { ae: '声发射 · 事件率 / 峰值', fo: '光纤光栅 · 多通道', st: '分布式应变 · 块均值 / 局部峰' }
         : { ae: '声发射 · 事件率 / 峰值', fo: '光纤光栅 · 多通道', st: '应变 · 波形 / 波动' };
-      if (el.tAE) el.tAE.textContent = TT.ae;
-      if (el.tFO) el.tFO.textContent = TT.fo;
-      if (el.tST) el.tST.textContent = TT.st;
+      // 面板副标题可由数据包覆盖：L1 第三批没有 DFOS（只有 FBG），
+      // 若沿用上面 isCycle() 的「分布式应变」措辞就会说错模态。
+      // 未提供时**回落到原值**，因此其余数据集行为不变。
+      if (el.tAE) el.tAE.textContent = LB.ae || TT.ae;
+      if (el.tFO) el.tFO.textContent = LB.fo || TT.fo;
+      if (el.tST) el.tST.textContent = LB.st || TT.st;
       el.boot.classList.add('hide');
       S.dirty = true;
       if (!keepLog) {

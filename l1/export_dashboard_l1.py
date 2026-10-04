@@ -45,6 +45,7 @@ os.chdir(ROOT)
 import evaluate_l1_degree as _deg                          # noqa: E402
 import evaluate_l1_dfos as _dfos                           # noqa: E402
 import reproduce_broer_l1 as _l4                           # noqa: E402
+import evaluate_l1_hi_ae as _hiae                          # noqa: E402
 
 GAP_S = 300.0                 # FBG 测量块间隔阈值(s)
 MIN_ROWS = 500                # 一个有效块的最少采样行
@@ -171,6 +172,96 @@ def dfos_profiles(gid, max_pos=420):
     return pos[sel], prof[:, sel], (idx + 0.5) * CYCS_PER_BLK, n_fix
 
 
+def fbg_block_p2p(gid):
+    """FBG 逐块的**逐通道应变峰峰值** → (块 cycle, {通道: 值数组}）。
+
+    与 `fbg_block_channels` 用同一套分块规则（时间间隔 > GAP_S、块内 >= MIN_ROWS 行），
+    但取块内**峰峰值**而非均值 —— 均值含应变基线漂移与温度项，不适合做形状指标；
+    第三批的 `shape_rob25` 用的也是峰峰值口径。
+    """
+    fp = os.path.join(ROOT, gid, f'{gid}光纤.csv')
+    df = pd.read_csv(fp, encoding='utf-8-sig')
+    t = df['timestamp'].to_numpy(float)
+    cols = fbg_strain_cols(df)
+    gap = np.where(np.diff(t) > GAP_S)[0]
+    bounds = np.concatenate([[0], gap + 1, [len(t)]])
+    cyc, vals = [], {c: [] for c in cols}
+    k = 0
+    for i in range(len(bounds) - 1):
+        a, b = bounds[i], bounds[i + 1]
+        if b - a < MIN_ROWS:
+            continue
+        cyc.append((k + 0.5) * CYCS_PER_BLK)
+        for c in cols:
+            seg = df[c].to_numpy(float)[a:b]
+            v = seg[np.isfinite(seg)]
+            vals[c].append(float(v.max() - v.min()) if v.size else np.nan)
+        k += 1
+    cyc = np.asarray(cyc, float)
+    out = {}
+    for c in cols:
+        v = np.asarray(vals[c], float)
+        if np.isfinite(v).sum() < max(2, 0.5 * len(cyc)):
+            continue
+        out[c] = fill_nan(v)
+    return cyc, out
+
+
+def shape_rob25_of(P):
+    """块级 10 通道剖面（按块归一化）与**前 25% 块中位剖面**的 L1 距离。
+
+    与 `fbg_profile.py` 的 `shape_rob25` **同定义**（只是分辨率从加载窗换成 FBG 测量块）：
+    先在块内按通道求和归一化（消掉整体缩放），再取 L1 形状距离。
+    """
+    P = np.asarray(P, float)
+    s = P.sum(axis=1, keepdims=True)
+    s = np.where(s > 0, s, 1.0)
+    P = P / s
+    n = len(P)
+    k25 = max(1, int(round(n * 0.25)))
+    ref = np.median(P[:k25], axis=0)
+    return np.abs(P - ref).sum(axis=1)
+
+
+def fano_of_ae(gid, nf, bin_s=60.0, win=60):
+    """AE 簇状性 Fano = 滑窗内 var(n)/mean(n)，60 s 分箱 + 1 h（60 箱）滑窗。
+
+    与第三批（`ae_burst.py` 及 `export_dashboard_l1_v3.py`）**同口径**。
+    返回 (cycle, fano)；横轴用 `_hiae._cycle_of` 把箱时间映射到 cycle，
+    使簇状性可与主曲线同轴比较。
+    """
+    fp = os.path.join(ROOT, gid, f'{gid}声发射.csv')
+    if not os.path.exists(fp):
+        return None
+    t = pd.read_csv(fp, encoding='utf-8-sig',
+                    usecols=['time'])['time'].to_numpy(float)
+    if t.size == 0:
+        return None
+    t0, t1 = float(t.min()), float(t.max())
+    nb = max(1, int(np.ceil((t1 - t0) / bin_s)))
+    cnt, _ = np.histogram(t, bins=nb, range=(t0, t0 + nb * bin_s))
+    x = cnt.astype(float)
+    c1 = np.concatenate([[0.0], np.cumsum(x)])
+    c2 = np.concatenate([[0.0], np.cumsum(x * x)])
+    fano = np.full(nb, np.nan)
+    for i in range(win, nb + 1):
+        s1 = c1[i] - c1[i - win]
+        s2 = c2[i] - c2[i - win]
+        mu = s1 / win
+        if mu > 0:
+            fano[i - 1] = (s2 / win - mu * mu) / mu
+    ok = np.isfinite(fano)
+    if ok.sum() < 10:
+        return None
+    tb = t0 + (np.arange(nb) + 0.5) * bin_s
+    # `_cycle_of` 是 evaluate_l1_hi_ae 的内部函数（本仓库内复用，避免另造一套锚）
+    cycb = np.asarray(_hiae._cycle_of(gid, tb[ok], nf), float)
+    good = np.isfinite(cycb)
+    if good.sum() < 10:
+        return None
+    return cycb[good], fano[ok][good]
+
+
 def levels_from(D):
     """D → 单调分级(在线语义: 级别只升不降)。"""
     lv = np.zeros(len(D), dtype=np.int8)
@@ -222,28 +313,67 @@ def pack(gid):
     print(f'\n=== 导出 {gid} ===')
     nf = _deg.META[gid]['n_f']
 
-    # --- 正式口径 D(t)（基线重定义 + 应变漂移证据 + rise=0.05）---
+    # --- 网格与应变/AE 逐点序列仍复用原口径（D(t) 的运行只用来取网格与 strain/peak）---
     r = _deg.run_group(gid, dict(PARAMS), baseline=True, strain_ev=True, fusion=FUSION)
-    cyc, D = r['cyc'], r['D']
-    nb = len(cyc)
+    cyc, nb = r['cyc'], len(r['cyc'])
     nfr = int(np.ceil(nb / STEP))
+
+    # --- 主指标：改用与第二/三批**同源**的文献口径 HI_hit（AE 累积 hits 自归一化）---
+    # 为何不再用 D(t)：`evaluate_l1_hi_ae.py` 头部已论证 —— L1 是「冲击后疲劳」，
+    # 0 cycle 即带 BVID ⇒ D 的 e_ae 一抬头就冲上 0.85，与真实寿命无关；
+    # 该项目结论是「**仅保留离线复评 `evaluate_l1_hi_ae.py`**」。
+    # 实测第一批 4 组 cum_hits 的 t85 中位 92.6%，与第二/三批（92.1% / 93.9%）一致。
+    hi = _hiae.hi_of_group(gid)
+    if hi is None:
+        print(f'  [warn] {gid} HI_hit 不可用 → 回退 D(t)')
+        D = np.asarray(r['D'], float)
+        risk_pt = np.asarray(r['risk'], float)
+        eae_pt = np.asarray(r['eae'], float)
+        est_pt = np.asarray(r['est'], float)
+        c0_pt = float(r['c0'])
+        main_name = '损伤度 D(t)（回退）'
+    else:
+        hc = np.asarray(hi['cyc'], float)
+        D = np.interp(cyc, hc, _hiae.unity01(hi['cum_hits']))
+        risk_pt = D.copy()
+        # 因果证据 1：AE 活动度（5000 cycle 窗内事件量）
+        eae_pt = np.interp(cyc, hc, _hiae.unity01(hi['win10_hits']))
+        # 因果证据 2：FBG 剖面漂移（块级，与第三批 shape_rob25 同定义）
+        bcyc2, prof2 = fbg_block_p2p(gid)
+        if prof2:
+            names = list(prof2.keys())
+            P = np.column_stack([prof2[c] for c in names])
+            est_pt = np.interp(cyc, bcyc2, _hiae.unity01(shape_rob25_of(P)))
+        else:
+            est_pt = np.zeros_like(cyc)
+        c0_pt = 0.0                       # c0 是 D(t) 专用锚，换口径后不再成立
+        main_name = '离线复评 HI_hit（非在线）'
 
     # --- FBG 逐通道(块级 → 逐点插值) + AE 事件级 ---
     bcyc, fo_cols, fo_blk = fbg_block_channels(gid)
     strain = np.nan_to_num(np.asarray(r['strain'], float), nan=0.0)
     fo_pt = {c: np.interp(cyc, bcyc, v, left=v[0], right=v[-1]) for c, v in fo_blk.items()}
-    tae, eae, n_ae_ch = ae_series(gid)
+    tae, eae_ev, n_ae_ch = ae_series(gid)
     dfos_cyc, dfos_local, dfos_rmse, dfos_hi, n_pos = dfos_block_series(gid)
     dpos, dprof, dcyc, n_spike = dfos_profiles(gid)
+
+    # --- 与第三批同源的第三路证据：Fano 簇状性（AE 事件 60 s 分箱 + 1 h 滑窗）---
+    fa = fano_of_ae(gid, nf)
+    fano_pt = (np.interp(cyc, fa[0], _hiae.unity01(fa[1])) if fa is not None
+               else np.zeros_like(cyc))
+    fano_raw = None
+    if fa is not None:
+        fano_raw = (round(float(np.min(fa[1])), 1), round(float(np.max(fa[1])), 1))
 
     # --- 逐点 → 逐帧(取每帧最后一个点, 与主样本导出器同口径) ---
     j = np.minimum((np.arange(nfr) + 1) * STEP - 1, nb - 1)
     cyc_f = cyc[j]
 
     D_f = D[j]
-    risk_f = r['risk'][j]
-    eae_f = r['eae'][j]
-    est_f = r['est'][j]
+    risk_f = risk_pt[j]
+    eae_f = eae_pt[j]
+    est_f = est_pt[j]
+    fano_f = fano_pt[j]
     st_f = strain[j]
     lv_f = levels_from(D)[j]
 
@@ -295,7 +425,7 @@ def pack(gid):
         't25': first_ge_pct(0.25), 't55': first_ge_pct(0.55), 't85': d85_pct,
         'b2': None,                                  # L1 无弱标签 b2(前端自动隐藏)
         'b3': 100.0,                                 # 失效锚 = n_f
-        'c0Pct': round(float(r['c0']) / nf * 100.0, 1) if r['c0'] > 0 else None,
+        'c0Pct': None,                               # c0 是 D(t) 专用锚，换口径后不再成立
         'refs': [{'pct': round(c / nf * 100.0, 1), 'label': lab}
                  for lab, c in _deg.META[gid]['refs']],
         'aeEvents': int(aen.sum()),
@@ -303,7 +433,9 @@ def pack(gid):
         'nDfos': n_pos,
         # --- 论文 HI_F 离线参考（方案A）---
         'hiF85': hi85_pct,        # HI_F 达 0.85 的寿命% (None = 未达)
-        'hiLeadPt': hi_lead,      # D 相对 HI_F 的提前量(百分点, 正 = D 更早)
+        'hiLeadPt': hi_lead,      # HI_hit 相对论文 HI_F 的提前量(百分点, 正 = 更早)
+        'mainName': main_name,
+        'fanoRaw': fano_raw,      # Fano 原始量程(显示用的 0至1 缩放是离线归一)
     }
 
     # --- 块级阶跃 → 块内线性插值(展示连续化; 块级口径不变) ---
@@ -311,6 +443,7 @@ def pack(gid):
     risk_f = de_step(risk_f)
     eae_f = de_step(eae_f)
     est_f = de_step(est_f)
+    fano_f = de_step(fano_f)
     lv_f = levels_from(D_f)
 
     # --- 分级升级事件(逐帧, 在线语义) ---
@@ -336,18 +469,38 @@ def pack(gid):
         {'key': 'ae', 'name': '声发射 AE', 'mode': '事件流', 'n': str(n_ae_ch), 'unit': '通道'},
         {'key': 'fo', 'name': '光纤光栅 FBG', 'mode': '5000 cyc/块', 'n': str(len(fo_cols)), 'unit': '通道'},
         {'key': 'dfos', 'name': '分布式应变 DFOS', 'mode': '5000 cyc/块', 'n': str(n_pos), 'unit': '点'},
-        {'key': 'engine', 'name': '损伤度引擎', 'mode': '500 点/块', 'n': None, 'unit': ''},
+        {'key': 'engine', 'name': '离线复评 HI_hit', 'mode': 'AE 累积·需全寿命归一',
+         'n': None, 'unit': ''},
+    ]
+
+    # --- 证据通道声明（与第三批同结构；前端 EVIDENCE 面板由它渲染）---
+    indics = [
+        {'key': 'e_ae', 'name': 'e_ae AE 活动度（5000 cycle 窗）',
+         'color': 'rgba(255,208,138,.9)',
+         'series': [_i1000(x) for x in eae_f]},
+        {'key': 'e_st', 'name': 'e_st FBG 剖面漂移（块级，在线）',
+         'color': 'rgba(0,227,154,.85)',
+         'series': [_i1000(x) for x in est_f]},
+        {'key': 'e_fano', 'name': 'e_fano Fano 簇状性（1 h 窗 var/mean）',
+         'color': 'rgba(176,124,255,.9)',
+         'series': [_i1000(x) for x in fano_f]},
     ]
 
     pkg = {
         'gid': gid, 'ds': 'l1', 'unit': 'cycle',
         'xLabel': '寿命 / cycle',
         'rig': 'L1 压缩-压缩疲劳 (BVID 后)',
-        'mode': '多源同步 · 5000 cycle/块',
+        'mode': '多源同步 · 5000 cycle/块 · 主曲线 = 离线复评 HI_hit',
+        'indexName': main_name,
+        'trendName': 'HI_hit 趋势 / 阈值 0.25 · 0.55 · 0.85',
+        'labels': {'unit': 'HI_hit (0~1)', 'legend': 'HI_hit',
+                   'margin': '1 − HI_hit', 'thrName': 'HI_hit',
+                   'peak': '峰值 HI_hit',
+                   'foot': 'HI_hit ∈ [0,1] · 阈值 0.25 / 0.55 / 0.85'},
         'n': int(nb), 'nfr': int(nfr), 'step': STEP,
         'frameDt': float(STEP * CYCS_PER_PT), 'dt': float(STEP * CYCS_PER_PT),
-        'dur': float(nf), 'c0': float(r['c0']),
-        'foCols': list(fo_cols), 'chans': chans,
+        'dur': float(nf), 'c0': c0_pt,
+        'foCols': list(fo_cols), 'chans': chans, 'indics': indics,
         'meta': meta, 'warn': warn,
         # --- 波形数组(长度均 = nfr) ---
         'D': [_i1000(x) for x in D_f],

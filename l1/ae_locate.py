@@ -34,6 +34,7 @@ PDF 明确给出两个方向的声速，差异达 60%：
     python l1/ae_locate.py                      # 全部 GROUPS
 """
 import argparse
+import csv
 import glob
 import io
 import os
@@ -113,6 +114,58 @@ VEL = {
     'L1-60': (4116.0, 6550.0),
 }
 
+# --- 几何与声速的**单一来源**（2026-10-04）------------------------------------
+# 上方的 SENSORS / VEL 是手工抄的缺省值；权威来源是
+# `results/l1_specimen_meta.csv`（由 `l1/pdf_specimen_meta.py` 从数据集自带的
+# PDF 自动抽取）。历史上这张表在 `ae_locate.py` 与 `impact_truth_check.py`
+# 各存一份手工副本，两边会漂 —— 现在改成运行时读表。
+# 读表带两项自检，**不通过就不覆盖**硬编码值，离线/缺表也能跑。
+META_CSV = os.path.join(RES, 'l1_specimen_meta.csv')
+
+
+def load_meta():
+    """→ (传感器字典 或 None, 声速字典)。"""
+    if not os.path.exists(META_CSV):
+        return None, {}
+    rows = {}
+    with open(META_CSV, encoding='utf-8-sig') as fh:
+        for r in csv.DictReader(fh):
+            rows.setdefault(r['gid'], {})[r['field']] = r['value']
+    # 声速：带 vel_caveat 的组**故意不登记**（C1 批自述为失效后测量，不可信）
+    vel = {}
+    for g, d in rows.items():
+        if 'vel_caveat' in d or 'vel_longitudinal_ms' not in d:
+            continue
+        vel[g] = (float(d['vel_lateral_ms']), float(d['vel_longitudinal_ms']))
+    # 传感器坐标：13 组应完全一致；不一致就报警并取占多数的那个
+    per = {}
+    for g, d in rows.items():
+        s = {}
+        for k, v in d.items():
+            m = re.match(r'ae_sensor_(\d+)_([xy])$', k)
+            if m:
+                s.setdefault(int(m.group(1)), {})[m.group(2)] = float(v)
+        if len(s) >= 4:
+            per[g] = {i: (p['x'], p['y']) for i, p in s.items()}
+    if not per:
+        return None, vel
+    uniq = {}
+    for d in per.values():
+        key = tuple(sorted((i, x, y) for i, (x, y) in d.items()))
+        uniq[key] = uniq.get(key, 0) + 1
+    if len(uniq) > 1:
+        print('  ⚠️ 元信息表里 AE 坐标有 %d 种取值（%d 组），取占多数的'
+              % (len(uniq), len(per)))
+    best = max(uniq, key=uniq.get)
+    return {i: (x, y) for i, x, y in best}, vel
+
+
+_META_SENSORS, _META_VEL = load_meta()
+if _META_SENSORS:
+    SENSORS = _META_SENSORS                                # noqa: F811
+VEL.update(_META_VEL)
+GEOM_SOURCE = '元信息表' if _META_SENSORS else '硬编码'
+
 
 # --------------------------------------------------------------------------
 def read_hits(gid):
@@ -173,7 +226,8 @@ def run(gid, win_us=WIN_US, step=2.0, min_ch=MIN_CH, max_events=None, seed=0):
     chan = a[:, 1].astype(np.int32)
     amp = a[:, 2]
     print(f'  [{gid}] hits={t_s.size:,}  通道={sorted(set(chan.tolist()))}  '
-          f'vx={vx:.0f} vy={vy:.0f} m/s  跨度={t_s[-1] - t_s[0]:.0f}s')
+          f'vx={vx:.0f} vy={vy:.0f} m/s  几何源={GEOM_SOURCE}  '
+          f'跨度={t_s[-1] - t_s[0]:.0f}s')
 
     starts, ends = cluster_runs(t_s, win_us * 1e-6)
     print(f'  簇数={starts.size:,}（窗口 {win_us:.0f} µs）')
@@ -303,6 +357,34 @@ def plot_map(gid, rms_max=RMS_GOOD):
     print(f'  已存 {out}')
 
 
+def check_meta():
+    """核对元信息表（CSV）与文件内硬编码的几何/声速是否一致。
+
+    本文件的历史风险是：几何与声速**手工抄了两份**（这里 + `impact_truth_check.py`），
+    改一处忘另一处就会静默漂移。现已改成运行时读表，本命令用来**验证两套一致**。
+    """
+    print(f'元信息表: {META_CSV}')
+    if not os.path.exists(META_CSV):
+        print('  ⚠️ 表不存在 —— 请先跑 `python l1/pdf_specimen_meta.py --write`')
+        return
+    if not _META_SENSORS:
+        print('  ⚠️ 表里没读到 4 个 AE 传感器（保持硬编码几何）')
+    else:
+        same = all(abs(_META_SENSORS[i][0] - SENSORS[i][0]) < 1e-9
+                   and abs(_META_SENSORS[i][1] - SENSORS[i][1]) < 1e-9
+                   for i in SENSORS)
+        print('  传感器坐标系: %s' % ('一致 ✓' if same else '不一致 ✗'))
+        print('    表: %s' % {i: (x, y) for i, (x, y) in sorted(SENSORS.items())})
+    bad = 0
+    for g in sorted(VEL):
+        x, y = VEL[g]
+        print('  %-7s vx=%7.1f vy=%7.1f m/s' % (g, x, y))
+    print('  表格声速条目 %d 个；C1 批（L1-03/04/05/09）因原文自述'
+          '“after specimen failure … might not be useful”而**故意不登记**'
+          % len([g for g in VEL]))
+    print('  自检完成（bad=%d）' % bad)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--groups', default=','.join(GROUPS))
@@ -311,7 +393,12 @@ def main():
     ap.add_argument('--step', type=float, default=2.0, help='网格步长 [mm]')
     ap.add_argument('--min-ch', type=int, default=MIN_CH)
     ap.add_argument('--max-events', type=int, default=None)
+    ap.add_argument('--check-meta', action='store_true',
+                    help='只核对元信息表与硬编码几何/声速是否一致')
     a = ap.parse_args()
+    if a.check_meta:
+        check_meta()
+        return
     for g in [s.strip() for s in a.groups.split(',')]:
         print(f'--- {g} ---')
         run(g, win_us=a.win, step=a.step, min_ch=a.min_ch,

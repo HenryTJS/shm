@@ -13,6 +13,12 @@
     -Unlink      拆链：只移除 junction，**绝不动**外接盘上的数据
     -Restore     还原：必须与 -Unlink 同时用 —— 拆链后把数据从外接盘搬回仓库
 
+    link   —— 仓库内的路径，可含通配符 * ? [0-9]
+              （展开时取【仓库侧已存在目录 ∪ 数据盘侧同名目录】的并集，
+                这样数据盘上新增的组跑一次 -Apply 就能补齐）
+    target —— link 含通配符时：视为【容器目录】，实际目标 = data_root/target/<目录名>
+              link 不含通配符：视为【精确目标】，实际目标 = data_root/target
+
   例：
     powershell -ExecutionPolicy Bypass -File tools\relink_data.ps1
     powershell -ExecutionPolicy Bypass -File tools\relink_data.ps1 -Migrate
@@ -51,20 +57,35 @@ Write-Host ("数据根   : {0}" -f $(if ($Root) { $Root } else { '(未配置)' }
 Write-Host "配置文件 : $Config"
 
 # ---------------------------------------------------------------- 工具函数
-function Expand-Links([string]$rel) {
-    $full = Join-Path $Repo ($rel -replace '/', '\')
-    if ($rel -match '[*?\[]') {
-        return @(Get-ChildItem -Path $full -Directory -Force -ErrorAction SilentlyContinue |
-                 ForEach-Object { $_.FullName } | Sort-Object)
-    }
-    return @($full)
+function Get-TargetBase($item) {
+    $t = $item.target -replace '/', '\'
+    if ([string]::IsNullOrWhiteSpace($Root)) { return $t }
+    return (Join-Path $Root $t)
 }
 
 function Get-TargetOf($item, [string]$link) {
-    $t = $item.target -replace '/', '\'
-    $base = if ([string]::IsNullOrWhiteSpace($Root)) { $t } else { Join-Path $Root $t }
+    $base = Get-TargetBase $item
     if ($item.link -match '[*?\[]') { $base = Join-Path $base (Split-Path -Leaf $link) }
     return $base
+}
+
+function Expand-Links($item) {
+    $rel = $item.link
+    $full = Join-Path $Repo ($rel -replace '/', '\')
+    if ($rel -notmatch '[*?\[]') { return @($full) }
+    $leaf = Split-Path -Leaf ($rel -replace '/', '\')
+    $names = @{}
+    # ① 仓库侧已存在的（已联接的 junction 或仍在本地的实体目录）
+    foreach ($d in @(Get-ChildItem -Path $full -Directory -Force -ErrorAction SilentlyContinue)) {
+        $names[$d.Name] = $true
+    }
+    # ② 数据盘侧存在的（新组：数据已到位、但仓库里还没建链接）
+    #    ⚠️ 只展开仓库侧会漏掉新组，-Apply 永远补不上。必须取两者并集。
+    foreach ($d in @(Get-ChildItem -Path (Get-TargetBase $item) -Directory -Force -ErrorAction SilentlyContinue)) {
+        if ($d.Name -like $leaf) { $names[$d.Name] = $true }
+    }
+    $parent = Split-Path -Parent $full
+    return @($names.Keys | Sort-Object | ForEach-Object { Join-Path $parent $_ })
 }
 
 function Get-State([string]$p) {
@@ -122,7 +143,7 @@ function Rel([string]$p) {
 # ---------------------------------------------------------------- 展开映射
 $rows = @()
 foreach ($it in $cfg.items) {
-    foreach ($lp in (Expand-Links $it.link)) {
+    foreach ($lp in (Expand-Links $it)) {
         $tp = Get-TargetOf $it $lp
         $rows += [pscustomobject]@{
             name   = $it.name
