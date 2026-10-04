@@ -81,6 +81,11 @@ RMS_GOOD = 5.0                                      # 可信定位的残差上�
 # （本文件头的窗长扫描也是按 min_ch=4 标定的。）
 MIN_CH = 4
 
+# 定位可用性门槛：某探头在「最早到达」里的占比低于它 ⇒ 该探头长期偏晚，
+# 会带来**稳定偏置**而非随机误差 ⇒ 该组定位不可用。
+# 阈值取 5%：实测均衡组（L1-49）最低通道占 6.1%，而故障组最低通道 ≤ 2.1%。
+MINSHARE_OK = 0.05
+
 # 冲击点参考（**仅 L1-49 已核实可用，其余组慎用**）。
 #
 # 2026-09-15 逐组核对 13 份 PDF + 实测定位质心（见 `l1/impact_truth_check.py`
@@ -213,6 +218,69 @@ def locate(t_us, ch, tmap, gx, gy):
     j = int(np.argmin(cost))
     iy, ix = np.unravel_index(j, (gy.size, gx.size))
     return float(gx[ix]), float(gy[iy]), float(cost[iy, ix])
+
+
+def first_channel_stats(t_s, chan, win_us=WIN_US, min_ch=MIN_CH, nmax=600000):
+    """≥min_ch 通道的簇里，**最早到达**的是哪个通道 → 占比统计。
+
+    为什么它是关键的体检指标：四个探头若都正常，最早到达的通道应**比较均衡**
+    （取决于源在哪一侧，但不会长期只有一个）。若某通道的占比 ≈ 0，
+    说明它**总是偏晚**（阮合不良 / 阀值偏高 / 探头脉粘）——
+    这会直接产生**稳定的定位偏置**，而不是随机误差。
+
+    ⚠️ 坑：必须按 (簇, 时刻) 排序后取块首才是「最早到达」。
+    若用 `lexsort((t, chan, cid))` 取块首，拿到的是**最小通道号**，
+    会得到一个恒为 100% 的假分布。（`run()` 本体没这个问题。）
+    """
+    n = int(min(t_s.size, nmax))
+    st, en = cluster_runs(t_s[:n], win_us * 1e-6)
+    cid = np.repeat(np.arange(st.size), en - st)
+    order = np.lexsort((t_s[:n], chan[:n], cid))
+    c_s, ch_s, tv = cid[order], chan[order], t_s[:n][order]
+    first = np.ones(order.size, bool)
+    first[1:] = (c_s[1:] != c_s[:-1]) | (ch_s[1:] != ch_s[:-1])
+    sc, sch, stv = c_s[first], ch_s[first], tv[first]
+    nch = np.bincount(sc, minlength=st.size)
+    keep = set(np.nonzero(nch >= min_ch)[0].tolist())
+    m = np.isin(sc, list(keep))
+    sc, sch, stv = sc[m], sch[m], stv[m]
+    o2 = np.lexsort((stv, sc))
+    sc2, sch2 = sc[o2], sch[o2]
+    b = np.nonzero(np.diff(sc2))[0] + 1
+    heads = np.concatenate(([0], b))
+    cnt = np.diff(np.concatenate((heads, [sc2.size])))
+    full = cnt >= min_ch
+    w = {i: 0 for i in SENSORS}
+    for h, ok in zip(heads, full):
+        if ok:
+            w[int(sch2[h])] += 1
+    tot = sum(w.values()) or 1
+    return int(full.sum()), {k: v / tot for k, v in w.items()}
+
+
+def audit(gid):
+    """定位可用性体检：最早到达通道分布 + 拟合残差 → 判定该组能不能用。
+
+    实测（2026-10-04，C2 九组 + C1 四组）：本地化的成败**完全由这个分布解释**：
+      · L1-49（分布最均衡 6/26/54/14%）是唯一与真值差 < 5 mm 的组；
+      · L1-56 的 S2=0.0%、S3=0.4% ⇒ 这两个探头总偏晚 ⇒ 质心 y 恒定偏 +124 mm；
+      · L1-50 的 S4=0.1% ⇒ 偏置 +37 mm；
+      · L1-55 的 rms 中位 13.29 µs（其余组 0.85 至 3.9）⇒ 该组定位彻底不可用。
+    ⇒ **之前说的「系统性向中心回缩」是错的**：没有统一回缩，是**逐组的探头故障**。
+    """
+    a = read_hits(gid)
+    t_s, chan = a[:, 0], a[:, 1].astype(np.int32)
+    nf, share = first_channel_stats(t_s, chan)
+    p = os.path.join(RES, '_l1_loc_%s.npz' % gid)
+    rms_med = float(np.median(np.load(p)['rms_us'])) if os.path.exists(p) else float('nan')
+    bad = [i for i, v in share.items() if v < MINSHARE_OK]
+    ok = (not bad) and np.isfinite(rms_med) and rms_med <= RMS_GOOD
+    print('  %-7s 簇=%6d  rms中位=%6.2f  最早到达: %s  → %s'
+          % (gid, nf, rms_med,
+             '  '.join('S%d=%4.1f%%' % (k, 100.0 * v) for k, v in sorted(share.items())),
+             '可用' if ok else '不可用（%s）' %
+             ('探头 S%s 长期偏晚' % ','.join(map(str, bad)) if bad else '残差过大')))
+    return ok, share, rms_med
 
 
 def run(gid, win_us=WIN_US, step=2.0, min_ch=MIN_CH, max_events=None, seed=0):
@@ -395,9 +463,15 @@ def main():
     ap.add_argument('--max-events', type=int, default=None)
     ap.add_argument('--check-meta', action='store_true',
                     help='只核对元信息表与硬编码几何/声速是否一致')
+    ap.add_argument('--audit', action='store_true',
+                    help='定位可用性体检（最早到达通道分布 + 残差）')
     a = ap.parse_args()
     if a.check_meta:
         check_meta()
+        return
+    if a.audit:
+        for g in [s.strip() for s in a.groups.split(',')]:
+            audit(g)
         return
     for g in [s.strip() for s in a.groups.split(',')]:
         print(f'--- {g} ---')
