@@ -24,16 +24,27 @@ FBG 是**突发式**采集（每文件 20 s 数据，文件间隔 420 s 或 240 
   · FBG 停录超过 20 min 时 AE 侧也几乎无事件（L1-41 空隙内 AE 事件为 0）
     ⇒ 试验确实在暂停，应判 0 而不是外推。
 
-五种口径的实测对比（`l1/cycle_fill_compare.py`，11 组）：
+五种口径的实测对比（`l1/cycle_fill_compare.py`，11 组；2026-10-05 重跑）：
 
-    口径      反解f中位   f组间IQR   空隙内加载h   rho(g,AE)
-    mean3(旧)    1.87      0.90         5.6        0.292
-    mean1        1.85      0.73         2.7        0.369
-    hold         1.82      0.75         3.1        0.328
-    holdgap      1.86      0.45         2.6        0.397   <- 采用
-    aeact        1.83      0.72         3.4        0.341
+    口径        反解f中位  f组间IQR  空隙内加载h  rho中位(可用组)
+    mean3(旧)     1.87      0.90       5.6       0.286 (11/11)
+    mean1         1.85      0.73       2.7       0.471 (11/11)
+    hold          1.82      0.75       3.1       0.475 ( 8/11)
+    holdcut       1.86      0.45       2.6       0.497 (10/11)
+    holdgap       1.86      0.75       2.8       0.494 ( 8/11)   <- 采用
+    aeact         1.83      0.72       3.4       0.490 ( 7/11)
 
-holdgap 在四条物理判据上均最优。最直接的证据：**L1-31 的离群消失** ——
+⚠️ **两处口径说明（2026-10-05 更正，勿照抄旧数）**
+
+1. `rho(g,AE)` 列已改成**中位 + 可用组数**。旧版报的是把**退化组**也平均进去的均值
+   （L1-06 的 `g` 有 99.0 % 恒为 1、L1-13 是 99.7 %、L1-14 是 100 %），所以旧列
+   系统性偏低（如 holdgap 旧写 0.397、现为 0.494）⇒ 由此得出的
+   「`aeact` 略差」**不成立**（§29）。该判据的完整适用边界见 §28。
+2. **`holdgap` 并不是四条判据都最优**：`holdcut` 的 IQR（0.45）与空隙内加载（2.6）
+   都比它好。选 `holdgap` 的决定性理由是**物理正确** —— 纯时间阈值会在 3/7 组上
+   把真实加载段切掉，见 `l1/check_carry.py` 与下表。
+
+**采用 holdgap 最直接的证据：L1-31 的离群消失** ——
 旧口径反解 2.72 Hz（偏差 -26%），新口径得 2.12 Hz，与同批次 C4 组
 （1.82 至 1.91）齐平；且其加载块平均长度由 **1.0 帧**（等于无结构）
 升到 **5.6 帧**，`rho(g, AE事件数)` 由 0.208 升到 0.489。
@@ -79,6 +90,7 @@ import glob
 import os
 import re
 import sys
+import warnings
 
 import numpy as np
 
@@ -152,11 +164,31 @@ def _parse_ts(txt, ref=None):
     return best[1].timestamp() if best else None
 
 
-def scan_fbg(path, window_lines=WINDOW_LINES):
+def _iter_rows(path):
+    """逐行产出 (epoch 秒, 10 通道数值)。表头行与残留行自动跳过。"""
+    ref = _file_dt(path)
+    with open(path, encoding='utf-8', errors='replace') as fh:
+        for ln in fh:
+            p = ln.split()
+            if len(p) < 12:
+                continue
+            try:
+                vals = [float(x) for x in p[2:12]]
+            except ValueError:
+                continue
+            ts = _parse_ts(p[0] + ' ' + p[1], ref)
+            if ts is None:
+                continue
+            yield ts, vals
+
+
+def scan_fbg(path, window_lines=WINDOW_LINES, channels=False):
     """扫一个 FBG 文件 → [(t_epoch, p2p_median), ...] 逐窗。
 
     列 = Timestamp + R1..R5 + L1..L5。
 
+    `channels=True` 时返回 [(t_epoch, p2p向量), ...] —— 逐通道峰峰值，
+    用于诊断「中位数是否被部分坏通道拉低」（见 `l1/p2p_load_check.py --channels`）。
     📌 **表头结构**（实测 SM130 文件，典型共 260 行）：
       0..36   设备/配置表头
       37..46  通道标定式（17 列，**含数字但不是数据**）
@@ -172,39 +204,80 @@ def scan_fbg(path, window_lines=WINDOW_LINES):
     ref = _file_dt(path)
     out = []
     buf, t0 = [], None
-    with open(path, encoding='utf-8', errors='replace') as fh:
-        for ln in fh:
-            p = ln.split()
-            if len(p) < 12:
-                continue
-            try:
-                vals = [float(x) for x in p[2:12]]
-            except ValueError:
-                continue
-            ts = _parse_ts(p[0] + ' ' + p[1], ref)
-            if ts is None:               # 表头残留行
-                continue
-            if t0 is None:
-                t0 = ts
-            buf.append(vals)
-            if len(buf) >= window_lines:
-                out.append(_win_stat(buf, t0))
-                buf, t0 = [], None
+    for ts, vals in _iter_rows(path):
+        if t0 is None:
+            t0 = ts
+        buf.append(vals)
+        if len(buf) >= window_lines:
+            out.append((_win_stat_ch if channels else _win_stat)(buf, t0))
+            buf, t0 = [], None
     if buf:
-        out.append(_win_stat(buf, t0))
+        out.append((_win_stat_ch if channels else _win_stat)(buf, t0))
     return [o for o in out if o is not None]
 
 
-def _win_stat(buf, t0):
+def _win_level(buf, t0):
+    """返回 (t0, 逐通道**均值**向量)。均值与幅度一起看才能分出「停机」与「保载」"""
     if t0 is None or not buf:
         return None
     a = np.asarray(buf, dtype=float)
-    with np.errstate(all='ignore'):
-        d = np.nanmax(a, axis=0) - np.nanmin(a, axis=0)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)
+        with np.errstate(all='ignore'):
+            m = np.nanmean(a, axis=0)
+    m = m[np.isfinite(m)]
+    if len(m) == 0:
+        return None
+    return (t0, m)
+
+
+def scan_fbg_ex(path, window_lines=WINDOW_LINES):
+    """逐窗返回 (t0, p2p向量, 均值向量)。
+
+    用途：`P2P_LOAD` 只看振荡幅度，而**真停机与保载（恒定载荷）都给出 p2p 接近 0**。
+    要分开它们必须看**应变绝对水平**：保载时水平仍在载荷对应的量级，停机时趋近 0。
+    """
+    out = []
+    buf, t0 = [], None
+    for ts, vals in _iter_rows(path):
+        if t0 is None:
+            t0 = ts
+        buf.append(vals)
+        if len(buf) >= window_lines:
+            a = _win_stat_ch(buf, t0)
+            b = _win_level(buf, t0)
+            out.append(None if (a is None or b is None) else (a[0], a[1], b[1]))
+            buf, t0 = [], None
+    if buf:
+        a = _win_stat_ch(buf, t0)
+        b = _win_level(buf, t0)
+        out.append(None if (a is None or b is None) else (a[0], a[1], b[1]))
+    return [o for o in out if o is not None]
+
+
+def _win_stat_ch(buf, t0):
+    """返回 (t0, 逐通道峰峰值向量)。非有限通道已被剔除。
+
+    ⚠️ `np.nanmax` 遇到**整列全 NaN** 时发的是 `RuntimeWarning`（不是浮点 errstate），
+    所以必须用 `warnings` 上下文压 —— 否则 PowerShell 会把 stderr 当成错误，
+    让退出码变成 1（实测踩过）。
+    """
+    if t0 is None or not buf:
+        return None
+    a = np.asarray(buf, dtype=float)
+    with warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)
+        with np.errstate(all='ignore'):
+            d = np.nanmax(a, axis=0) - np.nanmin(a, axis=0)
     d = d[np.isfinite(d)]
     if len(d) == 0:
         return None
-    return (t0, float(np.median(d)))
+    return (t0, d)
+
+
+def _win_stat(buf, t0):
+    r = _win_stat_ch(buf, t0)
+    return None if r is None else (r[0], float(np.median(r[1])))
 
 
 def group_load(gid, root=None):
@@ -218,7 +291,24 @@ def group_load(gid, root=None):
 
 
 def build(gid, root=None, f_hz=None, n_f=None, frame_s=FRAME_S, fill=FILL):
-    """建循环轴：返回 dict(frame, cycle, g_load, ...)。"""
+    """建循环轴：返回 dict(frame, cycle, g_load, ...)。
+
+    ⚠️ **`load_h` 的定义（2026-10-05 明确，勿误读为日历占空比）**
+    ------------------------------------------------------------
+        load_h = sum(g) * frame_s / 3600
+
+    其中求和号只跑在 **AE 帧网格**上，而该网格是**稀疏**的：
+    `ae_frames.py` 只为**有事件的时段**建帧（某 600 s 内一个 event 都没有就不建帧）。
+    实测 L1-25 有 1668 帧，但帧号跨度 5586（缺 3918 帧），
+    相邻帧间隔中位 0.17 h、**最大 576.33 h**，超过 12 h 的缺口 3 处。
+
+    ⇒ `load_h` 统计的是「**AE 在录的时段内**的加载时长」，
+      **不等于日历时长乘以加载占空比**。
+    ⇒ `load_h / span_h` 也**不是**该试验的日历占空比（`span_h` 是帧时刻跨度，
+      它跨越了中间那些没有帧的空洞）。
+    ⇒ 但用它反解频率 `f = n_f / load_h` 是自洽的：
+      分母与「事件在什么时候被记下来」共用同一张网格。
+    """
     fr = _load_frames(gid, frame_s)
     if fr is None:
         return None

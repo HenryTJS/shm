@@ -29,8 +29,16 @@
   1. 反解频率的**组内一致性**：同批次同设备的组，反解 f 应聚在一起。
   2. 取值结构：离散取值数、众数占比、**加载块的平均连续长度**（块状才物理）。
   3. 跨模态一致性：与 AE 帧事件的秩相关（加载时事件多）。
-  4. **长空隙惩罚**：AE 已证实长空隙内无活动（L1-41 空隙内 AE 事件为 0），
-     任何方法都不该在那里标「加载」。此列应接近 0。
+     ⚠️ **这个判据不是全组可用** —— 详见 §28：`g` 几乎恒为 1 的组无定义或退化成噪声，
+     AE 帧级事件数贴近本底的组（L1-41）也会给出约 0 的值。汇总里的「rho可用组」列会说明。
+     而且它是**帧级**口径：600 s 帧大多跨越「跑」与「停」，所以**系统性低估**真实关联
+     （日尺度对照是 Spearman 0.886）。⇒ 它只能当粗筛，不能当「加载重建正确性」的证据。
+  4. **长空隙惩罚**：AE 已证实长空隙内无活动，任何方法都不该在那里标「加载」。此列应接近 0。
+
+**缓存**
+------
+FBG 窗序列优先读 `results/_duty_{gid}.npz`（由 `l1/duty_anomaly.py` 生成）；
+没有才扫文本文件（11 组要读约 2.8 万个文件，很慢）。
 
 用法
 ----
@@ -61,16 +69,32 @@ BIN = 0.5               # g > BIN 记为「加载」
 MIN_FRAMES = 300        # 参与批次一致性统计的最少帧数
 
 
-def fbg_bursts(gid, root):
-    """把 FBG 窗聚成「突发」（同一文件内的连续窗），返回 (突发时刻, 突发加载占比)。"""
+def fbg_windows_cached(gid, root):
+    """FBG 窗序列 (t, 加载标记)。
+
+    优先用 `results/_duty_{gid}.npz`（`l1/duty_anomaly.py` 生成）——
+    否则要读该组全部 FBG 文本（11 组共约 2.8 万个文件，很慢）。
+    """
+    p = os.path.join(RES, '_duty_%s.npz' % gid)
+    if os.path.exists(p):
+        z = np.load(p)
+        return z['t'], z['lf']
     pts = []
     for f in sorted(glob.glob(os.path.join(root, gid, 'FBG', '*.txt'))):
         pts.extend(scan_fbg(f))
     pts.sort(key=lambda x: x[0])
     if not pts:
+        return None, None
+    t = np.asarray([x[0] for x in pts], dtype=float)
+    lf = np.asarray([1.0 if x[1] > P2P_LOAD else 0.0 for x in pts], dtype=float)
+    return t, lf
+
+
+def fbg_bursts(gid, root):
+    """把 FBG 窗聚成「突发」（同一文件内的连续窗），返回 (tf, lf, tb, sb)。"""
+    tf, lf = fbg_windows_cached(gid, root)
+    if tf is None or len(tf) == 0:
         return None
-    tf = np.array([p[0] for p in pts])
-    lf = np.array([1.0 if p[1] > P2P_LOAD else 0.0 for p in pts])
     tb, sb = [], []
     i = 0
     while i < len(tf):
@@ -184,6 +208,8 @@ VARIANTS = ['mean3', 'mean1', 'hold', 'holdcut', 'holdgap', 'aeact']
 
 
 def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser()
     ap.add_argument('--groups', nargs='*', default=None)
     ap.add_argument('--variants', nargs='*', default=VARIANTS)
@@ -220,7 +246,7 @@ def main():
         gaps = gaps_of(t_sec)
         nfrm = len(t_sec)
         detail[gid] = {'n': nfrm, 'gp': gp, 'gaps': {}, 'nf': nf,
-                       'g': {}, 'gh': {}}
+                       'g': {}, 'gh': {}, 'rho': {}, 'frac1': {}}
 
         print(f'=== {gid}  帧 {nfrm}  FBG 突發 {len(tb)}  窗 {len(tf)}  '
               f'实测加载占比 gp={gp:.3f}  n_f={nf}  长空隙 {len(gaps)} 个 ===')
@@ -242,10 +268,20 @@ def main():
                 # BIN 时会「逃过惩罚」，但它在物理上依然是在凭空声称加载
                 gap_h += float(np.sum(g[m]) * FRAME_S / 3600.0)
             rr = spearmanr(g, n_hits).statistic if np.ptp(g) > 0 else np.nan
+            frac1 = float((g >= 1.0).mean())
             detail[gid]['g'][v] = g
             detail[gid]['gh'][v] = gap_h
+            detail[gid]['rho'][v] = rr
+            detail[gid]['frac1'][v] = frac1
+            if not np.isfinite(rr):
+                rs_show, tag = '       NaN', '  <= 退化：g 为常数，rho 无定义'
+            elif frac1 >= 0.99:
+                rs_show = '%10.3f' % rr
+                tag = '  <= 退化：g 有 %.1f%% 恒为 1（几乎无变化）' % (100 * frac1)
+            else:
+                rs_show, tag = '%10.3f' % rr, ''
             print(f'  {v:<11}{load_h:>9.1f}{f_res:>8.2f}{uq:>8}{mode_share:>8.1f}%'
-                  f'{mr:>9.1f}{mx:>8}{gap_h:>12.1f}{rr:>11.3f}')
+                  f'{mr:>9.1f}{mx:>8}{gap_h:>12.1f}{rs_show:>11}{tag}')
         print()
 
     # 汇总
@@ -253,11 +289,12 @@ def main():
     print('汇总（只统计 >= %d 帧的组）' % MIN_FRAMES)
     print('=' * 100)
     hdr = (f"{'口径':<9}{'组数':>5}{'反解f中位':>10}{'f组间极差':>10}{'f组间IQR':>10}"
-           f"{'空隙内加载h合计':>16}{'空隙内加载h中位':>16}{'平均rho(g,AE)':>14}")
+           f"{'空隙内加载h合计':>16}{'空隙内加载h中位':>16}"
+           f"{'rho可用组':>9}{'rho中位':>9}")
     print(hdr)
     print('-' * len(hdr))
     for v in a.variants:
-        fs, ghs, rs = [], [], []
+        fs, ghs, rs, deg = [], [], [], []
         for gid, d in detail.items():
             if d['n'] < MIN_FRAMES or v not in d['g']:
                 continue
@@ -266,24 +303,42 @@ def main():
             if load_h > 0 and d['nf']:
                 fs.append(d['nf'] / (load_h * 3600.0))
             ghs.append(d['gh'][v])
-            r = spearmanr(g, frames[gid][1]).statistic if np.ptp(g) > 0 else np.nan
-            if np.isfinite(r):
+            r = d['rho'][v]
+            if np.isfinite(r) and d['frac1'][v] < 0.99:
                 rs.append(r)
+            else:
+                deg.append('%s(%s)' % (gid, 'g为常数' if not np.isfinite(r)
+                                       else '%.0f%%为1' % (100 * d['frac1'][v])))
         if not fs:
             continue
         fs = np.array(fs)
         ghs = np.array(ghs)
+        rs = np.array(rs)
         print(f'{v:<11}{len(fs):>3}{np.median(fs):>10.2f}'
               f'{fs.max() - fs.min():>10.2f}'
               f'{np.percentile(fs, 75) - np.percentile(fs, 25):>10.2f}'
               f'{ghs.sum():>16.1f}{np.median(ghs):>16.1f}'
-              f'{np.mean(rs) if rs else np.nan:>14.3f}')
+              f'{len(rs):>9}{np.median(rs) if rs.size else np.nan:>9.3f}')
+        if deg:
+            print(f'{"":<9}  rho 排除（%d 组）：%s' % (len(deg), '、'.join(deg)))
     print('\n判据解读：')
     print('  · 「反解f中位」应接近名义 2 Hz，「f组间极差 / IQR」越小越好。')
     print('  · 「空隙内加载h」应接近 0 —— AE 已证实长空隙内无活动（最硬判据）。')
     print('    注意：该列用 sum(g) 累加而非二值化，因为「凭空声称 47% 时间在加载」')
     print('    与「声称 100%」同样不物理，只是数值大小不同。')
-    print('  · 「rho(g,AE)」越高越好 —— 加载帧应同时是 AE 事件多的帧（跨模态）。')
+    print('  · 「rho(g,AE)」= 加载帧应同时是 AE 事件多的帧（跨模态）。')
+    print('    [!] 但它**不是全组可用**，只看「rho中位」会误导：')
+    print('       (a) `g` 几乎恒为 1 的组（L1-06 99%、L1-13 99.7%、L1-14 100%）')
+    print('           —— rho 无定义或退化成噪声（§26 已证实这些组确实没有停机段，')
+    print('           所以这是「判据无定义」而不是「数据有问题」）；')
+    print('       (b) AE 帧级事件数贴近本底的组（L1-41，rho = -0.027）—— §18 更正 3；')
+    print('       (c) 帧数太少的组（L1-30 只有 13 帧）。')
+    print('       (d) aeact 口径会在 L1-24 上退化成常数（把该组也排除）。')
+    print('    ⇒ 生产口径 holdgap 真正可用的是 8 组，**中位 0.494**；')
+    print('      把退化组也平均进去才会掉到 0.35 一带（§28）。')
+    print('    [!] 而且这是**帧级**口径：600 s 帧大多跨越「跑」与「停」，')
+    print('      所以它**系统性低估**真实关联 —— 日尺度对照是 Spearman 0.886（§27）。')
+    print('      ⇒ rho(g,AE) 只能当**粗筛**，不能当「加载重建正确性」的证据。')
 
 
 if __name__ == '__main__':

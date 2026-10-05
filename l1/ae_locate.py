@@ -90,6 +90,10 @@ MINSHARE_OK = 0.05
 #
 # 2026-09-15 逐组核对 13 份 PDF + 实测定位质心（见 `l1/impact_truth_check.py`
 # 与 `l1/results/l1_impact_truth.csv`），结论：
+#   ⚠️ 2026-10-05 补充：上面这条「用任何统一坐标约定都无法自洽」的**一部分原因已查清** ——
+#      全寿命质心是「随寿命迁移的云」的平均（总迁移中位 139 mm，试件才 165x243），
+#      所以拿它比真值本就不合理；可量的残余系统误差约 35 mm（L1-54）。
+#      详见 docs/details.md §21 与 l1/loc_early.py。
 #   1. PDF 的冲击位置描述**逐组不同**（至少 5 类）：
 #        right edge x top / right edge x bottom / left edge x top /
 #        left edge x bottom / "skin near right, 2.5cm" / "centre, 8.25cm" …

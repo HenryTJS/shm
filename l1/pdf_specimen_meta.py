@@ -277,7 +277,8 @@ def emit_impact_truth(root, gmeta, loc, imp):
     """
     cols = ['gid', 'kind', 'x_mm', 'y_mm', 'y_hi_mm', 'side', 'source', 'page',
             'raw_desc', 'nx_cm', 'nx_side', 'ny_cm', 'ny_side',
-            'x_skin_mm', 'y_skin_mm', 'meas_cx_mm', 'meas_cy_mm', 'n_good']
+            'prose_x_mm', 'prose_y_mm', 'flip_x_mm', 'flip_y_mm',
+            'meas_cx_mm', 'meas_cy_mm', 'n_good']
     LX, LY = 165.0, 243.0
     rows = []
     for g in GROUPS:
@@ -291,13 +292,23 @@ def emit_impact_truth(root, gmeta, loc, imp):
             nxc, nxs = float(mx.group(1)), mx.group(2).lower()
         if my:
             nyc, nys = float(my.group(1)), my.group(2).lower()
-        # 派生 skin 坐标：⚠️ 这是**旧脚本的坐标约定**（由 ae_locate 的 IMPACT 反推），
+        # ① 文字描述推出的坐标：⚠️ 这是**旧脚本的坐标约定**（由 ae_locate 的 IMPACT 反推），
         # 与图纸自己标的 mm 值**逐组不一致**（见 impact_truth_check.py 的结论）。
-        # 保留仅供对照，**不要**拿它当权威值。
-        xsk = 10.0 * nxc if (nxc is not None and nxs == 'right') else \
+        # 列名带 prose_ 前缀就是为了防止被当成真值 —— **不要**拿它算定位误差。
+        pxk = 10.0 * nxc if (nxc is not None and nxs == 'right') else \
             (LX - 10.0 * nxc if nxc is not None else None)
-        ysk = (10.0 * nyc if nys == 'top' else (LY - 10.0 * nyc)) \
+        pyk = (10.0 * nyc if nys == 'top' else (LY - 10.0 * nyc)) \
             if nyc is not None else None
+        # ② 图纸 mm 值 + 180° 旋转 —— **推荐的真值**（列名 flip_*）。
+        # 依据：C2 批（locations.pdf，图纸值均为 (115,160)）的实测质心在旋转后
+        # 显著更近（L1-49 = 4.1 mm、L1-59 = 15.2 mm），不旋转则对不上。
+        # ⚠️ 注意：**哪一帧才对取决于图纸的观察面**，不能当成普适事实；
+        # C1 批（impact_location，另一份 PDF）无旋转反而更近，但那批的声速
+        # 自述 after-failure 不可信 ⇒ 其绝对位置本身就不可用，不能用来判定约定。
+        # 依据与量化见 docs/details.md §21。
+        dx_, dy_ = (d or {}).get('x_mm'), (d or {}).get('y_mm')
+        fxk = (LX - float(dx_)) if dx_ not in (None, '') else None
+        fyk = (LY - float(dy_)) if dy_ not in (None, '') else None
         # 实测质心（仅已有 DFOS 定位 npz 的组）
         cx = cy = ng = None
         fp = os.path.join(RES, '_l1_loc_%s.npz' % g)
@@ -318,8 +329,10 @@ def emit_impact_truth(root, gmeta, loc, imp):
             source=(d or {}).get('source', ''),
             page=(d or {}).get('page', ''),
             raw_desc=raw, nx_cm=nxc, nx_side=nxs or '', ny_cm=nyc, ny_side=nys or '',
-            x_skin_mm=(round(xsk, 1) if xsk is not None else ''),
-            y_skin_mm=(round(ysk, 1) if ysk is not None else ''),
+            prose_x_mm=(round(pxk, 1) if pxk is not None else ''),
+            prose_y_mm=(round(pyk, 1) if pyk is not None else ''),
+            flip_x_mm=(round(fxk, 1) if fxk is not None else ''),
+            flip_y_mm=(round(fyk, 1) if fyk is not None else ''),
             meas_cx_mm=cx, meas_cy_mm=cy, n_good=ng))
     out = os.path.join(RES, 'l1_impact_truth.csv')
     with open(out, 'w', newline='', encoding='utf-8-sig') as fh:

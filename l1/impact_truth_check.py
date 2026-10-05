@@ -107,6 +107,9 @@ for g in GROUPS:
                  'ny_cm': ny[0], 'ny_side': ny[1] or '', 'stiffener': stiff or '',
                  'surface': surf, 'x_skin_mm': x, 'y_skin_mm': y,
                  'meas_cx_mm': cx, 'meas_cy_mm': cy, 'n_good': ng})
+# ⚠️ 本工具的目的就是核对「文字描述」与实测质心是否一致 ⇒ 它用的 x_skin_mm / y_skin_mm
+# 是**由文字描述推得**的列，与 l1_impact_truth.csv 里已改名的 prose_x_mm / prose_y_mm 同源。
+# 真值应用图纸值旋转后的 `flip_x_mm` / `flip_y_mm`（见 §21 与 l1/loc_early.py）。
 
 # 声速表核对
 buf.append('')

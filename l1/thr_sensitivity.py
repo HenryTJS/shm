@@ -100,7 +100,13 @@ def g_hold(t_sec, tb, sb, max_carry, frac, n_hits, win=WIN):
 
 
 def metrics(g, n_hits, nf, t_sec, cut):
-    """一个 (组, 组合) 的全部指标。"""
+    """一个 (组, 组合) 的全部指标。
+
+    ⚠️ 其中 `rho` = Spearman(g, AE 帧事件数) **不是全组可用的判据**：
+    `g` 几乎恒为 1 的组（L1-06/13/14）无定义或退化成噪声，AE 帧级事件数
+    贴近本底的组（L1-41）给约 0，帧数太少的组（L1-30/34/36）无意义。
+    ⇒ 汇总时**必须报可用组数并存中位**，不要直接对所有组取均值。详见 §28。
+    """
     load_h = float(np.sum(g) * FRAME_S / 3600.0)
     f_res = (nf / (load_h * 3600.0)) if (load_h > 0 and nf) else float('nan')
     mr, mx = runs(g)

@@ -377,7 +377,13 @@ def cmd_stats(root, gids, per_file=True):
 
 
 def cmd_export(root, gids, out_csv):
-    """把各组 `.DTA` 的体检统计写成 CSV（零依赖，用标准库 csv）。"""
+    """把各组 `.DTA` 的体检统计写成 CSV（零依赖，用标准库 csv）。
+
+    ⚠️ **不要往这个 CSV 里放机器相关的列**（如解析耗时）：它是交付物，
+    还会被 `survey_groups.py` 并入 `L1数据记录.xlsx`。2026-10-05 实测：
+    原有一列 `解析耗时s`（wall-clock 秒，含文件缓存冷/热差异）会让产物
+    **不可逐字节复现**（连跑两次 MD5 不同）。已移除；耗时仍打到控制台。
+    """
     import csv
     import time
     if not gids:
@@ -385,7 +391,7 @@ def cmd_export(root, gids, out_csv):
                       if d.startswith('L1-') and os.path.isdir(os.path.join(root, d)))
     cols = ['组号', '文件', '大小MB', 'hit数', '时间跨度h', 't_min_s', 't_max_s',
             '通道1', '通道2', '幅值最小', '幅值中位', '幅值P90', '每小时中位',
-            '每小时峰值', '起始时刻', '采样率kHz', '波形数', '解析耗时s']
+            '每小时峰值', '起始时刻', '采样率kHz', '波形数']
     rows = []
     for gid in gids:
         for f in sorted(glob.glob(os.path.join(root, gid, 'AE', '*.DTA'))):
@@ -399,7 +405,7 @@ def cmd_export(root, gids, out_csv):
                          r['ch'].get(1, 0), r['ch'].get(2, 0),
                          r['amp_min'], r['amp_p50'], r['amp_p90'], r['hr_med'], r['hr_max'],
                          m.start_time.strftime('%Y-%m-%d %H:%M:%S') if m.start_time else '',
-                         srate, m.n_waveform, round(time.time() - t0, 1)])
+                         srate, m.n_waveform])
             print('   %-16s hit %9d  %.1fs' % (os.path.basename(f), r['hit'], time.time() - t0))
     with open(out_csv, 'w', newline='', encoding='utf-8-sig') as fh:
         w = csv.writer(fh)

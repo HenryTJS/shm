@@ -45,6 +45,15 @@ def fbg_stop_spans(gid):
     之前用 AE 帧网格上的加载占比判停机行不通：AE 帧长 600 s，而 FBG 采样间隔
     420 s，一个窗口里平均只有 1 至 2 个 FBG 帧 ⇒ 占比被量化成 0 / 0.5 / 1。
     直接在 FBG 序列上找连续非加载窗才准。
+
+    ⚠️ **2026-10-05 补充：上面这段理由只对旧的 `fill='mean'` 口径成立。**
+    循环轴现在用 `holdgap` + AE 静默守卫（`ae_cycle._ratio_on_grid`），
+    真停机段会在帧网格上给出 `g=0` 的**连续段**，所以 `find_restarts` 反而是对的 ——
+    但它**从未被调用**（死代码，保留作参照）。
+    两法实测结论一致：批次 A（L1-06/13/14/24）两法都是 0 至 1 段，
+    因为那 4 组**确实没有停机段**（AE 事件率自身也无低谷，见 `--diag`、`details.md` §26）。
+    另一条要注意：批次 A 的 FBG **覆盖率只有 13 % 至 17 %**，
+    且缺失部分**没有 >1 h 的缺口**（都是大量中等间隙）⇒ 本函数对它们**天然盲**。
     """
     try:
         from ae_cycle import group_load, P2P_LOAD
@@ -145,11 +154,114 @@ def run(gid):
     return d
 
 
+def ae_dip_runs(n_hits, radius=2, frac=0.30, min_run=2):
+    """直接在 **AE 事件率**上找低谷段 —— 不依赖 FBG 覆盖，也不依赖 `g`。
+
+    动机：批次 A 的 `g` 恒为 1（FBG 只看得到 13 % 至 17 % 的时间，
+    而 AE 静默守卫从未触发）⇒ `g` 从未被任何证据否证过。
+    若试验真的停过，AE 事件率应该出现**低谷**，而 `g` 看不出来。
+    返回 (低谷段数, 低谷帧占比)。
+    """
+    n = np.asarray(n_hits, dtype=float)
+    if n.size < 5:
+        return 0, float('nan')
+    # 滑动中位（滑窗 2*radius+1），对孤立低帧不敏感，避免把噪声当停机
+    from numpy.lib.stride_tricks import sliding_window_view
+    k = 2 * radius + 1
+    if n.size < k:
+        return 0, float('nan')
+    sm = np.median(sliding_window_view(np.pad(n, radius, mode='edge'), k), axis=1)
+    low = sm < frac * float(np.median(n))
+    runs, i = 0, 0
+    while i < low.size:
+        if low[i]:
+            j = i
+            while j < low.size and low[j]:
+                j += 1
+            if (j - i) >= min_run:
+                runs += 1
+            i = j
+        else:
+            i += 1
+    return runs, float(low.mean())
+
+
+def diag(gids):
+    """为什么有些组「无重启事件」—— 先查 FBG 采样本身能不能看见停机（待办 1.2）。
+
+    三种可能，必须先用数据分开，否则会把数据问题当成物理结论：
+      (a) **真的没有停机段** —— 试验连续跑完（那么 `load_h` 应该接近 `span_h`）；
+      (b) **FBG 只在加载时采集** —— 停机段变成**大时间缺口**，而
+          `fbg_stop_spans` 只认「连续非加载窗」，**看不见缺口**；
+      (c) `P2P_LOAD` 把停机窗误判成加载窗（§15 ① 已排除阈值问题）。
+
+    逐组输出：窗数、窗长估计、FBG 记录跨度与覆盖率、缺口统计（>1 h 的个数与合计）、
+    非加载窗数，以及现有 `fbg_stop_spans` 能找到几个停机段。
+    """
+    try:
+        from ae_cycle import group_load, P2P_LOAD
+    except Exception:                                        # noqa: BLE001
+        print('无法导入 ae_cycle')
+        return None
+    print('%-7s %6s %7s %9s %9s %8s %9s %9s %7s %5s %7s %6s %8s %8s' % (
+        '组', '窗数', '窗长s', 'FBG跨度h', '覆盖h', '覆盖率', '缺口>1h', '缺口合计h',
+        '非载窗', 'FBG停机', 'g<0.3比', '网格停机', 'AE低谷段', '低谷帧比'))
+    rows = []
+    for gid in gids:
+        pts = group_load(gid)
+        if len(pts) < 3:
+            print('%-7s  无 FBG' % gid)
+            continue
+        t = np.asarray([p[0] for p in pts], dtype=float)
+        p2p = np.asarray([p[1] for p in pts], dtype=float)
+        n = t.size
+        dt = np.diff(t)
+        small = dt[dt < 120.0]
+        win_s = float(np.median(small)) if small.size else float('nan')
+        span_h = (t[-1] - t[0]) / 3600.0
+        cover_h = n * win_s / 3600.0
+        gaps = dt[dt > 3600.0]
+        nonload = int((p2p <= P2P_LOAD).sum())
+        nspan = len(fbg_stop_spans(gid))
+        # 另一个检测器：AE 帧网格上的 g < STOP_G 连续段
+        # （`find_restarts`，它考虑了 holdgap 的零阶保持 + AE 静默守卫）
+        cp = os.path.join(RES, '_l1cyc_%s.npz' % gid)
+        fgrid, gzero = -1, float('nan')
+        if os.path.exists(cp):
+            c = np.load(cp, allow_pickle=True)
+            gg = np.asarray(c['g_load'], dtype=float)
+            fgrid = len(find_restarts(gg))
+            gzero = float((gg < STOP_G).mean())
+        # AE 事件率自身的低谷（不依赖 FBG 覆盖，也不依赖 g）
+        nrun, nlow = 0, float('nan')
+        fpa = os.path.join(RES, '_l1ae_frames_%s.npz' % gid)
+        if os.path.exists(fpa):
+            zz = np.load(fpa, allow_pickle=True)
+            if 'n' in zz.files:
+                nrun, nlow = ae_dip_runs(zz['n'].astype(float))
+        rows.append((gid, n, win_s, span_h, cover_h, nonload, nspan,
+                     int(gaps.size), float(gaps.sum()) / 3600.0, fgrid, gzero,
+                     nrun, nlow))
+        print('%-7s %6d %7.1f %9.1f %9.1f %7.0f%% %9d %9.1f %7d %5d %6.0f%% %6d %8d %7.0f%%'
+              % (gid, n, win_s, span_h, cover_h, 100 * cover_h / max(span_h, 1e-9),
+                 gaps.size, float(gaps.sum()) / 3600.0, nonload, nspan,
+                 100 * gzero, fgrid, nrun, 100 * nlow))
+    print('\n判读：若「缺口>1h」多且「缺口合计」与 (FBG跨度 − 覆盖) 同量级，')
+    print('      说明停机段是被**采样停掉**的（情形 b），不是真的没有停机。')
+    print('      「FBG停机」= fbg_stop_spans（连续非加载窗）；')
+    print('      「网格停机」= find_restarts（AE 帧网格上 g<0.3 的连续段）；')
+    print('      「AE低谷段」= 事件率自身低于中位 30%% 且 >=2 帧的连续段（不看 FBG、不看 g）。')
+    return rows
+
+
 def main(argv):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
-    gids = argv or sorted(os.path.basename(p)[len('_l1ae_frames_'):-4]
-                          for p in glob.glob(os.path.join(RES, '_l1ae_frames_*.npz')))
+    allg = sorted(os.path.basename(p)[len('_l1ae_frames_'):-4]
+                  for p in glob.glob(os.path.join(RES, '_l1ae_frames_*.npz')))
+    gids = [a for a in argv if not a.startswith('--')] or allg
+    if '--diag' in argv:
+        return 0 if diag(gids) is not None else 1
     print('%-7s %6s %8s %9s %9s %9s %9s' % (
         '组', '重启次数', '停机窗中位', 'R中位', 'R_前25%', 'R_后25%', 'rho(R,寿命)'))
     rows = []

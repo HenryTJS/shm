@@ -64,6 +64,11 @@
     python l1/fbg_variants.py                 # 全部组，出对比表
     python l1/fbg_variants.py --dump L1-31    # 单组逐窗诊断
     python l1/fbg_variants.py --qc            # 窗质量 / 载荷级匹配诊断（L1-14 查因）
+    python l1/fbg_variants.py --b-diag        # B 选了寿命的哪一段（已否证“时间带”假设）
+    python l1/fbg_variants.py --b-why         # 拆开 B：子集内容 vs 重算基线
+    python l1/fbg_variants.py --qc-causal     # A 的门槛能否改成因果形式（在线化）
+    python l1/fbg_variants.py --rank-check    # 核验排名统计量的基线口径（待办 1.5）
+    python l1/fbg_variants.py --batch         # 按 FBG 记录格式分批评估 rho（待办 1.1）
 """
 
 import argparse
@@ -73,6 +78,7 @@ import os
 import sys
 
 import numpy as np
+import pandas as pd
 from scipy.spatial.distance import jensenshannon
 from scipy.stats import spearmanr
 
@@ -366,10 +372,24 @@ def qc_scan(tol=LM_TOL, rel=QC_REL, null_n=400, seed=20261004):
     故对每组抽 null_n 次**同样本量随机子样本**，走完全相同的流程，
     看观测值在零分布上的位置（p 值）。
 
-    结论（11 组，n>=200）：
-      A 几乎无害（|Δrho| <= 0.02，10 组），把 L1-14 从 0.104 提到 0.208；
-      B 是双刃剑：L1-14 0.104→0.511、L1-25 0.506→0.913（p<0.001 的真实提升），
-        但 L1-41 0.821→0.461（显著变差）⇒ **不可全局替换交付口径**。
+    结论（11 组，n>=200，2026-10-04 首次得出）：
+      A 几乎无害（|Δrho| <= 0.02，10 组）；B 是双刃剑：
+      L1-14 0.104→0.511、L1-25 0.506→0.913，但 L1-41 0.821→0.613（显著变差）。
+
+    ⚠️ **2026-10-05 更正（两条，见 `--b-why` 与 `--qc-causal`）**：
+      1. 本函数里的 B 是「子集**重算基线** + **子集序号**」，而 `_rob25` 的 rho
+         对这个基线的取法很敏感。把基线固定为全窗基线后：
+           L1-14 0.511 → **-0.523**（“提升”消失且反向）
+           L1-41 0.613 → ** 0.796**（“变差”基本消失）
+           L1-31 0.619 → ** 0.420**（这一组 B 确实损坏了内容）
+         ⇒ B 不可做交付口径的结论**不变**，但**理由要改**：不是“窄带匹配破坏
+         寿命覆盖”（`--b-diag` 已否证：L1-41 的 B 子集寿命分布是均匀的），
+         而是 **`_rob25` 在更小子集上重算基线会让 rho 大幅漂移**。
+      2. 上面那对旧数字（L1-41 0.461）已过期 —— 缓存 `_l1fbgprof_*.npz` 重生后
+         变为 **0.613**。教训：docstring 里**不要写死数值**（§16 反复强调过）。
+      3. A 的门槛是**非因果**的（用全寿命中位）；改成因果形式（`--qc-causal`）后
+         |Δrho| 中位仅 0.007 至 0.008，但 **L1-14 的 0.208 掉回 0.065**
+         ⇒ A 对 L1-14 的“提升”本身就是非因果门槛的产物，不是真收益。
     """
     rng = np.random.default_rng(seed)
     print('%-7s %5s %8s | %18s | %20s' % (
@@ -401,17 +421,382 @@ def qc_scan(tol=LM_TOL, rel=QC_REL, null_n=400, seed=20261004):
     return rows
 
 
+def b_diag(tol=LM_TOL, rel=QC_REL):
+    """B 口径（载荷级匹配）为何在部分组把 rho 砸掉 —— 看它选了寿命的哪一段。
+
+    背景：`--qc` 的结论里 B 是双刃剑（L1-14 0.104→0.511，但 L1-41 0.821→0.461）。
+    本诊断检验一个很具体的机制：
+      **B 的带宽 `|p2p − 中位| < tol·中位` 可能比载荷程序的两级幅度差还窄**，
+      于是 B 只选到其中一级 ⇒ 只覆盖寿命的一段 ⇒
+      「剖面 vs 寿命序」的 rho 就不再是寿命漂移，而是在一个窄时间带内测别的东西。
+    例：L1-41 的 level_1 幅度 18.6 kN、level_2 32.1 kN（差 **1.73 倍**），远大于 ±10%。
+
+    输出每组：全窗/A/B 的 rho、样本量、**寿命分布**（选中窗在寿命十等分里的占比，
+    逐位一个数字，以 10% 为单位；`1111111111` = 均匀）以及 p2p 自身随寿命序的 rho
+    （若很强，B 必然挑成一段）。
+    """
+    print('%-7s %5s %8s | %-26s | %-26s | %s' % (
+        '组', '窗数', 'rho全窗', 'A: p2p>%.2f*中位' % rel, 'B: |p2p-中位|<%.0f%%' % (tol * 100),
+        'p2p 分位(10/25/50/75/90)'))
+    rows = []
+    for p in _paths():
+        prof, _t, p2p = load_prof(p)
+        if prof is None or p2p is None or len(p2p) < 200:
+            continue
+        gid = _gid(p)
+        n = len(p2p)
+        ref = float(np.median(p2p))
+        mA = p2p > rel * ref
+        mB = np.abs(p2p - ref) < tol * ref
+        full = _rho(_rob25(prof))
+
+        def stat(m):
+            idx = np.nonzero(m)[0]
+            if idx.size < 30:
+                return None
+            h = np.histogram(idx / max(n - 1, 1), bins=np.linspace(0, 1, 11))[0]
+            # 寿命分布：逐等分占比（以 10% 为单位取整，0 至 9）—— 直接看出密集在哪段
+            life = ''.join(str(min(int(round(100.0 * v / idx.size / 10.0)), 9)) for v in h)
+            return {'k': int(idx.size), 'life': life,
+                    'rho': _rho(_rob25(prof[m]))}
+        sA, sB = stat(mA), stat(mB)
+        qs = np.quantile(p2p, [0.1, 0.25, 0.5, 0.75, 0.9])
+        rho_p2p = _rho(p2p)
+        rows.append((gid, n, full, sA, sB, qs, rho_p2p))
+
+        def fmt(s):
+            if s is None:
+                return 'n<30 跳过'
+            return '%7.3f n=%4d 寿命%s' % (s['rho'], s['k'], s['life'])
+        print('%-7s %5d %8.3f | %s | %s | %s  rho(p2p,序)=%+.2f'
+              % (gid, n, full, fmt(sA), fmt(sB),
+                 '/'.join('%.0f' % v for v in qs), rho_p2p))
+    return rows
+
+
+def _partial_rank_shuffle(x, y, z):
+    """x、y 的秩偏相关（控制 z）。三者都按秩算，避免量纲问题。"""
+    from scipy.stats import rankdata
+    rx, ry, rz = rankdata(x), rankdata(y), rankdata(z)
+    rxy = float(np.corrcoef(rx, ry)[0, 1])
+    rxz = float(np.corrcoef(rx, rz)[0, 1])
+    ryz = float(np.corrcoef(ry, rz)[0, 1])
+    den = np.sqrt(max((1.0 - rxz ** 2) * (1.0 - ryz ** 2), 1e-12))
+    return (rxy - rxz * ryz) / den
+
+
+def b_why(tol=LM_TOL, rel=QC_REL):
+    """B 口径为何在 L1-41 把 rho 从 0.821 砸到 0.613 —— 拆开两个效应。
+
+    `qc_scan` 的 B 是「子集**重算基线** + **子集序号**」，所以 rho 变化可能有三个来源：
+      (a) **子集内容**：选走的窗本身携带多少漂移信号；
+      (b) **重算基线**：`_rob25` 在子集的前 25% 上重新取基线；
+      (c) **序号归一**：子集序号被重新拉到 0 至 1。
+    本诊断固定基线为**全窗的 `_rob25`**（`shape_full`），只用原寿命序，
+    于是「子集内容」以外的效应被排除 —— 由此可把 (a) 单独量出来。
+
+    另外算两个相关系数：
+      · `rho(shape, p2p)` —— 剖面与窗质量的耦合（L1-14 当年是 -0.801）；
+      · `偏rho(shape, 序 | p2p)` —— 扣掉 p2p 后还剩多少寿命漂移。
+        若它塌到接近 0，说明「漂移」其实是 p2p 变化的影子。
+    """
+    print('%-7s %5s | %s' % ('组', '窗数', '全窗（固定基线的 shape_full）'))
+    print('%-7s %5s | %8s | %13s | %s' % ('', '', 'rho(序)', 'rho(shape,p2p)',
+                                          '偏rho(序|p2p)'))
+    for p in _paths():
+        prof, _t, p2p = load_prof(p)
+        if prof is None or p2p is None or len(p2p) < 200:
+            continue
+        gid = _gid(p)
+        n = len(p2p)
+        life = np.arange(n, dtype=float)
+        shape_full = _rob25(prof)                 # 固定基线，与子集无关
+        ref = float(np.median(p2p))
+        mA = p2p > rel * ref
+        mB = np.abs(p2p - ref) < tol * ref
+        r_ord = _rho(shape_full)
+        r_sp = float(spearmanr(shape_full, p2p).statistic)
+        r_par = _partial_rank_shuffle(shape_full, life, p2p)
+        print('%-7s %5d | %8.3f | %13.3f | %+.3f' % (gid, n, r_ord, r_sp, r_par))
+
+        def row(m, tag):
+            k = int(m.sum())
+            if k < 30:
+                return '  %s: n<30（%d）跳过' % (tag, k)
+            rd = _rho(_rob25(prof[m]))            # 交付口径：子集重算基线 + 子集序号
+            rf = _rho(shape_full[m])              # 固定基线（内容效应）
+            sp = float(spearmanr(shape_full[m], p2p[m]).statistic)
+            return ('  %s: rho交付 %6.3f | rho固定基线 %6.3f | rho(shape,p2p) %+.3f'
+                    '（n=%d）' % (tag, rd, rf, sp, k))
+        print(row(mA, 'A'))
+        print(row(mB, 'B'))
+    return None
+
+
+def qc_causal(rel=QC_REL, win=200):
+    """窗质量控制 A 的门槛能不能**在线化**（把「全寿命中位」换成因果中位）。
+
+    现状（`qc_scan` 的 A）：`p2p > rel * median(p2p 全寿命)` —— **非因果**，
+    用了未来的数据，所以不能声称在线可用。
+
+    两种因果替代（都只用当前及过去）：
+      · **expanding**：门槛 = rel * median(p2p[0..i])
+      · **sliding**  ：门槛 = rel * median(p2p[i−W..i])，W = `win`
+    暖机段（历史不足 W 个窗）没有依据判窗质量，**一律保留** ——
+    这与交付口径一致（`shape_rob25` 的基线本来就取自前 25%）。
+
+    判读：若换成两种因果门槛后 `rho(shape_rob25, 序)` 与全寿命门槛基本一致，
+    则 A 可以改成在线形式；若明显变差，则 A 只能当离线诊断。
+    """
+    print('%-7s %5s %8s | %-22s | %-22s | %s' % (
+        '组', '窗数', 'rho全窗', 'A 全寿命门槛（现口径）',
+        'A expanding 因果', 'A sliding 因果(W=%d)' % win))
+    rows = []
+    for p in _paths():
+        prof, _t, p2p = load_prof(p)
+        if prof is None or p2p is None or len(p2p) < 200:
+            continue
+        gid = _gid(p)
+        n = len(p2p)
+        s = pd.Series(p2p)
+        thr_g = rel * float(np.median(p2p))
+        thr_e = (rel * s.expanding(min_periods=win).median()).to_numpy()
+        thr_s = (rel * s.rolling(win, min_periods=win).median()).to_numpy()
+
+        def rho_of(thr):
+            m = np.where(np.isnan(thr), True, p2p > thr)
+            keep = int(m.sum())
+            if keep < 30:
+                return float('nan'), keep
+            return _rho(_rob25(prof[m])), keep
+        r0, k0 = rho_of(np.full(n, thr_g))
+        r1, k1 = rho_of(thr_e)
+        r2, k2 = rho_of(thr_s)
+        rows.append((gid, n, r0, r1, k1, r2, k2))
+        print('%-7s %5d %8.3f | %7.3f (n=%4d)    | %7.3f (n=%4d)   | %7.3f (n=%4d)'
+              % (gid, n, r0, r0, k0, r1, k1, r2, k2))
+    dr1 = [r[3] - r[2] for r in rows if np.isfinite(r[3])]
+    dr2 = [r[5] - r[2] for r in rows if np.isfinite(r[5])]
+    print('|Δrho| 中位：expanding %.3f   sliding %.3f   最大 %.3f / %.3f'
+          % (float(np.median(np.abs(dr1))), float(np.median(np.abs(dr2))),
+             float(np.max(np.abs(dr1))), float(np.max(np.abs(dr2)))))
+    return rows
+
+
+def rank_check(warm=WARM):
+    """复核 §22 的推论会不会影响**现有的指标排名**（待办 1.5）。
+
+    §22 发现「在子集上重算基线」会让 rho 大幅漂移。本开关要回答两件事：
+
+      1. **生产路径用的到底是哪一种？** 不靠读代码，而用**独立复算**核验：
+         直接按「全窗前 25% 中位当基线、再取暖机后的序列」算一遍，
+         与 `analyze()` 产出的暖机后 rho 比 —— 相等即证明生产是固定基线。
+      2. **若当初用的是子集重算版，排名会变多少？** 即 §22 的影响面。
+         做法：把剖面先截到暖机后，再在**截断后的矩阵上**重算基线（`variants(prof[k0:])`）。
+
+    输出每组的两个 rho（`l1_first` 与 `l1_ref25`），以及按「暖机后 |rho| 中位」
+    排序的前 3 名在两种口径下是否一致。
+    """
+    data = _collect()
+    if not data:
+        print('没有可用的 _l1fbgprof_*.npz')
+        return None
+    gids = list(data)
+    print('%-7s %5s | %-19s | %-19s | %s' % (
+        '组', '窗数', 'l1_ref25 固定基线', 'l1_ref25 子集重算', 'l1_first 固定/子集'))
+    rows = []
+    for g in gids:
+        prof, _t, _p2p, v, _e = data[g]
+        n = prof.shape[0]
+        k0 = max(1, int(round(n * warm)))
+        if n - k0 < 8:
+            continue
+        sub = prof[k0:]
+        # ① 固定基线（独立复算，不经 variants()）
+        ref25_full = np.median(prof[:max(1, int(round(n * 0.25)))], axis=0)
+        s25_fix = np.abs(sub - ref25_full).sum(axis=1)
+        r25_fix = float(spearmanr(s25_fix, np.arange(len(sub))).statistic)
+        s1_fix = np.abs(sub - prof[0]).sum(axis=1)
+        r1_fix = float(spearmanr(s1_fix, np.arange(len(sub))).statistic)
+        # ② 子集重算基线（截断后重新取前 25% 中位 / 首窗）
+        ref25_sub = np.median(sub[:max(1, int(round(len(sub) * 0.25)))], axis=0)
+        r25_sub = float(spearmanr(np.abs(sub - ref25_sub).sum(axis=1),
+                                  np.arange(len(sub))).statistic)
+        r1_sub = float(spearmanr(np.abs(sub - sub[0]).sum(axis=1),
+                                 np.arange(len(sub))).statistic)
+        # ③ 与生产路径的暖机后值对照（核验 ① 是否就是生产口径）
+        r25_prod = rho_of(v['l1_ref25'][k0:])
+        rows.append({'gid': g, 'n': n, 'r25_fix': r25_fix, 'r25_sub': r25_sub,
+                     'r1_fix': r1_fix, 'r1_sub': r1_sub, 'r25_prod': r25_prod})
+        print('%-7s %5d | %7.3f (生产 %6.3f) | %7.3f (差 %+.3f) | %+.3f / %+.3f'
+              % (g, n, r25_fix, r25_prod, r25_sub, r25_sub - r25_fix,
+                 r1_fix, r1_sub))
+    d_prod = np.abs([r['r25_fix'] - r['r25_prod'] for r in rows])
+    d_sub = np.abs([r['r25_sub'] - r['r25_fix'] for r in rows])
+    print('\n核验：独立复算的固定基线 vs 生产暖机后 rho —— 最大差 **%.2e**'
+          % (float(d_prod.max()) if d_prod.size else float('nan')))
+    print('      => %s' % ('生产路径就是固定基线口径，排名不受 §22 影响'
+                          if float(d_prod.max()) < 1e-9 else
+                          '⚠️ 不一致，需查生产线'))
+    print('若改子集重算：|Δrho| 中位 %.3f、最大 %.3f（共 %d 组）'
+          % (float(np.median(d_sub)), float(d_sub.max()), len(d_sub)))
+
+    # 排名（因果口径：暖机后 |rho| 中位）
+    cand = [k for k in VARIANTS if k in CAUSAL and k not in DEGENERATE]
+    post = {k: np.array([rho_of(data[g][3][k][max(1, int(round(data[g][0].shape[0] * warm))):])
+                         for g in gids], dtype=float) for k in cand}
+    rank_fix = sorted(cand, key=lambda k: -float(np.nanmedian(np.abs(post[k]))))
+    print('\n暖机后 |rho| 中位排名（生产/固定基线，前 5）：')
+    for k in rank_fix[:5]:
+        print('    %-12s %6.3f' % (k, float(np.nanmedian(np.abs(post[k])))))
+    return rows, rank_fix
+
+
+BATCH_A = ['L1-06', 'L1-13', 'L1-14', 'L1-24']      # C3 变幅 VA，连续长记录型 FBG
+
+
+def _acf1(y):
+    """滞后 1 自相关（Pearson，用于估有效样本量）。"""
+    y = np.asarray(y, dtype=float)
+    if y.size < 4 or np.ptp(y) == 0:
+        return 0.0
+    a, b = y[:-1], y[1:]
+    if np.std(a) == 0 or np.std(b) == 0:
+        return 0.0
+    return float(np.corrcoef(a, b)[0, 1])
+
+
+def _block_perm_rho(shape, n_perm=400, block=20, seed=7):
+    """循环分块置换的零分布 —— 保留自相关、只打乱顺序。
+
+    ⚠️ 为什么不能用「随机子样本」当零分布：批次 A 是**连续长记录**上的 28 s 切片，
+    相邻窗强自相关，随机打散会破坏这个结构，零分布偏窄 ⇒ p 值偏小。
+    循环分块置换把序列按 block 长度切块再随机拼接，**保留了块内结构**。
+    """
+    rng = np.random.default_rng(seed)
+    n = shape.size
+    if n < 4 * block:
+        block = max(2, n // 4)
+    nb = int(np.ceil(n / block))
+    comp = np.empty(n)
+    out = np.empty(n_perm)
+    ar = np.arange(n)
+    for i in range(n_perm):
+        starts = rng.integers(0, n, size=nb)
+        idx = (starts[:, None] + np.arange(block)[None, :]).ravel() % n
+        comp[:] = shape[idx[:n]]
+        out[i] = spearmanr(comp, ar).statistic
+    return out
+
+
+def batch_review(warm=WARM, n_perm=400, block=20):
+    """按 FBG 记录格式分批评估 `shape_rob25` 的 rho（待办 1.1）。
+
+    动机：批次 A（C3 变幅，L1-06/13/14/24）是**连续长记录**型 FBG ——
+    相邻窗是同一条记录上的 28 s 切片，强自相关；
+    批次 B（C4 谱载）是**每 7 分钟 20 秒快照** —— 窗之间近乎独立。
+    同一个 rho 在两批的**有效样本量**相差很多，
+    所以直接比较「|rho| 中位」或「反例数」并不对等。
+
+    本诊断给出：每组窗数、相邻窗时距中位、剖面序列的滞后 1 自相关、
+    有效样本量 n_eff = n(1-a1)/(1+a1)，以及
+      · rho —— 固定基线（全窗 `l1_ref25`）口径的暖机后 rho；
+      · p_block —— 循环分块置换零分布下 |rho| 的 p 值（保留自相关）。
+    再按批次汇总，回答「批次 A 的 4 组是否撑得住同一个结论」。
+    """
+    data = _collect()
+    if not data:
+        print('没有可用的 _l1fbgprof_*.npz')
+        return None
+    print('%-7s %4s %6s %9s %8s %8s | %8s %8s' % (
+        '组', '批', '窗数', '窗距中位s', 'acf1', 'n_eff', 'rho', 'p_block'))
+    rows = []
+    for g in data:
+        prof, t, _p2p, v, _e = data[g]
+        n = prof.shape[0]
+        k0 = max(1, int(round(n * warm)))
+        if n - k0 < 8:
+            continue
+        shape_full = v['l1_ref25']                 # 固定基线，与子集无关
+        a1 = _acf1(shape_full)
+        # ⚠️ AR(1) 的 n_eff 公式在 acf1 -> 1 时退化（L1-44 会算出 3712 窗 -> n_eff 8）
+        # ⇒ 只在 acf1 < 0.95 时当参考值用，否则标 * 并从汇总里排除。
+        ok_eff = a1 < 0.95
+        neff = (n * max(1.0 - a1, 1e-3) / max(1.0 + a1, 1e-3)) if ok_eff else float('nan')
+        sub = shape_full[k0:]
+        rho = float(spearmanr(sub, np.arange(sub.size)).statistic)
+        null = _block_perm_rho(sub, n_perm=n_perm, block=block)
+        p = float((np.abs(null) >= abs(rho)).mean())
+        dt = float(np.median(np.diff(t))) if (t is not None and t.size == n) else float('nan')
+        b = 'A' if g in BATCH_A else 'B'
+        rows.append((g, b, n, dt, a1, neff, rho, p))
+        print('%-7s %4s %6d %9.1f %8.3f %8s | %8.3f %8.3f'
+              % (g, b, n, dt, a1, ('%.0f' % neff) if ok_eff else '退化*', rho, p))
+
+    print('\n按批次汇总（固定基线口径）')
+    print('%-4s %4s %10s %10s %16s %10s %11s' % (
+        '批', '组数', '|rho|中位', 'rho 中位', '反例(rho<-0.3)', 'acf1中位', 'n_eff中位'))
+    for b in ('A', 'B'):
+        rs = [r for r in rows if r[1] == b]
+        if not rs:
+            continue
+        ar = np.abs([r[6] for r in rs])
+        neg = sum(1 for r in rs if r[6] < -0.3)
+        ne = [r[5] for r in rs if np.isfinite(r[5])]
+        print('%-4s %4d %10.3f %10.3f %16d %10.3f %11s' % (
+            b, len(rs), float(np.median(ar)), float(np.median([r[6] for r in rs])),
+            neg, float(np.median([r[4] for r in rs])),
+            ('%.0f（%d/%d 组可用）' % (float(np.median(ne)), len(ne), len(rs)))
+            if ne else '全部退化*'))
+    print('  * acf1 >= 0.95 时 AR(1) 的 n_eff 公式退化，不给值。')
+    pa = [r[7] for r in rows if r[1] == 'A']
+    pb = [r[7] for r in rows if r[1] == 'B']
+    print('\np_block < 0.05 的组数：批 A %d/%d，批 B %d/%d'
+          % (sum(1 for x in pa if x < 0.05), len(pa),
+             sum(1 for x in pb if x < 0.05), len(pb)))
+    print('窗距中位（s）：A %s；B %s'
+          % ('/'.join('%.0f' % r[3] for r in rows if r[1] == 'A'),
+             '/'.join('%.0f' % r[3] for r in rows if r[1] == 'B')))
+    return rows
+
+
 def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser()
     ap.add_argument('--dump', default=None, help='单组诊断，如 L1-31')
     ap.add_argument('--warm', type=float, default=WARM, help='暖机比例，默认 0.25')
     ap.add_argument('--qc', action='store_true',
                     help='窗质量控制 / 载荷级匹配诊断（L1-14 查因）')
+    ap.add_argument('--b-diag', dest='b_diag', action='store_true',
+                    help='B 口径（载荷级匹配）到底选了寿命的哪一段')
+    ap.add_argument('--b-why', dest='b_why', action='store_true',
+                    help='拆开 B 口径 rho 变化：子集内容 vs 重算基线 vs 序号归一')
+    ap.add_argument('--qc-causal', dest='qc_causal', action='store_true',
+                    help='窗质量控制门槛能否在线化（全寿命中位 vs 因果中位）')
+    ap.add_argument('--rank-check', dest='rank_check', action='store_true',
+                    help='核验指标排名用的是固定基线还是子集重算（待办 1.5）')
+    ap.add_argument('--batch', dest='batch', action='store_true',
+                    help='按 FBG 记录格式分批评估 rho（带自相关校正的 p 值）')
+    ap.add_argument('--qc-win', type=int, default=200,
+                    help='因果门槛的滑动/暖机窗长（窗数），默认 200')
     ap.add_argument('--lm-tol', type=float, default=LM_TOL,
                     help='载荷级匹配带宽（相对中位 p2p），默认 0.10')
+    ap.add_argument('--qc-rel', type=float, default=QC_REL,
+                    help='窗质量控制门槛（相对中位 p2p），默认 0.80')
     a = ap.parse_args()
     if a.dump:
         dump(a.dump)
+    elif a.batch:
+        batch_review(warm=a.warm)
+    elif a.rank_check:
+        rank_check(warm=a.warm)
+    elif a.qc_causal:
+        qc_causal(rel=a.qc_rel, win=a.qc_win)
+    elif a.b_why:
+        b_why(tol=a.lm_tol, rel=a.qc_rel)
+    elif a.b_diag:
+        b_diag(tol=a.lm_tol, rel=a.qc_rel)
     elif a.qc:
         qc_scan(tol=a.lm_tol)
     else:
