@@ -34,7 +34,7 @@ Level 2 —— 损伤定位（论文 §"Level 2: damage localization"）
            取 max|δ| 的位置作为脱粘沿脚位置估计
   AE 支路:  4 传感器平行四边形 + Geiger 平面定位（见 ae_locate.py，后续接入）
 
-数据事实（本工作区实测，2026-09-17）
+数据事实
   - DFOS 行严格 `谷(卸载) → 峰(最大载荷)` 交替，每块 18 行 = 9 对测量，
     块跨 ~3100 s ≈ 5000 cycles → **测量间隔 ≈ 555 cycles**（即论文的 measuring
     cycle interval；论文 Level3b 称"5 窗 = 2000 cycles"⇒ 其间隔 400 cycles）

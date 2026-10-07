@@ -1651,114 +1651,17 @@
   "note": ""
  },
  {
-  "id": "R-L1-49-na",
+  "id": "R-L1-49",
   "category": "检修建议",
   "gid": "L1-49",
-  "question": "L1-49 需要维修吗？接下来该怎么处理？",
+  "question": "L1-49 需要维修吗？如果要修，修哪个位置？",
   "trap": false,
   "expect_num": [],
-  "expect_any": [],
-  "disclaim": [
-   "未接入",
-   "不支持",
-   "无法",
-   "不能",
-   "不在",
-   "缺少",
-   "没有",
-   "定级",
-   "标定"
+  "expect_any": [
+   [
+    "立即处置"
+   ]
   ],
-  "must_call": [
-   "maintenance"
-  ],
-  "note": "L1 未接入维修定级（在线口径已于 2026-10-07 下线）→ 应如实说明，不得套用主样本口径"
- },
- {
-  "id": "R-L1-60-na",
-  "category": "检修建议",
-  "gid": "L1-60",
-  "question": "L1-60 需要维修吗？接下来该怎么处理？",
-  "trap": false,
-  "expect_num": [],
-  "expect_any": [],
-  "disclaim": [
-   "未接入",
-   "不支持",
-   "无法",
-   "不能",
-   "不在",
-   "缺少",
-   "没有",
-   "定级",
-   "标定"
-  ],
-  "must_call": [
-   "maintenance"
-  ],
-  "note": "L1 未接入维修定级（在线口径已于 2026-10-07 下线）→ 应如实说明，不得套用主样本口径"
- },
- {
-  "id": "R-L1-03-na",
-  "category": "检修建议",
-  "gid": "L1-03",
-  "question": "L1-03 需要维修吗？接下来该怎么处理？",
-  "trap": false,
-  "expect_num": [],
-  "expect_any": [],
-  "disclaim": [
-   "未接入",
-   "不支持",
-   "无法",
-   "不能",
-   "不在",
-   "缺少",
-   "没有",
-   "定级",
-   "标定"
-  ],
-  "must_call": [
-   "maintenance"
-  ],
-  "note": "L1 未接入维修定级（在线口径已于 2026-10-07 下线）→ 应如实说明，不得套用主样本口径"
- },
- {
-  "id": "R-L1-09-na",
-  "category": "检修建议",
-  "gid": "L1-09",
-  "question": "L1-09 需要维修吗？接下来该怎么处理？",
-  "trap": false,
-  "expect_num": [],
-  "expect_any": [],
-  "disclaim": [
-   "未接入",
-   "不支持",
-   "无法",
-   "不能",
-   "不在",
-   "缺少",
-   "没有",
-   "定级",
-   "标定"
-  ],
-  "must_call": [
-   "maintenance"
-  ],
-  "note": "L1 未接入维修定级（在线口径已于 2026-10-07 下线）→ 应如实说明，不得套用主样本口径"
- },
- {
-  "id": "R-L1-49-pos",
-  "category": "检修建议",
-  "gid": "L1-49",
-  "question": "L1-49 需要维修吗？如果要修，应该修哪个位置？",
-  "trap": false,
-  "expect_num": [
-   {
-    "v": 52.4,
-    "tol": 8.0
-   }
-  ],
-  "expect_any": [],
   "disclaim": [
    "不可",
    "不支持",
@@ -1770,10 +1673,313 @@
    "沿加筋条"
   ],
   "must_call": [
-   "maintenance",
-   "localization"
+   "maintenance"
   ],
-  "note": "定级须拒答（L1 未接入）；定位区间可给，但 Y 向 σ≈46 mm 必须声明不可用"
+  "note": ""
+ },
+ {
+  "id": "R-L1-50",
+  "category": "检修建议",
+  "gid": "L1-50",
+  "question": "L1-50 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-51",
+  "category": "检修建议",
+  "gid": "L1-51",
+  "question": "L1-51 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-52",
+  "category": "检修建议",
+  "gid": "L1-52",
+  "question": "L1-52 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-54",
+  "category": "检修建议",
+  "gid": "L1-54",
+  "question": "L1-54 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-55",
+  "category": "检修建议",
+  "gid": "L1-55",
+  "question": "L1-55 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-56",
+  "category": "检修建议",
+  "gid": "L1-56",
+  "question": "L1-56 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-59",
+  "category": "检修建议",
+  "gid": "L1-59",
+  "question": "L1-59 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-60",
+  "category": "检修建议",
+  "gid": "L1-60",
+  "question": "L1-60 需要维修吗？如果要修，修哪个位置？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "立即处置"
+   ]
+  ],
+  "disclaim": [
+   "不可",
+   "不支持",
+   "不能",
+   "σ",
+   "标准差",
+   "40",
+   "Y 向",
+   "沿加筋条"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": ""
+ },
+ {
+  "id": "R-L1-03-na",
+  "category": "检修建议",
+  "gid": "L1-03",
+  "question": "L1-03 现在该怎么处理？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [],
+  "disclaim": [
+   "不存在",
+   "没有",
+   "无法",
+   "不支持",
+   "未",
+   "缺少",
+   "不在"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": "数据集 B 的 D(t) 产物缺失 → 应如实说明而非套用其它数据集"
+ },
+ {
+  "id": "R-L1-04-na",
+  "category": "检修建议",
+  "gid": "L1-04",
+  "question": "L1-04 现在该怎么处理？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [],
+  "disclaim": [
+   "不存在",
+   "没有",
+   "无法",
+   "不支持",
+   "未",
+   "缺少",
+   "不在"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": "数据集 B 的 D(t) 产物缺失 → 应如实说明而非套用其它数据集"
+ },
+ {
+  "id": "R-L1-05-na",
+  "category": "检修建议",
+  "gid": "L1-05",
+  "question": "L1-05 现在该怎么处理？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [],
+  "disclaim": [
+   "不存在",
+   "没有",
+   "无法",
+   "不支持",
+   "未",
+   "缺少",
+   "不在"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": "数据集 B 的 D(t) 产物缺失 → 应如实说明而非套用其它数据集"
+ },
+ {
+  "id": "R-L1-09-na",
+  "category": "检修建议",
+  "gid": "L1-09",
+  "question": "L1-09 现在该怎么处理？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [],
+  "disclaim": [
+   "不存在",
+   "没有",
+   "无法",
+   "不支持",
+   "未",
+   "缺少",
+   "不在"
+  ],
+  "must_call": [
+   "maintenance"
+  ],
+  "note": "数据集 B 的 D(t) 产物缺失 → 应如实说明而非套用其它数据集"
  },
  {
   "id": "T1",
@@ -2193,9 +2399,9 @@
    "不纳入"
   ],
   "must_call": [
-   "data_quality"
+   "l1_migration"
   ],
-  "note": "L1-51 时间标定不可靠（2026-10-07 起改查 data_quality；原依赖的 L1 在线口径工具已下线）"
+  "note": "L1-51 时间标定不可靠"
  },
  {
   "id": "T12",

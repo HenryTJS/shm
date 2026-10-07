@@ -72,7 +72,7 @@
    现"归一 + 单调包络"口径会**把早期局部噪声一次锁定** ⇒ **阈达时间偏早**；修法应改为**峰值增长率**（未做）。
 5. ❌ **不能做"两个脚本各算一遍同一个物理量"**。
    刚度阈值时刻曾出过错（018 的 L≥10% 曾报 1.4%，官方是 95.7%）。
-   现采用与官方逐项一致的口径并**内置自动对账**（`main/candidate_check.py` 每次运行自动与 `grade_stiff_traj.csv` 对账，漂开就报）。
+   现采用与官方逐项一致的口径并**内置自动对账**（`main/verify.py candidates`，原 `candidate_check.py`，每次运行自动与 `grade_stiff_traj.csv` 对账，漂开就报）。
    **一般化教训**：两个产物只要都能被引用，就必须有一条**自动对账**把它们绑住。
 
 **B L1 一批（4 组）—— 哪些方法不行**
@@ -2434,6 +2434,372 @@ L1-13（100 % 为 1）也基本是噪声。此前引用的『中位 0.35』被�
   未设时两边差 48 行（原脚本过 GBK 控制台变成乱码），设好后 **0 差异**。
 - **多工具合并入口，用「子命令 + 转发 rest argv」最省风险**：每个子命令保留自己的 argparse，
   参数名一个都不用改，也就不必重新验证每个旋钮的语义。
+
+#### 34）`main/` 目录合并：12 个脚本 → 4 个（2026-10-07）
+
+**背景**：用户指出「工作区里东西乱七八糟、README 看不懂怎么跑、交给别人不会用」，
+并明确「84 个脚本太多了，上一轮合并过还是留这么多」。盘点后确认：全仓 78 个 `.py` 中
+**库 30 个（合理）、入口 45 个（多余的根源）** —— 上一轮只合了「同名重复」三组，
+**同类入口一个没合**。
+
+**本阶段（只做 `main/`，不碰其他目录）**：
+
+| 新入口 | 由哪些脚本合并 | 子命令 |
+| ------ | -------------- | ------ |
+| `main/verify.py` | evaluate_baselines / evaluate_loso / evaluate_labels / evaluate_ae_columns / candidate_check / fusion_compare / grade_compare（7 → 1） | `baselines` / `loso-cv` / `labels` / `ae-cols` / `grade` / `fusion` / `candidates` |
+| `main/pipeline.py` | prepare_data / evaluate / robustness（3 → 1） | `prepare {align,weaklabels}` / `evaluate {degree,warning,curves,paper}` / `robust {sens,loso,ablation,stats}` |
+
+⇒ `main/` **12 → 4**（`pipeline.py` / `verify.py` / `export_dashboard.py` / `eval_common.py`）。
+13 个原脚本全部归档到 `main/results/_logs/_orig_src/`。
+
+**合并做法（在阶段 3/4/5 基础上收紧）**：全部用一次性生成器完成，正文**逐字搬运**，
+只做两类机械改动 ——（a）给真正冲突的顶层名加前缀；（b）去掉各自的 `__main__` 块。
+改进点：**改名用 `tokenize` 而不是正则**，天然排除字符串/注释，不会再误伤属性访问；
+生成器**内置重名自检**（拼好后扫描全部顶层名，同名而源码不同就中止）。
+
+**验证（三段，全部通过）**：
+
+1. **AST 逐函数比对**：把原文件的每个 `def`/`class` 按同一改名规则处理后与新文件逐 AST 比 ——
+   `verify.py` **40 个**、`pipeline.py` **41 个**，**不一致 0、缺失 0**⇒ 正文确实一字未改。
+2. **产物基线**：先建 75 项 MD5（`main/results/*.csv` + `main/figures/*.png` + `dashboard/data/*.js`），
+   合并后重跑 —— **75/75 逐字节一致**；`candidates` 与 `evaluate warning` 单独重跑也一致。
+3. **入口可用**：7 + 3 个子命令 `-h` 全部 exit 0；`run.py --list` / `--task verify --dry-run` 正常。
+
+**踩到的坑（值得记住）**：
+
+- `baselines` / `loso-cv` / `labels` / `grade` / `fusion` **本来就没有 argparse**，传 `-h` 不会
+  打印用法，而是**直接开跑**。验证「入口可用」不能一律用 `-h` 试探 —— 先看它有没有 argparse。
+- `evaluate_ae_columns` 用「**调用时**的目录」解析相对 `--out`（`CWD0 = os.getcwd()` 写在 chdir **之前**）。
+  合并后 chdir 只发生一次，必须在文件头、chdir 之前取值；直接拼接会让 `CWD0` 变成 `main/`。
+- 同名但语义不同的常量必须查清：`ROOT` 在 7 个验证脚本里是 `main/`，在 `candidate_check.py` 里却是
+  **项目根**（`dirname(HERE)`）；`OUT` / `CACHE` / `RES` 同名不同值。这些不查就会静默出错。
+- `from eval_common import run_cfg` 与同文件内后面的 `def run_cfg` 会**静默覆盖导入**；
+  本想共用却被本地定义抢走 —— 所以冲突名宁可加前缀。
+
+#### 35）`phmdc/` 合并尝试：8 → 3 —— **做错了，已回退**（2026-10-07）
+
+**结论**：把 6 个 step 脚本拼成 `phmdc/pipeline.py`（**3504 行**）是**过度合并**。已用
+`_orig_src` 归档**逐字节还原**（8/8 文件与原版一致），`run.py` 与 `phmdc/README.md`
+的引用一并改回。
+
+**为什么错（三条硬证据）**：
+
+1. 那 3504 行**不是重构，是 `cat` + 改名**：重复样板 **402 行（14%）**
+   （`import os` ×7、`import sys` ×7、`import numpy as np` ×6），代码一行没少。
+2. **违反了本阶段自己定的判据** ——「只合**同类任务**」。这 6 个不是同类：step0 是数据规整、
+   step2 是深度学习、step5 是统计检验，**只是编号相邻**。
+3. **拿自文档化换了数字**：原文件名 `step5_uncertainty.py` 与 `phmdc/README.md` 的
+   §5 Step 0–5 **一一对应**；合并后变成 `pipeline.py step5`，还多出
+   `s1m_metrics` / `step0_say` / `S1M_OUT_REPORT` 这类**纯为避开名字冲突而生**的前缀，
+   对读者零价值。
+
+**收益只是文件数 8→3，代价是自文档化丢失 + 3500 行单文件 + 噪音前缀 —— 不划算。**
+
+**由此定下的合并判据（以后先写下判据、再动手）**：
+
+- 只合**同类任务**；合并后**单文件 ≤ 约 1500 行**，超标就拆。
+- **能归档就不要合并**：归档不损失可读性，合并会。
+- 名字自带文档性的（`step3_extrap.py`）**不要**为了方便而合成 `pipeline.py step3`。
+
+> 以下为**回退前**的过程记录，留档备查；其中「`S1.` 属性重写」与「`-h` 探查」两个坑仍然有效。
+
+**合并结果**：`phmdc/pipeline.py`（3504 行，6 段：`step0` / `step1` / `step1_model` /
+`step3_extrap` / `step4_perm` / `step5_uncertainty`，子命令 `step0` / `step1` / `step1-model` /
+`step3` / `step4` / `step5`），`phmdc/` **8 → 3**（`pipeline.py` / `prep.py` / `step2.py`）。
+
+**为什么只到 3 而不是 2（该合的合、该留的留）**：
+
+- `prep.py` 是 6 个脚本共用的预处理层（都 `import prep`），合进去要把几十处 `prep.X`
+  改成裸名字，收益不抵风险。
+- `step2.py`（波形级 DL）的 torch 是**故意延迟导入**的 —— `step4_perm` 里写的是
+  函数内 `import step2 as S2`。若并入同一文件，torch 就变成**导入即加载**，
+  `phmdc step0` 会无端要求装 torch（`step0` 模块级 `except ImportError` 直接 `SystemExit`）。
+  这一条是**原本的设计意图**，不应为了减文件数而破掉。
+
+**多出的一类机械改动**：`step4_perm` 用 `import step1_model as S1` 并调 `S1.apply_mono` /
+`S1.metrics` / `S1.feature_cols` / `S1.run_loso`。`step1_model` 并入后，`S1.xxx` 必须
+改写成裸名字（其中被改名的三个要映射：`metrics→s1m_metrics`、`apply_mono→s1m_apply_mono`、
+`isotonic_up→s1m_isotonic_up`）。这里用了 attribute 级 regex，且**先把改名做掉、再做属性重写**
+（顺序反了会把 `S1.say` 写成 step4 自己的 `say`）。
+
+**验证**：
+
+1. **AST 逐函数**：6 个原文件共 **56 个 `def`/`class`**，不一致 **0**、缺失 **0**；
+   新文件里 `S1.` 残留 0 处、`import step1_model` 残留 0 处。
+2. **产物基线**：83 项 MD5。实跑 `step5`（1.5 s）后 `step5_uncertainty.csv` /
+   `step5_per_specimen.csv` / `step5_paired.csv` **逐字节一致**；只有
+   `step5_uncertainty_report.txt` 不同 —— 因为它带 `生成时间: YYYY-MM-DD hh:mm:ss`。
+   **剥掉该行后与「原脚本跑的」diff = 0 行**（合并版 vs 原版，两者各自跑一次），
+   ⇒ 差异与合并无关。
+3. 5 个有 argparse 的子命令 `-h` 全 exit 0；`run.py --dataset phmdc --task all --dry-run`
+   命令拼装正确。
+
+**又一个坑**：`step0` **没有 argparse**（它的 `main()` 直接干活），所以
+`python phmdc/pipeline.py step0 -h` 会**直接开跑**而不是打用法 —— 与 `main/verify.py`
+里 5 个无 argparse 的子命令同一个坑。**探 `-h` 前必须先看脚本里有没有 argparse。**
+
+#### 36）`l1/` 瘦身第一步：**归档 13 个一次性脚本**（38 → 25，2026-10-07）
+
+按第 35 节定下的判据（**能归档就不要合并** —— 归档不损失可读性，合并会），
+`l1/` 的减量先走归档，而不是合并。
+
+**归档判据（四条全中才进 `attic/`）**：
+
+1. 没有任何 `.py` 引用它（不是库）；
+2. `run.py` 没有对应任务（不是入口）；
+3. 产物**不在交付清单**里；
+4. 结论已经写进文档。
+
+**清掉的 13 个**（约 3 800 行，全部移到 `l1/attic/`，**未删除**）：
+
+`ae_index` / `ae_loadstep` / `ae_phase` / `ae_tdoa` / `check_carry` / `duty_anomaly` /
+`impact_truth_check` / `p2p_load_check` / `rul_feasibility` / `thr_sensitivity` /
+`ae_shape_features` / `ae_burst` / `cycle_fill_compare`。
+其中 `ae_burst` 只被 `ae_phase` 引用、`cycle_fill_compare` 只被 `thr_sensitivity` 引用，
+所以**跟着一起走**（否则留下悬空的库）。
+
+**差点误伤的 5 个**（逐个核对产物才拦下）：
+
+| 脚本 | 差点归档的原因 | 实际为什么必须留 |
+| ---- | -------------- | ---------------- |
+| `ae_raf.py` | 文档里搜不到它的文件名 | 产出 `_l1_raf_*.npz` —— **在交付清单里** |
+| `loc_early.py` | 同上 | 产出 `_l1_loc_*.npz` —— **在交付清单里** |
+| `unsup_anomaly.py` | 搜它文件名 = **0 引用** | 产出 `_l1_anom_*.npz` —— **在交付清单里** |
+| `probe_dta.py` | 搜它文件名 = 0 引用 | 被 `survey_groups.py` **import**（是库） |
+| `check_dashboard_pkg.py` | 不产交付物 | 它是**交付包校验器**，出包后必跑 |
+
+⇒ 教训：**“搜不到引用”≠“没用”**。真正的判据得看“**它产出的文件是不是交付物**”，
+而不是“有没有文档提它”。前一轮误删 `main/evaluate_*.py` 是同一个错（判据用了“有没有人 import 它”）。
+
+**归档后的校验**：
+
+- `l1/` 下没有任何指向已归档模块的 `import`（静态扫描）；
+- `run.py --list` exit 0；`run.py --dataset l1 --task all --dry-run` 21 条命令全部指向存在脚本；
+- 归档说明写在 `l1/attic/README.md`（含逐条“结论在哪一节”与**重跑方法**：移回或设 `PYTHONPATH`）。
+
+**待办**：`l1/` 下一步本想做“只合同类的”三组合并（每个 ≤ 1500 行），
+但逐个量了收益后**决定不合**：
+
+| 候选组 | 结论 |
+| ------ | ---- |
+| `evaluate_l1` + `evaluate_l1_dfos` | 确实是同一件事（块级 HI，CLI 同形），但仅少 **1 个文件**，代价是改 `export_dashboard.py` 的 `import … as _dfos` 别名；**真正的问题是 `evaluate_l1` 名字过泛** ⇒ 改为直接**改名** |
+| `reproduce_broer_l1` + `reproduce_broer_l23` | 同理（`_l4` 别名被 `export_dashboard` 与 `l23` 引用），只少 1 个文件 ⇒ 不合 |
+| `ae_hi` + `evaluate_l1_hi_ae` | **不是同类**：前者是 C3/C4 谱载的 `HI_hit`（循环轴），后者是 C2 的 `HI_AE`。**只是名字像** ⇒ 不合（合了就是又一次“编号相邻”） |
+
+**实做的**：`l1/evaluate_l1.py` → **`l1/evaluate_l1_fbg.py`**（0 个 import 者，零风险），
+与 `evaluate_l1_dfos.py` 并列、名字不再过泛。
+
+#### 37）补上"能用"的三份东西：`QUICKSTART.md` / `docs/仓库地图.md` / `requirements.txt`（2026-10-07）
+
+**起因**：用户的原话是「工作区乱七八糟、README 也很乱，**要怎么运行我也不明白**，
+把这个仓库交给别人他也不会用」。文件数从 78 降到 57 只解决了"看起来乱"，
+但**没有任何一页文档回答"怎么运行"和"该改哪个文件"** —— 那才是真正的缺口。
+
+**补了什么**：
+
+| 文件 | 回答什么问题 |
+| ---- | ------------ |
+| `QUICKSTART.md`（约 240 行） | **怎么跑起来**：装依赖 → 数据只在外接盘（`paths.json` + `python shm/paths.py`）→ 5 分钟自检 → 「想干什么→跑什么」三张命令表 → 产物在哪 → 看板/Agent → **8 条踩过的坑** |
+| `docs/仓库地图.md`（177 行） | **哪个文件干什么**：58 个 `.py` 按目录分类（入口 / 库 / 归档）+ 作用 + 产物；末尾给「怎么判断一个文件是入口还是库」 |
+| `requirements.txt` | 仓库**原先没有任何依赖清单** —— 交别人第一关就卡住。按实际 import 统计出 11 个第三方包并记录**实测版本** |
+| `README.md` 顶部 | 加一张「你想干什么 → 看哪里」的导航表（原先直接就是方法描述，新人不知道从哪进） |
+
+**做法上的要求（这次执行了）**：
+
+- **写进文档的每条命令都实际跑过**，不臆造：
+  `python -m shm.datasets --cross-nf`（27 组对 27 组、不一致 0）· `run.py --list`（exit 0）·
+  三个数据集的 `--task all --dry-run` · `python shm/paths.py`（**只读**，逐条列出仓库侧/数据侧状态）·
+  `agent/cli.py --demo`（模板渲染、**离线 0.5 s**）· `agent/cli.py "<问句>" --quiet` ·
+  `l1/check_dashboard_pkg.py --help`。
+- **新增的 `.md` 全部过规则自检**：波浪号 0、表格列数 0 错行；
+  **全仓 16 条相对链接逐条验证存在，失效 0 条**。
+- 顺手修掉 README 里一个**坏引用**：`见 §9` → `见 §7`（README 只有 §0–§8，§9 不存在）。
+
+**副产品：发现一个真缺陷（待修）**：`agent/cli.py --demo` 的输出里仍是**旧命名** ——
+「数据集 A 主样本 / B L1 第一批 / C L1 第二批」。而我们早已把 A/B/C/D 改成
+`main`/`l1`/`phmdc`、把「第一批/第二批」改成语义模态名。全仓搜旧命名有 **139 处**，
+但**用户可见的是 agent 那几处**（`agent/tools.py` 的 `DS_L1A='B'` / `DS_L1B='C'` 与若干
+`notes=`/`error=` 文案、`agent/react.py` 的系统提示词、`agent/core.py` 的意图表）。
+⇒ **跟着 QUICKSTART 说"数据集 = main/l1/phmdc"，agent 却回"A/B/C"，一致性不成立**。
+另有一批出现在 `agent/eval/cases.json`（评测题集的期望值）里 —— 那些**不能顺手改**，
+改了等于改评测标准，需要单独一轮。
+
+**验证方式上踩的坑（又一次）**：`& python agent\cli.py --stats 2>&1 | Select-Object -First 8`
+报 `exit=-1`，看起来像命令坏了 —— 实际是**管道被 `-First` 提前关闭**导致生产者拿到 broken pipe。
+去掉管道、先存变量再取前几行，`exit=0`。**这条已经写进 QUICKSTART 的"常见坑 ④"**。
+
+#### 38）下线 L1 的**在线口径**：脚本 + 产物 + 连带改动（2026-10-07）
+
+**决策依据**（用户拍板「B」= 按字面删全部在线相关）：`docs/details.md`〈l1 恒幅+DFOS 组 —— 不能做什么〉已写定
+> ❌ 不能做「跨试件统一阈值的在线预警」（**四条独立路径一致失败**）
+> ✅ 可交付 = **离线损伤复评**（`HI_AE`，t85 中位 92.1%）+ 组内趋势提示 + 三项扩展任务
+> ❌ **不可交付 = 在线预警**
+
+**注意**：文档结论本来只针对**二批（恒幅+DFOS）**；用户选择把它**扩到整个 L1** ——
+即一批（恒幅+FBG+DFOS）的在线 D(t) 也一并下线，**这等于撤回 README 原先声称的
+「一批 迁移 D(t) 4/4 达 0.85」交付物**，README 已同步改。
+
+**归档的 4 个脚本 → `l1/attic/`（未删除）**：
+
+| 脚本 | 原用途 |
+| ---- | ------ |
+| `evaluate_l1_degree.py` | 一批的在线因果 D(t) + 三级预警 |
+| `evaluate_l1_degree_v2.py` | 二批的段级在线 D(t) |
+| `export_dashboard.py` | L1 看板数据包（逐帧回放） |
+| `check_dashboard_pkg.py` | L1 看板数据包校验 |
+
+**删掉的产物**（可重跑，不留档）：`l1/results/l1_degree.csv`、`l1_degree_v2.csv`；
+`l1/figures/l1_degree*.png`（13 张）；`dashboard/data/L1-*.js` + `index_l1*.js`（**27 个**）。
+
+**连带改动（不处理就是死引用）**：
+
+1. `run.py`：删 l1 的 `degree` / `curves` / `degree-v2` / `dashboard` / `dashboard-v2` / `dashboard-v3`
+   六个任务与 `L1_DEGREE` 常量（`main` 的同名任务**保留**）；文档串里注明 L1 只保留离线口径。
+2. `mono_ablation.py`：删 **B 臂**（`groups_B()` 就是一批的在线 D(t)，调 `evaluate_l1_degree.run_group`），
+   `--sets` 默认 `A,B,C` → `A,C`，汇总循环与文档同步。
+3. `agent/tools.py`：删 `l1_migration` 工具（它读 `l1_degree*.csv`）；`maintenance` 里
+   **二批那整段约 80 行分支**（读 `l1_degree_v2.csv` + 异常 + 机制 + 定位）也一并且下线，
+   两个 L1 campaign 统一走「未接入维修定级」提前返回。
+4. `agent/core.py`：删 `l1_migration` 意图项与它的模板渲染分支。
+5. `agent/test_physguard.py`：原断言「数据集 C 返回 `inspection_zone` → 放过」依赖二批的定级结果，
+   现改为新契约（L1 两个 campaign 均拒答、且**拒答时不返回** `inspection_zone`）—— 用例数 23 → 24。
+6. `agent/eval/gen_cases.py`：T11 的 `must_call=['l1_migration']` 改为 `['data_quality']`。
+   ⚠️ **`agent/eval/cases.json` 未动** —— 那是**评测期望值**，改了等于改标准，需单独一轮重生成 + 重基线。
+7. 文档：`README.md`（§0 速查、§2.1(b)、§2.2 表、§5 大屏、§7 交付清单）、
+   `dashboard/README.md`（顶部加"L1 已移除"横幅）、`QUICKSTART.md`、`docs/仓库地图.md`、`agent/README.md`、
+   `l1/attic/README.md`（新增"已否掉的在线路线"一节）。
+
+**验证**：`run.py --list` / 三个数据集 `--task all --dry-run` exit 0；`mono_ablation.py`、`run.py` AST 通过；
+agent 回归 **24 通过 / 0 失败** + envfile 22/0；`agent/cli.py --demo` exit 0。
+
+**L1 从 25 → 21 个脚本**；全仓 .py 从 57 → **53**（另 17 个在 `l1/attic/`）。
+
+#### 39）删除 D→E 数据迁移工具，确立「数据只在外接盘」的规矩（2026-10-07）
+
+**用户要求（原话）**：「数据迁移（D 到 E 盘）之类的文件全部删除，后续若有添加新数据
+全部都放到外接盘，不可以从 D 盘进入」。
+
+**删了什么**：
+
+- `tools/relink_data.ps1`（11.7 KB）—— 唯一那个「把仓库里的数据搬到外接盘 + 建/拆 junction」
+  的脚本（`-Migrate` / `-Apply` / `-Unlink -Restore` 四种模式）。`tools/` 目录随之整个删除
+  （里面只剩它 + 两个陈旧 `_selfcheck*.pyc`）。
+- `docs/数据路径与外接盘.md`（44 行）—— 那套迁移流程的说明。
+
+**确立的规矩**（同时写进 `paths.json` 头部、`QUICKSTART.md` §2、`shm/paths.py` 的提示）：
+
+> **数据本体只在外接盘**（当前 `E:\`），仓库（`D:\`）里不保存数据；
+> **新增数据一律直接放到外接盘**，不允许「先拷进 D 盘再搬迁」。D 盘只放代码与产物。
+
+**连带改动**（不留坏引用）：
+
+| 位置 | 改动 |
+| ---- | ---- |
+| `paths.json` | `_说明` 头部由四条 relink 命令改为「规矩 + `python shm/paths.py` 查状态」 |
+| `QUICKSTART.md` | §2 整段重写（`python shm/paths.py` 查状态）；§9 读书表里指向已删文档的坏链改掉 |
+| `shm/paths.py` | `report()` 末尾原提示「执行 relink_data.ps1 -Migrate」→ 改为「把数据放到 `data_root` 再在 `items` 里登记」 |
+| `docs/仓库地图.md` | 去掉 `tools/` 行与 `relink_data.ps1` 行；顺带修正看板数据包数（39 → **12**）、工具数（11 → 10） |
+| `l1/survey_groups.py` | 生成的 `L1数据记录.xlsx` 里两条文案（原写「已建好 27 个 junction（relink -Apply）」） |
+
+**⚠️ 有一件事**没有**做，以及为什么**：**仓库里 64 个目录联接（junction）保留**。
+脚本全部按**相对路径**读数据（`l1/L1-03/...`），一拆全仓立刻失效（约 50 个脚本 + 看板）。
+而 junction **不占 D 盘空间、数据本体在 E 盘**，它只是「访问入口」，与「数据不入 D 盘」并不冲突。
+⇒ 若本意是「连联接也不要、全部改成从 `E:\` 绝对路径读」，那是一次**全仓路径改造**，需单独确认。
+
+**用户裁定（2026-10-07）**：**不做了** —— 保留 64 个目录联接，只更新总 `README.md`。
+
+#### 40）总 `README.md` 与当前仓库状态对齐（2026-10-07）
+
+`README.md` 是「交付说明」那一页，但它有 12 处还在描述已删除的 L1 在线口径 / 看板包与旧工具数。
+逐条改正（**只改事实，不动结论与数字**）：
+
+| 位置 | 原文 | 改为 |
+| ---- | ---- | ---- |
+| 顶部导航 | 无「数据在哪」一行 | 新增「数据放在哪、怎么查状态 → `QUICKSTART.md` §2 + `python shm/paths.py`」 |
+| 顶部 `bat` 块 | `rem 数据集 l1 与 C 全流程（三批）` | `rem 数据集 l1（公开集三批）全流程` |
+| 顶部说明 | 「**四类**数据集…`--ds`（`export_dashboard.py`）…任务名带 `[C1]/[C2]/[C3+C4]`」 | 「**三个**数据集…只用 `--batch`…任务名带 `[恒幅+FBG+DFOS]`/`[恒幅+DFOS]`/`[变幅VA/谱载]`」 |
+| 顶部 | 无数据位置说明 | 新增红底块引：**数据只在外接盘、新增数据不经过 D 盘、64 个 junction** |
+| §0 表 · l1 恒幅+FBG+DFOS | `t85 52.5–79.3%`（这是 D(t) 占寿命，串行了） | `t85 **85.9–95.5%**`（HI_F 实测：85.9/94.3/91.0/95.5%） |
+| §0 表 · l1 变幅VA/谱载 | `（14 组，出包 11）` | `（14 组）`（包已删） |
+| §0 表 · 数字大屏 | `35 组试件（11+4+9+11）…四套数据同一个前端` | `**main** 11 组试件在线语义回放（L1 三批看板包已随在线口径下线）` |
+| §0 表 · Agent | `11 工具…23 + 22 回归用例` | `**10** 工具…**24 + 22** 回归用例` |
+| §0 表后 | 无仓库结构说明 | 新增块引：生产脚本 53 个（原 78）、`main/` 12→4、`l1/attic/` 17 个归档、`tools/` 已删 |
+| §2.1.2 交付层 | `看板导出…、Agent l1_migration 工具` | `离线复评与论文复现脚本（evaluate_l1_fbg.py / reproduce_broer_l1.py / _l23.py）` |
+| §2.1.3(b) 标题 | `(b) 迁移主样本 D(t)` | `(b) 迁移主样本 D(t)（离线复评；在线口径已下线，不再是交付物）` |
+| §2.3 表 · 看板接入 | `l1/export_dashboard.py --ds l1v3 → 数据集 l1v3、前端零改动` | `已下线（脚本 2026-10-07 归档，L1 全部看板包随之删除）` |
+| §2.3 成果 | `出包 11 组…每包 33 至 196 KB` | `原发过 11 个看板数据包…已于 2026-10-07 删除` |
+| §4.1 | `顶栏切换数据集 / 试件`；`四套数据一站显示` | `顶栏切换试件`；`当前只显示主样本 11 组（前端保留多数据集能力）` |
+| §4.1 页面区域 | `空间分布面板（仅 L1）` | `空间分布面板（L1 专用，主样本不显示）` |
+| §4.2 | 三条 L1 看板包成果（一批/二批/三批） | 合并为一条「（历史）…三批包已于 2026-10-07 删除」（`dashboard/README.md` 已自标历史） |
+| §5.1 | `11 个工具`（含 `l1_migration`） | `10 个工具`（删掉 `l1_migration`，并注明删除原因） |
+| §5.1 | `test_physguard.py` 23 用例 | **24 用例** |
+| §5.2 | 「数据集 l1 **检修位置**：给出 X 区间…」 | 「数据集 l1 **定位**（`localization` 可用）…⚠️ 但 L1 **不接入维修定级**」 |
+| §6 表 | l1 两行产物带 `dashboard/data/L1-*.js`；大屏行 `35 组（11+4+9+11）` | 去掉已删的数据包路径；大屏行改 `main 11 组`，产物补 `dashboard/data/016..027.js` |
+| §7 待办 | 无 | 新增一行：**Agent 消融题集按 10 工具重生成**（`agent/eval/cases.json` 仍含已删的 `l1_migration` 与 L1 在线 D(t) 期望） |
+| §8 总结 | 「**四套**数据平台…让迁移 D(t) 4/4 达档…数字大屏（35 组）…Agent（11 工具）」 | 「**三个**数据平台…`main` 是**唯一保留在线 D(t) 交付**的…大屏（主样本 11 组）…Agent（10 工具）」 |
+
+**校验**：`.md` 自检 **0 异常**（零波浪号、表格列数齐）；相对链接 **14 条 / 失效 0**。
+
+**连带修正 `agent/README.md`**（同一批过期事实，它是 Agent 的说明书，留着会误导）：
+工具数 11 → **10**（删 `l1_migration` 那一行与两处提及）、`test_physguard.py` 23 → **24 用例**、
+「其中 10 个已注册给 LLM」→「**10 个全部注册给 LLM**」（`react.py` 的 `TOOL_SCHEMAS` 已核对为 10 条）、
+`数据集 C → X 区间` → `` `l1` 定位 → X 区间 ``、「数据集 B（L1 一批）拒答」→「**`l1` 全部组**统一拒答」。
+
+**未改**：所有实验数字与结论（只改「已删除功能的现状描述」）；`dashboard/README.md`
+（它已在开头自标「L1 相关章节仅作历史记录，已不适用」）。
+
+#### 41）消融题集按 10 工具重新生成（2026-10-07）
+
+§38 删掉 L1 在线口径后，`agent/eval/cases.json` 里有 1 题 `must_call=['l1_migration']`
+指向了已不存在的工具。用户确认「动」。做法：**不手改冻结的 JSON，而是修生成器后重生成**
+（题集的 ground truth 必须能追溯回工具，手改就破坏了这条链）。
+
+**先快照**：`cases.json` → `agent/eval/_cases_before_2026-10-07.json`（141 题）。
+
+**生成器 `agent/eval/gen_cases.py` 改了 3 处**：
+
+| 问题 | 原因 | 改法 |
+| ---- | ---- | ---- |
+| T11 的 `must_call` 指向已删工具 | 上一轮已把期望改成 `data_quality`，但 note 里还留着旧名 | note 改写为「2026-10-07 起改查 data_quality」，JSON 里不再出现已删工具的字面 |
+| L1 的 9 题检修建议**静默消失** | `tools.maintenance()` 现在对 L1 **提前返回 `ok=False`**，而旧代码写的是 `if r['ok']:` → 条件永不成立、循环什么都不加。这类「静默丢题」比报错更危险 | 改为 4 题逐组「能否如实说明未接入」（L1-49/60/03/09，含正常组与覆盖不足组）+ 1 题 `R-L1-49-pos`「定级拒答、但定位区间可给、Y 向必须声明不可用」 |
+| docstring 的题量是估计值（约 150 / 约 14 / 约 45） | 与实际不符，无法核对 | 改成实测值并注明「数量随工具可用性浮动，以 `main()` 打印为准」 |
+
+**结果**（`python agent/eval/gen_cases.py`）：
+
+```
+生成 133 题（原 141）
+  状态查询 44 / 陷阱题 39 / 机制与定位 18 / 检修建议 15（原 23）
+  不可回答 7 / 方法原理 7 / 跨试件对比 3
+  其中 trap=true 46 题；必须调用工具 108 题；带数值期望 51 题
+```
+
+**自洽校验**（临时脚本，8 项全过）：
+
+1. `must_call` 里的工具**全部存在于** `tools.TOOLS`（0 个未知）；
+2. `cases.json` 全文不再出现 `l1_migration` / `l1_degree`；
+3. id 无重复；`expect_num` 全为有限数；
+4. 所有 `trap=true` 的题都带 `disclaim` 列表（否则无从判合规）；
+5. L1 检修建议题的实际工具返回与期望一致：4 个「未接入」题的 `disclaim` **全部命中**工具 error 文案；
+   主样本 5 组 `maintenance` 仍 `ok=True`（定级口径未被误伤）；
+6. 新旧差异 = **消失 11 题**（9 个 `R-L1-49…60` + 2 个被代表题取代的 `R-L1-04-na`/`R-L1-05-na`）、
+   **新增 3 题**、**保留 130 题**；
+7. 保留题的字段变化只有 5 处（T11 的 `must_call` + 2 题的问题措辞 + 2 题的 `disclaim` 词表），
+   **没有一题的答案期望被意外改写**；
+8. `run_ablation.py --help` 正常（`--trap-only` 仍选出 46 题）。
+
+**连带文档**：`agent/eval/README.md` 的题集规模 141 → 133、检修建议 23 → 15、
+成本 423 次 → **399 次**（¥15–25 → ¥14–24）、文件树补上历史快照；
+`README.md` §5.1 注明题集 133 题，§7 待办里那条「按 10 工具重生成」**已完成故删除**。
+
+> ⚠️ **仍未做**：全量 399 次三臂实验没有跑（需 API key 与约 1 小时、¥14–24），
+> 所以 §7 的「消融实验全量重跑」仍挂在待办上 —— 本次只保证**题集与工具自洽**。
+> 另：`agent/` 内 `数据集 A/B/C` 的旧叫法与新的 `main` / `l1 恒幅+FBG+DFOS` / `l1 恒幅+DFOS`
+> 仍混用（`tools.py` 的 error 文案、`react.py` 的工具描述）。本次**没动**（会牵动工具契约与
+> PhysGuard 用例），是一条独立的待办。
+
+
+
+
 
 
 

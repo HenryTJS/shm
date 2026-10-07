@@ -95,10 +95,11 @@ def main():
          'medium', tools.call('maintenance', gid='020')['data']['confidence'])
     case('主样本不给检修位置',
          True, tools.call('maintenance', gid='016')['data']['inspection_zone'] is None)
-    case('数据集 C 给检修位置（X 区间）',
-         True, bool(tools.call('maintenance', gid='L1-49')['data']['inspection_zone']))
+    r = tools.call('maintenance', gid='L1-49')
+    case('L1 二批（恒幅+DFOS）未接入定级 → 如实拒答', False, r['ok'])
+    case('L1 拒答时不返回检修位置字段', True, 'inspection_zone' not in (r['data'] or {}))
     r = tools.call('maintenance', gid='L1-03')
-    case('数据集 B 未接入定级 → 如实拒答', False, r['ok'])
+    case('L1 一批（恒幅+FBG+DFOS）未接入定级 → 如实拒答', False, r['ok'])
 
     print('\n%d 通过 / %d 失败' % (N_PASS, N_FAIL))
     return 1 if N_FAIL else 0

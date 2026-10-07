@@ -1,5 +1,10 @@
 # 疲劳机多源在线损伤度 D(t) 监测看板
 
+> ⚠️ **2026-10-07：L1 的看板数据包与导出脚本已移除** —— L1 不支持跨试件统一阈值的在线预警，
+> 只保留离线复评（见 `docs/details.md` §38 与 `l1/attic/README.md`）。
+> **看板现在只服务主样本 11 组（016-020 + 022-027）**。
+> 本文下面与 L1 相关的章节（数据包字段、三批导出、`--ds l1|l1v2|l1v3` 等）**仅作历史记录**，已不适用。
+
 工业化风格的实时监测看板，用于回放**三类数据集**的**在线因果流式**损伤评估过程，逐点复现 D(t) 演化、多源信号、分级预警与报警日志。
 
 | 数据集                                | 试件                    | 时间基                            | 数据源 / 参考锚                                                    |
@@ -270,7 +275,7 @@ dashboard/
 ## 6. 与正式口径的一致性
 
 - **主样本**：损伤度由 `shm.damage_index.OnlineDamageIndex` **默认参数**计算（含 latch 加速追赶），
-  与 `main/evaluate.py degree` 口径完全一致；流式入口 `shm.streaming.StreamSimulator`
+  与 `main/pipeline.py evaluate degree` 口径完全一致；流式入口 `shm.streaming.StreamSimulator`
   （松散对齐、事件门控 AE 能量）与 `evaluate.py` 的 `_stream_d` 一致；b2/b3 来自 `main/weak_labels`。
 - **L1**：损伤度由 `l1/evaluate_l1_degree.run_group(..., baseline=True, strain_ev=True, fusion='max')`计算，与 `l1/results/l1_degree.csv` **逐帧一致**；`c0`/论文检测点来自
   `l1/evaluate_l1_degree.shakedown_cycle` 与 `l1_meta`。

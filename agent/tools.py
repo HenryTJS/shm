@@ -31,10 +31,10 @@ MAIN_RES = os.path.join(ROOT, 'main', 'results')
 L1_RES = os.path.join(ROOT, 'l1', 'results')
 MAIN_CACHE = os.path.join(ROOT, 'main', 'cache')
 
-# 三类数据集（A/B/C 编号沿用旧文档口径）
-DS_MAIN = 'A'          # 主样本 016-020
-DS_L1A = 'B'           # L1 第一批 L1-03/04/05/09
-DS_L1B = 'C'           # L1 第二批 9 组
+# 三组数据（名字与 shm/datasets.py 保持一致；2026-10-07 起不再用旧文档的 A/B/C 编号）
+DS_MAIN = 'main'                 # 主样本 016-020
+DS_L1A = 'l1 恒幅+FBG+DFOS'      # L1-03/04/05/09
+DS_L1B = 'l1 恒幅+DFOS'          # L1-49 至 L1-60
 
 L1A_GROUPS = ['L1-03', 'L1-04', 'L1-05', 'L1-09']
 L1B_GROUPS = ['L1-49', 'L1-50', 'L1-51', 'L1-52', 'L1-54',
@@ -130,7 +130,7 @@ def list_specimens():
         rows.append({'gid': g, 'dataset': DS_L1B, 'usable': True,
                      'note': '；'.join(note)})
     return _res(True, 'list_specimens', {'specimens': rows}, evidence=ev,
-                notes=['数据集 A=主样本(5组) / B=L1第一批(4组,有FBG) / C=L1第二批(9组,无FBG)'])
+                notes=['main=主样本(5组) / l1 恒幅+FBG+DFOS(4组,有FBG) / l1 恒幅+DFOS(9组,无FBG)'])
 
 
 # ---------------------------------------------------------------- 工具 2
@@ -323,40 +323,9 @@ def localization(gid):
                        'Y 向差的物理解释：加筋条是波导，波沿 Y 传播非直线 → 椭圆模型在 Y 失效'])
 
 
-# ---------------------------------------------------------------- 工具 9
-def l1_migration(gid):
-    """查询数据集 B（L1 第一批）的 D(t) 迁移结果。"""
-    gid = norm_gid(gid)
-    ds = dataset_of(gid)
-    if ds == DS_L1A:
-        fp = os.path.join(L1_RES, 'l1_degree.csv')
-        d = _read_csv(fp)
-        if d is None or gid not in set(d['gid'].astype(str)):
-            return _res(False, 'l1_migration', gid=gid,
-                        error='数据集 B 的 l1/results/l1_degree.csv 不存在或不含该组',
-                        notes=['复现：python l1/evaluate_l1_degree.py --baseline '
-                               '--strain-evidence --fusion max --params rise=0.05',
-                               '该文件产出的是数据集 B（4 组）的 D(t)，'
-                               '勿与数据集 C 的 l1_degree_v2.csv 混用'])
-        r = d[d['gid'].astype(str) == gid].iloc[0]
-        return _res(True, 'l1_migration', {
-            k: (round(float(r[k]), 4) if pd.notna(r[k]) else None) for k in d.columns
-            if k != 'gid'}, gid=gid, evidence=['l1/results/l1_degree.csv'],
-            notes=['数据集 B 有 FBG 块锚 → cycle 坐标可靠；采用基线重定义 + 应变漂移证据'])
-    if ds == DS_L1B:
-        fp = os.path.join(L1_RES, 'l1_degree_v2.csv')
-        d = _read_csv(fp)
-        if d is None or gid not in set(d['gid'].astype(str)):
-            return _res(False, 'l1_migration', gid=gid,
-                        error='数据集 C 的 l1/results/l1_degree_v2.csv 不存在或不含该组')
-        r = d[d['gid'].astype(str) == gid].iloc[0]
-        return _res(True, 'l1_migration', {
-            k: (round(float(r[k]), 4) if pd.notna(r[k]) else None) for k in d.columns
-            if k != 'gid'}, gid=gid, evidence=['l1/results/l1_degree_v2.csv'],
-            notes=['数据集 C 无 FBG → 时间锚由 DFOS 段近似，位置结论可靠性低于数据集 B',
-                   'D_end ≈ 1 是末端归一化所致 → 用 t25/t55/t85 的寿命占比而非 D_end 定级'])
-    return _res(False, 'l1_migration', gid=gid,
-                error='仅数据集 B（%s）与 C（9 组）有 D(t) 迁移结果' % '/'.join(L1A_GROUPS))
+# ---------------------------------------------------------------- 工具 9（已下线）
+# 原 `l1_migration`（查询 L1 一批/二批的在线 D(t) 迁移）已于 2026-10-07 随 L1 在线口径
+# 一并移除，见 docs/details.md §38。L1 现在的可用口径是离线复评（HI_AE / HI_hit）。
 
 
 # ---------------------------------------------------------------- 工具 10
@@ -437,12 +406,13 @@ def maintenance(gid):
     ds = dataset_of(gid)
     if ds is None:
         return _res(False, 'maintenance', gid=gid, error='未知试件编号：%s' % gid)
-    if ds == DS_L1A:
+    if ds in (DS_L1A, DS_L1B):
         return _res(
             False, 'maintenance', gid=gid,
-            error='数据集 B（L1 一批）未接入维修定级：本工具的定级口径只在主样本 016-020 上标定',
-            notes=['D(t) 数值请改用 l1_migration 工具（产物 l1/results/l1_degree.csv）',
-                   '如需为数据集 B 出处置建议，须先标定其「D 级别 × 刚度闸门」口径',
+            error='L1（%s）未接入维修定级：本工具的定级口径只在主样本 016-020 上标定' % ds,
+            notes=['L1 只保留离线复评（HI_AE / HI_hit）与论文复现口径；'
+                   '跨试件统一阈值的在线预警已证不成立（见 docs/details.md）',
+                   '如需为 L1 出处置建议，须先标定其「级别 × 刚度闸门」口径',
                    NO_REPAIR_TECH])
 
     facts, ev, notes = {}, [], []
@@ -519,83 +489,8 @@ def maintenance(gid):
 
         recheck.append('AE 无时间戳、单通道 → 不支持事件速率与定位类复检结论')
 
-    # ───────────────────────── 数据集 C（L1 第二批 9 组）
-    else:
-        d = _read_csv(os.path.join(L1_RES, 'l1_degree_v2.csv'))
-        ev.append('l1/results/l1_degree_v2.csv')
-        if d is None or gid not in set(d['gid'].astype(str)):
-            return _res(False, 'maintenance', gid=gid,
-                        error='数据集 C 的 D(t) 产物缺失或不含该组')
-        r = d[d['gid'].astype(str) == gid].iloc[0]
-        facts['n_f'] = int(r['n_f'])
-        facts['D_end'] = _num(r.get('D_end'))
-        for k, lab in (('t25_pct', 'L1'), ('t55_pct', 'L2'), ('t85_pct', 'L3')):
-            t = _num(r.get(k))
-            if t is not None:
-                facts[lab + '_pct'] = t
-        # 严重度：t85/t55/t25 须与 D_end 一致，否则以异常检测定级（防早段误触发）
-        dend = facts.get('D_end')
-        for lab, thr, key in (('L3', 0.85, 'A'), ('L2', 0.55, 'B'), ('L1', 0.25, 'C')):
-            if lab + '_pct' in facts and dend is not None and dend >= thr:
-                sev = key
-                lead = round(100.0 - facts[lab + '_pct'], 1)
-                basis_sev.append('D 达 %s 阈值（%.1f%% 寿命）且 D_end=%.3f → 严重度 %s'
-                                 % (lab, facts[lab + '_pct'], dend, key))
-                break
-        if not basis_sev:
-            notes.append('D(t) 证据内部不一致（阈值时刻与 D_end 不匹配）→ '
-                         '改用无监督异常检测定级')
-        facts['lead_pct'] = lead
-        an = anomaly(gid)
-        if an['ok']:
-            facts['anomaly'] = an['data']
-            notes += an['notes']
-            fe = _num(an['data'].get('first_exceed_maha_pct'))
-            if fe is not None and _URG_RANK[sev] < _URG_RANK['C']:
-                sev = 'C'
-                lead = round(100.0 - fe, 1)
-                basis_sev.append('无监督检测首次偏离基线（%.1f%% 寿命）→ 严重度 C' % fe)
-        # 机制 → 检修重点
-        m = mechanism(gid)
-        if m['ok']:
-            facts['mechanism'] = m['data']
-            notes += m['notes']
-            dl = _num(m['data'].get('delta')) or 0.0
-            if dl >= 0.10:
-                acts.append({'action': '检修重点置于连接区／界面（分层、脱粘主导）',
-                             'priority': 2,
-                             'basis': ['剪切型占比上升 %.3f（%.3f→%.3f）'
-                                       % (dl, m['data']['first20'], m['data']['last20'])]})
-            elif dl <= -0.10:
-                acts.append({'action': '检修重点置于母材区（基体开裂／纤维断裂主导）',
-                             'priority': 2, 'basis': ['剪切型占比下降 %.3f' % dl]})
-            else:
-                notes.append('损伤机制未显著变化（Δ剪切占比 %.3f）→ 不据此调整检修重点' % dl)
-        else:
-            notes.append('无 RA–AF 结果 → 损伤机制未知，检修范围只能按位置而非机理确定')
-        # 定位 → 检修范围（仅 X 可信）
-        lo = localization(gid)
-        if lo['ok']:
-            facts['localization'] = lo['data']
-            notes += lo['notes']
-            cx = _num(lo['data'].get('centroid_x_mm'))
-            if cx is not None:
-                zone = {'x_range_mm': [round(cx - LOC_SIGMA_X_MM, 1),
-                                       round(cx + LOC_SIGMA_X_MM, 1)],
-                        'centroid_x_mm': cx,
-                        'basis': ['AE 事件定位可信点 %d 个、中位残差 %.2f µs'
-                                  % (lo['data']['n_good'], lo['data']['rms_median_us']),
-                                  'X 向 σ≈%.0f mm 可用于判断「哪一侧」；'
-                                  'Y 向 σ≈%.0f mm 不可用于分区'
-                                  % (LOC_SIGMA_X_MM, LOC_SIGMA_Y_MM)]}
-        else:
-            notes.append('无可用定位结果 → 无法给出检修范围，只能整体处置')
-
-        if gid in UNRELIABLE_TIME:
-            hard.append('%s 时间标定不可靠 → 其寿命位置结论不参与定级' % gid)
-        if gid in POOR_COVERAGE:
-            soft.append('%s（%s）→ 尾段结论可信度受限' % (gid, POOR_COVERAGE[gid]))
-        hard.append('数据集 C 无 FBG、无刚度轨迹 → 缺独立物理参照')
+    # 数据集 C 分支已于 2026-10-07 随 L1 在线口径下线（见 docs/details.md §38）；
+    # 现在 L1 两个 campaign 都在上面提前返回「未接入维修定级」。
 
     # ───────────────────────── 紧迫度：剩余裕度不足则升一级
     if lead is not None and lead < IM_MIN_LEAD_PCT and _URG_RANK[sev] < _URG_RANK['A']:
@@ -659,7 +554,6 @@ TOOLS = {
     'anomaly': anomaly,
     'mechanism': mechanism,
     'localization': localization,
-    'l1_migration': l1_migration,
     'doc_search': doc_search,
     'maintenance': maintenance,
 }

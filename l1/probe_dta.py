@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""探测 Vallen DiSP-4 `.DTA` 文件内部结构（只读，绝不写数据）。
+"""探测 Vallen DiSP-4 `.DTA` 文件内部结构。
 
 分两个子命令：
 

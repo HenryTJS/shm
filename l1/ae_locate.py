@@ -43,10 +43,6 @@ import sys
 
 import numpy as np
 
-# ⚠️ Windows 控制台默认 GBK，输出含 µ/→ 等字符会 UnicodeEncodeError 直接崩。
-# ⚠️ 必须用 reconfigure：`sys.stdout = io.TextIOWrapper(sys.stdout.buffer, ...)`
-# 会另建一层 wrapper 共用同一 buffer，新 wrapper 一旦被回收（重新赋值/GC）
-# 底层 stdout 就被连带关闭，后续打印全部 ValueError。
 try:
     sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 except Exception:                       # noqa: BLE001
@@ -60,7 +56,7 @@ FIG = os.path.join(HERE, 'figures')
 GROUPS = ['L1-49', 'L1-50', 'L1-51', 'L1-52', 'L1-54',
           'L1-55', 'L1-56', 'L1-59', 'L1-60']
 
-# --- 几何（13 组 PDF 一致） -------------------------------------------------
+# --- 几何 -------------------------------------------------
 SENSORS = {1: (145.0, 190.0), 2: (145.0, 20.0),
            3: (20.0, 50.0), 4: (20.0, 220.0)}      # mm, skin-side
 LX, LY = 165.0, 243.0                               # 宽(X) x 长(Y) [mm]

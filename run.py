@@ -10,16 +10,15 @@
 用法:
   python run.py --list                      # 查看任务矩阵（按数据集分组）
   python run.py --dataset main   --task degree
-  python run.py --dataset l1     --task degree          # C1 的 D(t)
-  python run.py --dataset l1     --task degree-v2       # C2 的段级 D(t)
-  python run.py --dataset l1     --task dashboard-v3    # L1 变幅VA/谱载 看板
+  python run.py --dataset l1     --task paper           # L1 只保留离线复评 / 论文复现口径
   python run.py --dataset phmdc  --task step1
   python run.py --dataset l1     --task all             # 全部任务
   python run.py --dataset l1     --task all --dry-run   # 只打印要跑的命令
   python run.py --dataset l1     --task paper -- --groups L1-03   # '--' 之后透传给底层脚本
 
 说明: 本脚本是"任务调度器", 不重写算法; 每类数据集的任务映射到既有脚本（见 --list）。
-      `--dataset l1` 涵盖三批；分组差异由底层脚本的 `--batch` / `--ds` 选择。
+      `--dataset l1` **只保留离线复评与论文复现口径** —— L1 不支持跨试件统一阈值的在线预警，
+      相关脚本与看板包已于 2026-10-07 移除（见 docs/details.md §38）。
       `--task all` 会把标 (重) 的任务（训练、全量重建缓存）一起跑，先想清楚。
 """
 import os
@@ -39,37 +38,46 @@ DATASETS = {
     'phmdc': 'PHM 2020 DC 轴承（T1 至 T8，退化外推）',
 }
 
-L1_DEGREE = ['l1/evaluate_l1_degree.py', '--baseline', '--strain-evidence',
-             '--fusion', 'max', '--params', 'rise=0.05']
+L1_DEGREE = None   # 已移除：L1 在线 D(t) 于 2026-10-07 随在线口径一并下线（见 details.md §38）
 
 TASKS = {
     'main': {
-        'prepare': [['main/prepare_data.py', 'align']],
-        'labels':  [['main/prepare_data.py', 'weaklabels']],
-        'degree':  [['main/evaluate.py', 'degree']],
-        'warning': [['main/evaluate.py', 'warning']],
-        'curves':  [['main/evaluate.py', 'curves']],
-        'paper':   [['main/evaluate.py', 'paper']],
-        'robust':  [['main/robustness.py', 'sens'],
-                    ['main/robustness.py', 'loso'],
-                    ['main/robustness.py', 'ablation'],
-                    ['main/robustness.py', 'stats']],
-        'fusion':  [['main/fusion_compare.py']],              # 源融合对照(单源/二源/三源)
-        'grade':   [['main/grade_compare.py']],               # 级别层异源分级(刚度损失闸门)
+        'prepare': [['main/pipeline.py', 'prepare', 'align']],
+        'labels':  [['main/pipeline.py', 'prepare', 'weaklabels']],
+        'degree':  [['main/pipeline.py', 'evaluate', 'degree']],
+        'warning': [['main/pipeline.py', 'evaluate', 'warning']],
+        'curves':  [['main/pipeline.py', 'evaluate', 'curves']],
+        'paper':   [['main/pipeline.py', 'evaluate', 'paper']],
+        'robust':  [['main/pipeline.py', 'robust', 'sens'],
+                    ['main/pipeline.py', 'robust', 'loso'],
+                    ['main/pipeline.py', 'robust', 'ablation'],
+                    ['main/pipeline.py', 'robust', 'stats']],
+        # ---- 验证层（合并入口 main/verify.py；子命令名 = 数据集名）----
+        'baselines':   [['main/verify.py', 'baselines']],     # vs 经典/朴素/监督 ML 基线
+        'loso-cv':     [['main/verify.py', 'loso-cv']],       # 留一试件交叉验证
+        'label-audit': [['main/verify.py', 'labels']],        # 标签审计 + 剔除规则事前化
+        'ae-cols':     [['main/verify.py', 'ae-cols']],       # AE 多列逐列对照
+        'grade':       [['main/verify.py', 'grade']],         # 级别层异源分级（刚度闸门）
+        'fusion':      [['main/verify.py', 'fusion']],        # 源融合对照（单源/二源/三源）
+        'candidates':  [['main/verify.py', 'candidates']],    # 候选试件体检（需先跑 grade）
+        'verify':  [['main/verify.py', 'baselines'],          # 一键跑完验证层（grade 在 candidates 前）
+                    ['main/verify.py', 'loso-cv'],
+                    ['main/verify.py', 'labels'],
+                    ['main/verify.py', 'ae-cols'],
+                    ['main/verify.py', 'grade'],
+                    ['main/verify.py', 'fusion'],
+                    ['main/verify.py', 'candidates']],
         'dashboard': [['main/export_dashboard.py']],          # → dashboard/data/
     },
     'l1': {
         # ---- L1 恒幅+FBG+DFOS（L1-03/04/05/09，有 FBG）----
         'prepare':  [['l1/step0.py']],                       # 原始 .pridb/.txt → CSV
-        'degree':   [L1_DEGREE],                             # D(t) + 三级预警
-        'curves':   [L1_DEGREE],
         'paper':    [['l1/reproduce_broer_l1.py', '--mode', 'all']],  # 论文 Level1 + Level4
         'paper-l23': [['l1/reproduce_broer_l23.py', '--mode', 'all']],  # 论文 Level2 + Level3
-        'dfos':     [['l1/evaluate_l1_dfos.py', '--mode', 'hi']],     # 分布式应变逐块
-        'fiber-hi': [['l1/evaluate_l1.py', '--mode', 'hi']],          # 光纤(FBG)块级 HI
+        'dfos':     [['l1/evaluate_l1_dfos.py', '--mode', 'hi']],     # 分布式应变逐块（离线块级 HI）
+        'fiber-hi': [['l1/evaluate_l1_fbg.py', '--mode', 'hi']],      # FBG(光纤)块级 HI（离线）
         # ---- L1 恒幅+DFOS（L1-49 至 L1-60，无 FBG）----
         'prepare-c2': [['l1/step0.py', '--batch', 'c2']],             # LUNA 段级 + AE 1s 分箱
-        'degree-v2':  [['l1/evaluate_l1_degree_v2.py']],              # 段级 D(t)
         # ---- L1 变幅VA+FBG + L1 谱载+FBG（AE .DTA + FBG）----
         'ae-dta':     [['l1/ae_dta.py', 'export']],                    # .DTA 体检概览（交付物）
         'ae-frames':  [['l1/ae_frames.py']],                          # AE 600 s 帧 → npz
@@ -82,9 +90,6 @@ TASKS = {
         'fbg-variants': [['l1/fbg_tools.py', 'variants']],             # 10 口径横向对比
         'meta':     [['l1/pdf_specimen_meta.py', '--write'],
                      ['l1/survey_groups.py']],                         # 元信息表 / 记录表
-        'dashboard':    [['l1/export_dashboard.py', '--ds', 'l1']],    # → dashboard/data/
-        'dashboard-v2': [['l1/export_dashboard.py', '--ds', 'l1v2']],
-        'dashboard-v3': [['l1/export_dashboard.py', '--ds', 'l1v3']],
     },
     'phmdc': {
         'step0': [['phmdc/step0.py']],                                # → labels.csv / index.csv
@@ -101,27 +106,30 @@ TASKS = {
 # 每个数据集的 task -> (名称, 说明)。名称带 "(重)" 表示耗时长或需要训练。
 DESC = {
     'main': {
-        'prepare':  ('数据准备/预处理', 'prepare_data.py align：多源对齐'),
-        'labels':   ('弱标签/失效锚', 'prepare_data.py weaklabels：b2/b3 弱标签'),
-        'degree':   ('连续损伤度 D(t)+分级', 'evaluate.py degree：D 达阈/单调'),
-        'warning':  ('预警 onset/分级', 'evaluate.py warning：A-预警'),
-        'curves':   ('D(t) 曲线出图', 'evaluate.py curves：5 组曲线'),
-        'paper':    ('论文图表', 'evaluate.py paper：四联图+流程图'),
-        'robust':   ('稳健性/统计', 'robustness.py sens/loso/ablation/stats'),
-        'fusion':   ('源融合对照', 'fusion_compare.py：5 组 × 9 配置'),
-        'grade':    ('级别层异源分级', 'grade_compare.py：刚度损失闸门'),
+        'prepare':  ('数据准备/预处理', 'pipeline.py prepare align：多源对齐'),
+        'labels':   ('弱标签/失效锚', 'pipeline.py prepare weaklabels：b2/b3 弱标签'),
+        'degree':   ('连续损伤度 D(t)+分级', 'pipeline.py evaluate degree：D 达阈/单调'),
+        'warning':  ('预警 onset/分级', 'pipeline.py evaluate warning：A-预警'),
+        'curves':   ('D(t) 曲线出图', 'pipeline.py evaluate curves：5 组曲线'),
+        'paper':    ('论文图表', 'pipeline.py evaluate paper：四联图+流程图'),
+        'robust':   ('稳健性/统计', 'pipeline.py robust sens/loso/ablation/stats'),
+        'baselines':   ('基线对照', 'verify.py baselines：本项目 vs 经典/朴素/监督 ML'),
+        'loso-cv':     ('留一试件交叉验证', 'verify.py loso-cv：19 配置 × 5 折'),
+        'label-audit': ('标签审计', 'verify.py labels：b2 来源/敏感性/剔除规则/统计口径'),
+        'ae-cols':     ('AE 多列对照', 'verify.py ae-cols：形状/比值列逐列（9 组）'),
+        'grade':       ('级别层异源分级', 'verify.py grade：刚度损失闸门'),
+        'fusion':      ('源融合对照', 'verify.py fusion：5 组 × 9 配置'),
+        'candidates':  ('候选试件体检', 'verify.py candidates：015-027（需先跑 grade）'),
+        'verify':      ('【验证层全部】', 'verify.py 七个子命令按序'),
         'dashboard': ('看板数据导出', 'export_dashboard.py → dashboard/data/'),
     },
     'l1': {
         'prepare':  ('[恒幅+FBG+DFOS] 原始 → CSV', 'step0.py（LUNA 逐行 + FBG + AE；--only 只重生一类）'),
         'prepare-c2': ('[恒幅+DFOS] 原始 → CSV', 'step0.py --batch c2（LUNA 段级 + AE 1 s 分箱）'),
-        'degree':   ('[恒幅+FBG+DFOS] D(t)+分级', 'evaluate_l1_degree.py：基线重定义 + 应变漂移证据'),
-        'degree-v2': ('[恒幅+DFOS] 段级 D(t)', 'evaluate_l1_degree_v2.py：DFOS 脚部应变 + markers 锚'),
-        'curves':   ('[恒幅+FBG+DFOS] D(t) 出图', 'evaluate_l1_degree.py：逐组图'),
         'paper':    ('论文 Level1/4', 'reproduce_broer_l1.py --mode all'),
         'paper-l23': ('论文 Level2/3', 'reproduce_broer_l23.py --mode all（L3b 未复现）'),
         'dfos':     ('分布式应变逐块', 'evaluate_l1_dfos.py --mode hi'),
-        'fiber-hi': ('光纤块级 HI', 'evaluate_l1.py --mode hi'),
+        'fiber-hi': ('FBG 块级 HI', 'evaluate_l1_fbg.py --mode hi'),
         'hi-ae':    ('离线复评 HI_AE', 'evaluate_l1_hi_ae.py（默认 --batch 2；见 §7 同名覆盖警告）'),
         'hi-hit':   ('[变幅VA/谱载] HI_hit', 'ae_hi.py（累积 AE 命中数；非因果，只作离线复评）'),
         'ae-dta':   ('[变幅VA/谱载] AE 体检概览 (重)', 'ae_dta.py export → l1/AE特征概览.csv（交付物）'),
@@ -131,9 +139,6 @@ DESC = {
         'fbg-qa':   ('FBG 覆盖体检', 'fbg_tools.py coverage（不读数据内容，快）'),
         'fbg-variants': ('FBG 口径对比', 'fbg_tools.py variants（10 口径 + 单组诊断）'),
         'meta':     ('试件元信息/记录表', 'pdf_specimen_meta.py --write + survey_groups.py'),
-        'dashboard':    ('[恒幅+FBG+DFOS] 看板数据', 'export_dashboard.py --ds l1'),
-        'dashboard-v2': ('[恒幅+DFOS] 看板数据', 'export_dashboard.py --ds l1v2'),
-        'dashboard-v3': ('[C3+C4] 看板数据', 'export_dashboard.py --ds l1v3'),
     },
     'phmdc': {
         'step0': ('标签/索引', 'step0.py → labels.csv / index.csv（幂等，约 20 s）'),

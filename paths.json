@@ -2,15 +2,12 @@
   "_说明": [
     "★★ 数据集路径的唯一入口（2026-09-28）。要换盘/改目录，只改本文件，不要再改代码。",
     "",
-    "用法（在仓库根 D:\\lixiang 下执行）：",
-    "    预览（不改动）：  powershell -ExecutionPolicy Bypass -File tools\\relink_data.ps1",
-    "    搬迁数据：        powershell -ExecutionPolicy Bypass -File tools\\relink_data.ps1 -Migrate",
-    "    重接链接：        powershell -ExecutionPolicy Bypass -File tools\\relink_data.ps1 -Apply",
-    "    拆链还原：        powershell -ExecutionPolicy Bypass -File tools\\relink_data.ps1 -Unlink -Restore",
+    "★★ 数据本体【只在外接盘】，仓库（D 盘）里不保存数据（2026-10-07 起；此前那套 D->E 迁移工具已删除）。",
+    "   新增数据：一律直接放到外接盘（如 E:\\l1\\L1-xx），不要先拷进仓库再搬迁，也不要在仓库留副本。",
+    "   查看状态：python shm/paths.py（只读，逐条列出仓库侧 / 数据侧状态）",
     "",
-    "原理：用 Windows 目录联接（junction）把仓库里的数据目录指向外接盘。",
-    "      junction 不需要管理员权限，不占用 D 盘空间；建好后仓库内所有相对路径照旧有效，",
-    "      因此 main/ 、l1/ 、phmdc/ 下的脚本与看板导出器【一行都不用改】。",
+    "原理：用 Windows 目录联接（junction）把仓库里的数据目录指向外接盘 —— 联接不占 D 盘空间、",
+    "      数据本体在 E 盘；建好后仓库内所有相对路径照旧有效，main/ 、l1/ 、phmdc/ 下的脚本【一行都不用改】。",
     "",
     "data_root 可填任意盘或网络路径。**当前用法 = 数据直接放 E 盘根，不套 shm_data 层**：",
     "    \"E:\\\\\"              → 实际目标 E:\\l1\\L1-03 、 E:\\main\\001 、 E:\\phmdc\\T1",
@@ -46,7 +43,7 @@
       "name": "主样本对齐输出",
       "link": "main/aligned",
       "target": "main/aligned",
-      "备注": "可重跑生成（prepare_data.py align），搬走只为省 D 盘空间"
+      "备注": "可重跑生成（main/pipeline.py prepare align），搬走只为省 D 盘空间"
     },
     {
       "name": "主样本弱标签",

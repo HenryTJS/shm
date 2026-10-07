@@ -1,31 +1,6 @@
 # -*- coding: utf-8 -*-
 """从**数据集自带的 PDF** 里抽取试件元信息（不依赖任何外部输入）。
 
-背景（2026-10-04 更正）
-----------------------
-此前认为「AE 传感器坐标与声速不在数据集里、需要向数据方索取」。**这是错的**：
-公开数据集虽然无索取渠道，但自带文档里就有 —— 只是分散在两类 PDF 里。
-
-  A. **组内 PDF**（仅老 13 组有）：`E:\\l1\\<gid>\\<gid>.pdf`
-     含 AE 传感器坐标表、实测声速（纵向/横向）、传感器布置图、
-     ODiSi-B(DFOS) 位置、试件尺寸、以及带逐级循环数的载荷程序。
-  B. **根目录汇总 PDF**（`E:\\l1\\*.pdf`，6 份，覆盖全部 27 组）
-     · `Damage locations variable.pdf` (C3 五页) / `spectrum.pdf` (C4 十页) /
-       `locations.pdf` (C2 九页)：每页一张试件平面图，给出冲击中心或脱粘下缘的
-       毫米坐标，含「skin side / stiffener side」观察面标注。
-     · `tables of cycles variable.pdf` (C3) / `table of specimen cycles to failure.pdf` (C4)：
-       每个试件的**完整分级载荷程序**（每级载荷 + 循环数 + 合计）。
-     · `Impact_Locations.pdf`：位图，但**文字层仍可用**，给出 L1-03/04/05/09/23 的位置。
-
-⚠️ 已知不一致（必须随数据一起记录，不能抹平）
-  · 组内 PDF 的 AE 传感器表只有 **4 个**探头（与 C1/C2 的 4 通道一致）；
-    而根目录 `Damage locations *.pdf` 的平面图标注 `AE sensors` 的是 **10 个**位置
-    （`L5R5 L4R4 L3R3 L2R2 L1R1`）—— 与 FBG 的 10 通道数吻合。
-    两者归谁尚未定论，**本工具两套都抽、分开存**，不做合并。
-  · C3 的 `Damage locations variable.pdf` 页面**没有** skin/stiffener 标注，
-    而 C2/C4 页面有 ⇒ 观察面归属对 C3 未知。
-  · 位置描述的文字形式逐组不同（见 `impact_truth_check.py` 的结论）。
-
 用法
 ----
     python l1/pdf_specimen_meta.py            # 解析并打印核对表（不写文件）

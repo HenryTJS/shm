@@ -44,7 +44,6 @@ INTENTS = [
                    '机理'], True, 'RA–AF 损伤机制'),
     ('localization', ['定位', '位置', '在哪', '哪个位置', '坐标'], True, 'AE 事件定位'),
     ('anomaly', ['异常', '偏离', '异常检测', '离群'], True, '无监督异常检测'),
-    ('l1_migration', ['L1 迁移', 'remap', 'reMAP', '论文复现', 'broer'], True, 'L1 第一批 D(t)'),
     ('doc_search', ['为什么', '原理', '方法', '怎么做', '解释', '什么是', '依据'], False, '文档检索'),
 ]
 
@@ -87,9 +86,9 @@ def render_template(intent, kw, res, verdict):
     """无 LLM 时的模板渲染（保证功能完整）。"""
     if intent == 'ask_gid':
         return ('请指明试件编号（如 016 / L1-49）。当前可用：\n'
-                '  数据集 A 主样本：016 017 018 019 020\n'
-                '  数据集 B L1 第一批：L1-03 L1-04 L1-05 L1-09\n'
-                '  数据集 C L1 第二批：L1-49 50 51 52 54 55 56 59 60')
+                '  main 主样本：016 017 018 019 020\n'
+                '  l1 恒幅+FBG+DFOS：L1-03 L1-04 L1-05 L1-09\n'
+                '  l1 恒幅+DFOS：L1-49 50 51 52 54 55 56 59 60')
     if not res.get('ok'):
         return '【无法回答】%s' % res.get('error', '未知原因')
     d, gid = res.get('data', {}), res.get('gid')
@@ -97,9 +96,9 @@ def render_template(intent, kw, res, verdict):
 
     if intent == 'list_specimens':
         lines = ['共三类数据集：']
-        for ds, name in [(tools.DS_MAIN, 'A 主样本（5 组）'),
-                         (tools.DS_L1A, 'B L1 第一批（4 组，有 FBG）'),
-                         (tools.DS_L1B, 'C L1 第二批（9 组，无 FBG）')]:
+        for ds, name in [(tools.DS_MAIN, 'main 主样本（5 组）'),
+                         (tools.DS_L1A, 'l1 恒幅+FBG+DFOS（4 组，有 FBG）'),
+                         (tools.DS_L1B, 'l1 恒幅+DFOS（9 组，无 FBG）')]:
             gs = [s['gid'] + (('（%s）' % s['note']) if s['note'] else '')
                   for s in d['specimens'] if s['dataset'] == ds]
             lines.append('  %s：%s' % (name, '，'.join(gs)))
@@ -173,12 +172,6 @@ def render_template(intent, kw, res, verdict):
         if rest:
             out.append('不建议：' + '；'.join(rest))
         return '\n'.join(out)
-
-    if intent == 'l1_migration':
-        ks = [k for k in ('D_end', 't25_pct', 't55_pct', 't85_pct') if d.get(k) is not None]
-        if not ks:
-            return '%sD(t) 迁移结果已返回（字段：%s）。' % (tag, '、'.join(list(d)[:8]))
-        return '%sD(t) 迁移：%s。' % (tag, '  '.join('%s=%s' % (k, d[k]) for k in ks))
 
     if intent == 'doc_search':
         hits = d.get('hits', [])

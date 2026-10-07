@@ -31,7 +31,7 @@ FO_PARAMS = {'fo_w': 0.6, 'fo_ratio_gain': 1.0, 'fo_min_blocks': 20}
 #       L2/L3 额外要求“刚度损失率”达标 —— 从而把“检测”与“退化确认”在时间上分开。
 #   刚度损失率 = |块均值| 相对校准段 [stiff_cal_lo, stiff_cal_hi) 低分位的相对增长
 #   （载荷控制疲劳下 应变幅值 ∝ 1/刚度，故该相对增长即刚度损失率）。
-# 依据 main/grade_compare.py 实测（results/grade_*.csv）:
+# 依据 main/verify.py grade（原 grade_compare.py）实测（results/grade_*.csv）:
 #   016 应变通道可自动判别为"已解调", 刚度损失率 0.10@59% / 0.50@87%, 闸门有效;
 #   018 修正幅值口径(块 std)后刚度损失 0.10 要到 95.7% 才达 → **闸门有害, 关闭**;
 #   017 前 57% 寿命幅值单调降(硬化)、019 刚度信号早于 AE、020 幅值单调降 → 均关闭。

@@ -156,8 +156,8 @@ def report(path=None):
     print('合计 %d 条：已联接 %d · 仍是本地实体目录 %d · 不存在 %d'
           % (len(rows), n_link, n_real, len(rows) - n_link - n_real))
     if n_real:
-        print('  → 还有实体目录未搬迁，执行：'
-              'powershell -ExecutionPolicy Bypass -File tools\\relink_data.ps1 -Migrate')
+        print('  → 还有实体目录未搬迁（数据本体应在外接盘）。'
+              '先把数据放到 %s，再在 paths.json 的 items 里登记。' % (data_root() or 'data_root'))
     return rows
 
 

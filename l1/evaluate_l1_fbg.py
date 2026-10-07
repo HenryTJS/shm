@@ -16,7 +16,7 @@ AE(事件级) + FBG(光纤应变)
   3. 输出: HI 曲线 + 达 0.25/0.5/0.7 的 cycle + 与论文检测周期对齐 + 尾段单调性
 
 注: LUNA 分布式应变 = 第二步融合, 本脚本不接入。
-用法: python evaluate_l1.py [--groups ...] [--mode block|hi|plot]
+用法: python l1/evaluate_l1_fbg.py [--groups ...] [--mode hi|plot]
 """
 import os, sys, argparse
 import numpy as np

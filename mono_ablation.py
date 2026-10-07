@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""物理约束层（保序投影）在数据集 A / B / C 上的消融对照
+"""物理约束层（保序投影）在数据集 A / C 上的消融对照
 
 要回答的问题
 ------------
@@ -20,15 +20,12 @@ D(t) 本身就是"升快降慢"的累积量，单调性天然较强 ⇒ **收益
    **只会提前、不会推后**。若原始 D 本来就偏早，投影会把"过早预警"变得更早
    ⇒ 所以本脚本同时报 `err`（与 b2 锚之差）**投影前后**的变化，看方向。
 3. **单调 ≠ 正确**：真实损伤若存在卸载/修复，强制单调就是**错的**。
-   A/B/C 上没有修复工况，所以这里只讨论"抖动抑制"，不宣称"单调是普适物理"。
+   A/C 上没有修复工况，所以这里只讨论"抖动抑制"，不宣称"单调是普适物理"。
 
 数据来源
 --------
 - A 主样本 016–020：`main/eval_common.run_one`（默认参数 + `SHAPE_DEFAULTS`，读缓存）
   锚：`main/weak_labels/labels_summary.csv` 的 b2 / b3；另算 `onset_of` 的 A-预警时刻。
-- B L1 一批 L1-03/04/05/09：`l1/evaluate_l1_degree.run_group(..., baseline=True,
-  strain_ev=True, fusion='max', params={'rise':0.05})` —— 与交付口径一致。
-  锚：`n_f`（失效循环）。
 - C L1 二批 9 组：`l1/evaluate_l1_hi_ae.hi_of_group` 的 `cum_hits` → `unity01`
   （= 交付用的离线复评 HI_AE）。**构造上单调** ⇒ 作为**阴性对照**：
   收益必须恰好为 0，用来证明本脚本的度量不是"总能测出点东西"。
@@ -162,7 +159,7 @@ def warn_onset(d, hold_frac=0.02, low=0.30, drop=0.15):
 
 
 # ============================================================
-# 三个数据集
+# 两个数据集（B = L1 一批的在线 D(t) 已随在线口径下线，见 details.md §38）
 # ============================================================
 def groups_A():
     """主样本 016–020：返回 [(gid, life%, D, 锚 dict)]。"""
@@ -175,22 +172,6 @@ def groups_A():
         b2, b3 = E.ref_map().get(gid, (np.nan, np.nan))
         out.append((gid, life, d, {'b2': float(b2), 'b3': float(b3),
                                    'unit': '点(等间隔)'}))
-    return out
-
-
-def groups_B():
-    """L1 一批：与交付口径一致（baseline + strain 证据 + max 融合）。"""
-    import evaluate_l1_degree as L
-
-    out = []
-    for gid in L.META:
-        r = L.run_group(gid, params={'rise': 0.05, 'fall': 0.008},
-                        baseline=True, strain_ev=True, fusion='max')
-        nf = float(L.META[gid]['n_f'])
-        life = r['cyc'] / nf * 100.0
-        out.append((gid, life, np.asarray(r['D'], float),
-                    {'n_f': nf, 'b2': np.nan, 'b3': 100.0,
-                     'refs': L.META[gid].get('refs', [])}))
     return out
 
 
@@ -268,13 +249,13 @@ def summarize(df, name):
 
 def main():
     ap = argparse.ArgumentParser(
-        description='物理约束层（保序投影）在 A/B/C 上的消融对照')
-    ap.add_argument('--sets', default='A,B,C', help='要跑哪几套，逗号分隔')
+        description='物理约束层（保序投影）在 A/C 上的消融对照')
+    ap.add_argument('--sets', default='A,C', help='要跑哪几套，逗号分隔')
     args = ap.parse_args()
     want = [s.strip().upper() for s in args.sets.split(',') if s.strip()]
 
     say('=' * 104)
-    say('物理约束层（保序投影）消融对照 —— 数据集 A / B / C')
+    say('物理约束层（保序投影）消融对照 —— 数据集 A / C')
     say('生成时间: %s' % pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'))
     say('=' * 104)
     say('')
@@ -297,8 +278,6 @@ def main():
     dfs = []
     if 'A' in want:
         dfs.append(run_set('A', groups_A()))
-    if 'B' in want:
-        dfs.append(run_set('B', groups_B()))
     if 'C' in want:
         dfs.append(run_set('C', groups_C()))
 
@@ -318,7 +297,7 @@ def main():
            '违例前%', '违例后%', '平均回撤'))
     say('  ' + '-' * 92)
     srows = []
-    for name in ('A', 'B', 'C'):
+    for name in ('A', 'C'):
         s = summarize(allg[allg['set'] == name], name)
         if s is None:
             continue
