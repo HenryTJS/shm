@@ -2,7 +2,7 @@
 
 ---
 
-**A 主样本（016–020）—— 不能做什么**
+**main 主样本（016–020）—— 不能做什么**
 
 1. ❌ **不能做 RUL**。
    ① D 没有渐变窗口：4/5 组在 1–2 个块内从 0.30 跳到 0.85 ⇒ **饱和平台零分辨率**；`D≥0.85` 后剩余寿命仍有 **5.0%–27.1%（5.4 倍差异）**。
@@ -58,13 +58,13 @@
 
 ---
 
-**B L1 一批（4 组）—— 不能做什么**
+**l1 恒幅+FBG+DFOS 组（4 组）—— 不能做什么**
 
 1. ❌ **不能做 RUL**。
    与 A 同机理：**4/4 组皆为 latch 阶跃** —— `t25→t55` 与 `t55→t85` 各仅跨 **1–2 个块**（1 块 = 5000 cycle）
    ⇒ **无可外推的渐变段**；且 N=4。
    ⚠️ 本条为**机理判定、非实测**（`rul_feasibility.py` 只覆盖二批，一批**未单独跑 LOSO**）。
-2. ❌ **不能把定位结论外推到 Y 方向**（见〈C L1 二批 —— 不能做什么〉②）。
+2. ❌ **不能把定位结论外推到 Y 方向**（见〈l1 恒幅+DFOS 组 —— 不能做什么〉②）。
    且**一批的 AE 声速不可信**：PDF 自述为 after-failure 测量 ⇒ `ae_locate.py` 对一批只能用缺省值。
 3. ❌ **不能靠 FBG 单源判断 L1-04**。
    其应变几乎**零漂移（−0.2 µε）→ HI_end 仅 0.721** —— 这才是 L1-04 的固有难点（与 AE 侧无关）。
@@ -85,7 +85,7 @@
 
 ---
 
-**C L1 二批（9 组）—— 不能做什么**
+**l1 恒幅+DFOS 组（9 组）—— 不能做什么**
 
 1. ❌ **不能做「跨试件统一阈值的在线预警」**（核心一条）。
    **四条独立路径一致失败**：
@@ -190,7 +190,7 @@
 
 ---
 
-**D phmdc（外部验证平台，8 件）—— 不能做什么**
+**phmdc（外部验证平台，8 件）—— 不能做什么**
 
 1. ❌ **不能改变 A/B/C 的任何结论**。物理不同（铝 / 铆接 / Lamb 波 vs 复材 / 加筋 / AE），
    只有**方法层**（投影算子、对比协议、统计检验）可迁移。
@@ -234,7 +234,7 @@
 5. ❌ **不能拿二批的"损伤度/剩余裕度"字面语义去引用** —— 已改为 `HI_AE` / `1 − HI_AE`。
 6. ⚠️ **必须与正式口径保持一致** —— 达阈时间须与 `l1/results/l1_hi_ae.csv` 一致；
    改上游数据后**必须显式重跑导出脚本**（`export_dashboard*.py` 无缓存失效保护）。
-7. ❌ **015 与 021 不进大屏**（问题组，见〈A 主样本 —— 不能做什么〉第 10 条）。
+7. ❌ **015 与 021 不进大屏**（问题组，见〈main 主样本 —— 不能做什么〉第 10 条）。
 
 ---
 
@@ -418,7 +418,7 @@ g[np.isnan(g)] = float(lf.mean())          # 其余帧全部赋全局均值
 - `g_load` 退化成只有 **2 至 15 个离散取值**，单一众数占 **50% 至 73% 的帧**，且多文件组的众数正好落在分数上（0.474 / 0.646 / 0.655 / 0.727 / 0.799 / 0.870）—— **就是补值**；
 - 这些区段的循环轴因此变成近似**线性时间斜坡**（`g` 为常数）。
 
-⇒ 这是一个**真实存在的口径缺陷**（需修 `ae_cycle`；建议改用「最近一次突发的加载状态外推」，而非全局均值），但性质是「网格不匹配 + 均值补值」，**不是读取丢数据**。诊断工具：`l1/fbg_coverage.py`。
+⇒ 这是一个**真实存在的口径缺陷**（需修 `ae_cycle`；建议改用「最近一次突发的加载状态外推」，而非全局均值），但性质是「网格不匹配 + 均值补值」，**不是读取丢数据**。诊断工具：`l1/fbg_tools.py coverage`。
 
 #### 1c）但「频率自检失真来自补值」这个推断**不成立**（已实测否证）
 
@@ -486,7 +486,7 @@ g[np.isnan(g)] = float(lf.mean())          # 其余帧全部赋全局均值
 - **`shape_rob25`** = 10 通道应变剖面（按窗归一化）与**前 25% 加载窗中位剖面**的 L1 距离。
 - **在线可用**（基线全部取自过去数据），暖机 25% 寿命后全区间 **10 正 / 0 负 / 2 弱**，**|ρ| 中位 0.71**（旧口径 `shape_l1` 为 0.58 且含 1 个反例）。
 - 唯一真正的弱组是 **L1-14（+0.21）**；L1-30 窗数仅 51，不参与结论。
-- 工具：`l1/fbg_profile.py`（产出 npz，含 `shape_l1` / `shape_rob10` / `shape_rob25`）→ `l1/fbg_variants.py`（10 口径横评 + 混杂检验 + 单组诊断）。
+- 工具：`l1/fbg_tools.py profile`（产出 npz，含 `shape_l1` / `shape_rob10` / `shape_rob25`）→ `l1/fbg_tools.py variants`（10 口径横评 + 混杂检验 + 单组诊断）。
 
 #### 5）加载状态重建口径：从「全局均值补值」改为「零阶保持 + AE 静默守卫」
 
@@ -548,11 +548,11 @@ g[np.isnan(g)] = float(lf.mean())          # 其余帧全部赋全局均值
 - `ae_loadstep`（重启响应）：R 中位 1.005 至 1.038（L1-41 为 0.947）⇒ 仍为**否定**结论。
 - `ae_phase`（Fano 簇状性）：末期 Fano 高于 20% 寿命处者 **9/12**，与旧轴一致。
 - `HI_eng`（能量口径）：t85 范围 21.1 至 98.4% ⇒ 仍**弃用**。
-- 工具链新增：`l1/cycle_fill_compare.py`（口径对比）、`l1/check_carry.py`（截断审查）、`l1/fbg_coverage.py`（覆盖体检）。
+- 工具链新增：`l1/cycle_fill_compare.py`（口径对比）、`l1/check_carry.py`（截断审查）、`l1/fbg_tools.py coverage`（覆盖体检）。
 
 #### 6）看板接入：数据集 `l1v3`（新 14 组首次可视化）
 
-- 导出器 `l1/export_dashboard_l1_v3.py`，数据集 id `l1v3`。
+- 导出器 `l1/export_dashboard.py --ds l1v3`（三批统一入口），数据集 id `l1v3`。
   **实际出包 11 组**：L1-06 / 13 / 14 / 24 / 25 / 27 / 29 / 31 / 35 / 41 / 44；
   L1-30（13 帧）/ L1-34（2 帧）/ L1-36（5 帧）因帧数不足跳过。每包 33 至 196 KB。
 - **主曲线口径的决定**：主曲线仍用 **`HI_hit`**，而 `shape_rob25` 作为**在线证据通道 `est`**。
@@ -569,7 +569,7 @@ g[np.isnan(g)] = float(lf.mean())          # 其余帧全部赋全局均值
   「分布式应变 · 块均值 / 局部峰」（DFOS 措辞），对只有 FBG 的 `l1v3` 说错模态。
   已加「**数据包可覆盖、未提供则回落原值**」的钩子（`labels.ae/fo/st`）。
   回归验证四个数据集（`main` / `l1` / `l1v2` / `l1v3`）标签均正确。
-- 附带产出：`fbg_profile.py` 新增落盘 `p2p_ch`（逐通道峰峰值矩阵），
+- 附带产出：`fbg_tools.py profile` 新增落盘 `p2p_ch`（逐通道峰峰值矩阵），
   这是看板 FBG 面板 10 通道曲线的数据源；注意必须在 `p2p` 过滤前留副本，
   否则通道数可能不足 10。
 
@@ -621,7 +621,7 @@ L1 的试件在 cycl 0 处即带 BVID，`e_ae` 的「相对首值漂移」会**�
 与真实寿命无关；本项目结论是「L1 只保留离线复评 `evaluate_l1_hi_ae.py`」。
 故老批主曲线改为**离线复评 `HI_hit`**，与 `l1v3` 完全同源。
 
-**改法**（`l1/export_dashboard_l1.py`）：
+**改法**（`l1/export_dashboard.py --ds l1`）：
 
 | 项 | 改前 | 改后 |
 | --- | --- | --- |
@@ -638,7 +638,7 @@ L1 的试件在 cycl 0 处即带 BVID，`e_ae` 的「相对首值漂移」会**�
   取**每通道峰峰值 `p2p`**而非块均值 —— 均值会携带基线 / 温度慢漂，
   块间比较会把慢漂误当成损伤。
 - `shape_rob25_of(P)`：块内归一化后与**首 25 % 中位剖面**的 L1 距离，
-  与 `l1/fbg_profile.py` 的定义逐字一致。
+  与 `l1/fbg_tools.py profile` 的定义逐字一致。
 - `fano_of_ae(gid, nf)`：用 `evaluate_l1_hi_ae._cycle_of` 映射到循环轴，
   与 `ae_burst.py` 的 `FANO_WIN = 1 h`、60 s 帧同口径。
 
@@ -699,7 +699,7 @@ DFOS 空间热图仍在（51 / 56 块）、通道表 4 行、论文参考线与�
 
 **问题**：`shape_rob25` 在 13 组里只剩 L1-14 一个真弱组（全窗 `rho` 仅 **+0.10**）。
 
-**排查**（工具 `l1/fbg_variants.py --qc`）：
+**排查**（工具 `l1/fbg_tools.py variants --qc`）：
 
 1. **剖面寿命漂移本来就极小**。「前 10% 中位剖面」到「后 10% 中位剖面」的 L1 距离，
    L1-14 只有 **0.0394**，是可评价的 12 组里最小（次小 L1-27 = 0.1288；
@@ -1155,10 +1155,11 @@ L1-25 有 1668 帧，但帧号跨度 5586（缺 3918 帧），相邻帧间隔中
 `l1/ae_dta.py`（.DTA 解析，与 `MistrasDTA` 逐位校验 0 偏差）、`l1/ae_frames.py`、
 `l1/ae_cycle.py`、`l1/ae_index.py`、`l1/ae_hi.py`（`HI_hit` / t85）、`l1/ae_burst.py`（Fano）、
 `l1/ae_loadstep.py`（重启响应，否定）、`l1/ae_phase.py`、`l1/ae_tdoa.py`、
-`l1/fbg_profile.py` + `l1/fbg_variants.py`（交付口径 `shape_rob25`）、`l1/fbg_coverage.py`、
+`l1/fbg_tools.py profile` + `l1/fbg_tools.py variants`（交付口径 `shape_rob25`）、`l1/fbg_tools.py coverage`、
 `l1/cycle_fill_compare.py`、`l1/check_carry.py`、`l1/thr_sensitivity.py`、
 `l1/p2p_load_check.py`、`l1/ae_locate.py`、`l1/pdf_specimen_meta.py`、
-`l1/export_dashboard_l1{,_v2,_v3}.py` + `l1/check_dashboard_pkg.py`、
+`l1/export_dashboard.py`（`--ds l1` / `--ds l1v2` / `--ds l1v3` 三批统一入口）
++ `l1/check_dashboard_pkg.py`、
 `l1/survey_groups.py`（→ `L1数据记录.xlsx`，8 页）、`tools/relink_data.ps1`。
 
 ---
@@ -1328,7 +1329,7 @@ rootcyc_total    966000
 #### 19）口径定义：`load_h` 到底是什么（2026-10-05）
 
 **背景**：`load_h` 是循环轴的核心中间量（`f = n_f / load_h`），并且已经进了数据包的
-`meta`（`l1/export_dashboard_l1_v3.py` 写 `'load_h': round(cy['load_h'], 1)`）。
+`meta`（`l1/export_dashboard.py --ds l1v3` 写 `'load_h': round(cy['load_h'], 1)`）。
 此前对它的表述不准确（只有一句「FBG 时间覆盖粗」），容易被误读成日历占空比。现明确定义。
 
 ```
@@ -1373,7 +1374,7 @@ load_h = sum(g) * frame_s / 3600        # frame_s = 600 s
 - `l1/results/` 的 `l1_specimen_meta.csv` / `l1_impact_truth.csv` / `l1_conditions.csv`。
 
 **重跑**：`l1/pdf_specimen_meta.py --write`、`l1/survey_groups.py`、
-`l1/export_dashboard_l1{,_v2,_v3}.py`、`main/export_dashboard.py`
+`l1/export_dashboard.py --ds all`、`main/export_dashboard.py`
 —— 全部 exit 0。
 
 **结果**
@@ -1501,7 +1502,7 @@ load_h = sum(g) * frame_s / 3600        # frame_s = 600 s
 「窄带匹配会选到时间上聚集的窗而破坏寿命覆盖」。
 本轮把这两件事都查实了 —— **两个结论都要改**。
 
-**新增三个开关**：`l1/fbg_variants.py --b-diag` / `--b-why` / `--qc-causal`。
+**新增三个开关**：`l1/fbg_tools.py variants --b-diag` / `--b-why` / `--qc-causal`。
 
 ##### 1.4 B 的问题不是「选走了一段寿命」—— 该假设被否证
 
@@ -1544,7 +1545,7 @@ load_h = sum(g) * frame_s / 3600        # frame_s = 600 s
 - 更普遍的推论：**任何改变样本量的操作（A / B / 降温过滤）都会改变 rho**，
   所以**不能拿「重算后的 rho 变化」当过滤效果的证据**。
   正确做法：**固定基线、固定寿命序，只改样本集合**（即 `--b-why` 的「固定基线」列）。
-- 建议：指标筛选（`fbg_variants` / `fbgprof_rank`）里的 rho 换成**固定基线版**。
+- 建议：指标筛选（`fbg_tools.py variants` / `fbgprof_rank`）里的 rho 换成**固定基线版**。
   ⚠️ **2026-10-05 复核后作废**：这两条线**本来就是**固定基线口径（见 §23，数值核验
   最大差 0.00e+00）⇒ **无需改动**。§22 的污染只涉及 A / B 两个过滤策略的评估。
 - 顺带修一处「写死结论」：`qc_scan` docstring 里 L1-41 的旧值 **0.461 已过期** ——
@@ -1582,17 +1583,17 @@ sliding 的 L1-31 = 0.033）—— 其余 8 组均 ≤ 0.022。
   而这类噪声**不能靠因果过滤去掉**。
 - 同样地，§10 里用 B 得到的 0.511 也不能再作为「真实漂移」的证据（见 1.4）。
 
-**产物**：`l1/fbg_variants.py` 的 `--b-diag` / `--b-why` / `--qc-causal` 三个开关。
+**产物**：`l1/fbg_tools.py variants` 的 `--b-diag` / `--b-why` / `--qc-causal` 三个开关。
 
 ---
 
 #### 23）复核 §22 的推论：指标排名**本来就是**固定基线口径（2026-10-05，待办 1.5）
 
 **起因**：§22 查出「子集重算基线」会让 rho 大幅漂移，随即记了一条待办 ——
-「`fbg_variants` / `fbgprof_rank` 用的仍是子集重算基线版，要换掉」。
+「`fbg_tools.py variants` / `fbgprof_rank` 用的仍是子集重算基线版，要换掉」。
 本轮**先核验这句话本身对不对**（不靠读代码，靠数值）—— 结论：**这句话是错的**。
 
-**核验方法**（`l1/fbg_variants.py --rank-check`）：不看 `variants()` 的实现，
+**核验方法**（`l1/fbg_tools.py variants --rank-check`）：不看 `variants()` 的实现，
 而是**独立复算**一遍「固定基线」口径 ——
 基线取全窗前 25% 中位剖面（`np.median(prof[:k25])`）、序列取暖机后（`prof[k0:]`）、
 再算 Spearman —— 与 `analyze()` 产出的暖机后 rho 对照：
@@ -1604,7 +1605,7 @@ sliding 的 L1-31 = 0.033）—— 其余 8 组均 ≤ 0.022。
 ⇒ **生产路径就是固定基线口径**，`l1_fbgvariant_rank.csv` 的排名不受 §22 影响。
 读代码也印证：`variants(prof)` 的基线一律取自**全窗矩阵**（`prof[:k10]` / `prof[:k25]`），
 `analyze()` 的暖机后版本只是把**已算好的序列**截断，没有重算基线；
-`fbg_profile.py` 的 `l1_fbgprof_rank.csv` 同理 —— `shape_l1` / `shape_rob10` / `shape_rob25`
+`fbg_tools.py profile` 的 `l1_fbgprof_rank.csv` 同理 —— `shape_l1` / `shape_rob10` / `shape_rob25`
 的基线都在 `group_profile()` 里按**整组**算一次（`prof[0]` / 前 10% / 前 25%）。
 唯一会重算基线的是 `qc_scan`（诊断工具）⇒ §22 那两条「假提升 / 假变差」
 **只污染了 A / B 两个过滤策略的评估，没有污染指标排名**。
@@ -1619,7 +1620,7 @@ sliding 的 L1-31 = 0.033）—— 其余 8 组均 ≤ 0.022。
 | L1-31 | 0.526 | 0.623 | +0.097 |
 | L1-24 | 0.843 | 0.758 | −0.086 |
 | L1-29 | 0.714 | 0.787 | +0.073 |
-| 其余 7 组 | | | |Δ| ≤ 0.04 |
+| 其余 7 组 | | | \|Δ\| ≤ 0.04 |
 
 **12 组 |Δrho| 中位 0.054、最大 0.208** ⇒ 若真踩了，个别组的排名会动一个档，
 足以改变「哪个口径最优」的结论。**这条待办的价值就在于确认没踩。**
@@ -1706,7 +1707,7 @@ sliding 的 L1-31 = 0.033）—— 其余 8 组均 ≤ 0.022。
 **起因**：待办 1.1 说「11 组里批次 A 只有 4 组，而批次 A 是长记录型 FBG，
 与批次 B 的突发式采集成像机制不同，需确认口径在两种记录格式下都成立」。
 
-**新增开关**：`l1/fbg_variants.py --batch`（固定基线口径 + 自相关校正）。
+**新增开关**：`l1/fbg_tools.py variants --batch`（固定基线口径 + 自相关校正）。
 批次按 `CAMPAIGN`：**A = C3 变幅（L1-06/13/14/24）**，**B = C4 谱载（其余 8 组）**。
 
 每个组给出：窗数、**实测窗距中位**、剖面距离序列的**滞后 1 自相关** acf1、
@@ -1776,7 +1777,7 @@ acf1 中位：**A 0.663、B 0.957**（L1-35 = 0.994、L1-44 = 0.996）。
 **顺带说明**：L1-14 的 acf1 = **−0.357**（负），即相邻窗交替 —— 与它剖面漂移最弱（0.207）
 相符：它的序列更像在噪声里来回摆，而不是单调漂移。
 
-**产物**：`l1/fbg_variants.py --batch`。
+**产物**：`l1/fbg_tools.py variants --batch`。
 
 ---
 
@@ -1851,8 +1852,8 @@ acf1 中位：**A 0.663、B 0.957**（L1-35 = 0.994、L1-44 = 0.996）。
 
 **第 0 步 —— §25 的「窗距」线索无效（方向本身就错）**
 
-`fbg_variants.py --batch`（§25）报的「窗距中位」是 `median(diff(t))`，而 `t` 只含
-**加载窗**（`fbg_profile.group_profile` 里 `med <= P2P_LOAD` 的窗会被丢掉）
+`fbg_tools.py variants --batch`（§25）报的「窗距中位」是 `median(diff(t))`，而 `t` 只含
+**加载窗**（`fbg_tools.py profile` 的 `group_profile` 里 `med <= P2P_LOAD` 的窗会被丢掉）
 ⇒ **停机窗根本不进入这个统计**，它天生看不见停机。
 实测：L1-31 与 L1-41 的窗距**都是 406 s**，而 `gp` 是 0.474 对 0.870。
 ⇒ 待办里「算 gp vs 窗距的相关性」这条建议**不必执行**。
@@ -2217,6 +2218,223 @@ L1-13（100 % 为 1）也基本是噪声。此前引用的『中位 0.35』被�
 该文件保留两件事：交付限制表与「明确不做」清单。
 
 **产物**：`l1/results/l1_burst_rank.csv`（Fano 数值出处）、`l1/ae_burst.py`。
+
+---
+
+#### 32）bug 排查与修复：三处真 bug + 一处脆弱写法（2026-10-06）
+
+**排查方法（可复现，建议沿用）**
+
+1. 全仓语法编译。⚠️ **`compileall .` 现在很慢** —— junction 会把外接盘的**数据目录**
+   （约 239 GB）一起遍历。只编译目标文件（`python -m py_compile <files>`）即可。
+2. Pylance 工作区诊断（`workspace/diagnostic`）。⚠️ **它只覆盖了 84 个里的 52 个**
+   （其余是分析盲区，含 `l1/ae_loadstep.py`、`l1/loc_early.py`、`shm/*`、`agent/*`），
+   **不能只看它**。本次真 bug ① 就是它抓到的，②③ 它都没抓到。
+3. **41 个有 argparse 的脚本逐个 `--help`** —— 抓导入错误、argparse 构造错误、
+   以及 GBK 控制台下打印崩。结果：`results/_logs/_help_sweep.txt`。
+4. 自研 AST 检查（无第三方 linter 可用）：argparse `help=` 里的裸 `%`；
+   模块级 def/class 全仓从未被引用。结果：`results/_logs/_bug_scan.txt`。
+5. **逐目录导入冒烟测试**（把「文件所在目录」放进 `sys.path`，模拟 `python <file>`）——
+   抓模块级副作用。结果：`results/_logs/_import_smoke*.txt`。
+6. `node --check` 全部 **40 个 JS**（39 个是导出的数据包）；`tools/*.ps1` 语法 + UTF-8 BOM。
+
+**bug ① `l1/ae_shape_features.py:103` —— 未定义变量 `fn`（脚本从未跑通）**
+
+循环变量是 `fp`，打印却写成 `{fn}` ⇒ 第一组读完就 `NameError`。
+**该脚本一启动必崩，它的输出 `_l1_ae_shape_{gid}.npz` 从未生成过。**
+已改为 `os.path.basename(fp)`；修后 **14 组全部跑通（exit 0，产物落盘）**。
+
+**bug ② `l1/rul_feasibility.py:379` —— `--help` 直接抛异常**
+
+`help='查询点(寿命%)'`：argparse 会对 `help` 字符串做 `%` 格式化 ⇒
+`ValueError: unsupported format character ')' (0x29) at index 7`。
+已改成 `%%`；AST 全仓扫描确认这是**唯一**一处。
+⇒ 全仓 41 个 argparse 脚本 `--help` 现已**全部 exit 0**。
+
+**bug ③ 9 处 `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, ...)` —— 会关掉 stdout**
+
+这是本仓沿用已久的「Windows GBK 防崩」写法，但有两个真隐患：
+
+- **另建一层 wrapper 共用同一 buffer** ⇒ 新 wrapper 一旦失去引用（重新赋值 / GC），
+  底层 stdout 被**连带关闭**，之后所有打印抛 `ValueError: I/O operation on closed file`。
+  **本次实测踩到**：扫描脚本为了探测临时换了 `sys.stdout`，结果一次性毒化整条导入链
+  —— `l1/` 里 30 多个模块连续「导入失败」，看起来像一大批脚本都坏了，其实**只有一个根因**。
+- **模块级替换会污染导入方**：import 一个脚本会改掉调用者的 `sys.stdout`。
+  `agent/eval/show_runs.py` 的注释里其实**已经写明**了这个风险
+  （「重复包装同一 buffer，前一个 wrapper 被 GC 会关掉底层流」），但没有从根上换掉写法。
+
+已把 9 处统一改为 `sys.stdout.reconfigure(encoding='utf-8', errors='replace')`
+（需要行缓冲的再加 `line_buffering=True`），并删掉随之变成未使用的 `import io`：
+
+| 文件 | 文件 |
+| ---- | ---- |
+| `l1/ae_locate.py` | `l1/ae_raf.py` |
+| `l1/ae_shape_features.py` | `l1/reproduce_broer_l23.py` |
+| `l1/step0.py`（由 `step0_v2.py` 合并） | `agent/eval/gen_cases.py` |
+| `agent/eval/run_ablation.py` | `agent/test_envfile.py` |
+| `agent/test_physguard.py` | `agent/eval/show_runs.py`（只更正注释） |
+
+**修后验证**：逐目录导入冒烟测试 → `l1` / `main` / `phmdc` / `shm` / `agent`
+**全部模块导入成功、无 stdout 劫持**（修前 `l1` 有整条毒化链）；
+两个回归测试 `agent/test_envfile.py` **22 通过 / 0 失败**、
+`agent/test_physguard.py` **23 通过 / 0 失败**；9 个文件 `py_compile` + `--help` 全通过。
+
+**排查中确认「不是 bug」的（避免以后重复挖）**
+
+| 现象 | 结论 |
+| ---- | ---- |
+| Pylance 报 `mono_ablation.py` 无法解析 `eval_common` / `evaluate_l1_degree` 等 | **误报** —— 它在模块顶部就 `sys.path.insert` 了 `main` 与 `l1` |
+| 7 处模块级 def/class 全仓从未被引用 | **未调用的备用实现，不是 bug**。例如 `despike_row`（真正在用的那个）在 3 个文件里被调用，只有批量包装 `despike_profiles` 无人用 |
+| `agent/eval/show_runs.py` 导入时 `PermissionError: 'd:\\lixiang'` | **测试方式所致** —— 它在模块级读 `sys.argv[1]`，我传了仓库根路径。它本来就只作脚本用 |
+| `E:` 盘未挂载时大批脚本失败 | **环境问题**（junction 悬空），盘接回即恢复，非代码缺陷 |
+| 40 个 JS、`tools/relink_data.ps1` | 全部通过（`--check` 0 失败；ps1 语法 0 错误且 UTF-8 BOM 正常） |
+
+**遗留的已知脆弱点（本轮未改，仅记录）**
+
+- `l1/ae_frames.py`、`l1/pdf_specimen_meta.py` 里的 `import io` **早已未使用**
+  （与本轮改动无关，未动）。
+- `agent/eval/show_runs.py` **没有 `if __name__ == '__main__'` 守卫**，且模块级读 `sys.argv`
+  ⇒ 不能被 import（只能按脚本运行）。
+- **递归工具要显式排除数据目录**：`l1/L1-*`、`main/[0-9][0-9][0-9]`、`phmdc/T[1-8]`
+  都是指向外接盘的 junction，任何 `os.walk` / `compileall` / 全仓 grep 都会把它们算进去。
+
+---
+
+#### 33）仓库重构：删死代码 + 事实去重 + 看板导出器三合一（2026-10-06）
+
+**目标**：同类任务散在多个文件、同一事实抄在多处，维护成本高。按「每类数据集合并成少数
+主文件、同类任务合并、无用的删」重构，每步都逐项核对。
+
+**阶段 1 至 7（已完成）**
+
+1. **删死代码 6 个文件、共 1095 行**（清单与 MD5 见 `l1/results/_logs/_removed_files.txt`）：
+   `main/evaluate_baselines.py`、`main/evaluate_loso.py`、`main/evaluate_labels.py`、
+   `main/evaluate_ae_columns.py`、`l1/raf_trend_check.py`、`plot.py`。
+   依据：全仓引用扫描（`*.py` / `*.md` / `*.json` / `*.html` / `*.ps1`）只剩扫描日志命中。
+
+2. **事实去重：`shm/datasets.py` 成为唯一来源**。原来失效循环数 `n_f` 抄了 3 份、批次名单
+   抄了 2 份、AE 时钟平移抄了 2 份，现在都从 `shm/datasets.py` 读：
+   - `l1/ae_cycle.py` / `l1/ae_hi.py`：`N_F` 改为 `from shm.datasets import N_F`；
+   - `l1/ae_frames.py`：`CLOCK_SHIFT` 由 `L1_CAMPAIGNS` + `clock_shift_days()` 生成；
+   - `l1/survey_groups.py`：`C1_CA1` / `C2_CA2` / `C3_VA` / `C4_SP` / `CAMPAIGN` 由 `L1_CAMPAIGNS` 派生。
+
+   核对：`N_F` 与 `CLOCK_SHIFT` 原有的 14 组取值逐项不变（键数 27，多出的 C1/C2 键为 0，
+   下游只用 `CLOCK_SHIFT.get(gid, 0)`，且 `_l1cyc_*` / `_l1ae_frames_*` 缓存只有那 14 组
+   ⇒ 无副作用）；13 个受影响脚本的 `--help` / `--diag` / `--batch` 全部 exit 0；
+   `python -m shm.datasets --cross-nf` 14 组 0 冲突。
+
+3. **3 个 L1 看板导出器合并为 `l1/export_dashboard.py`**（`--ds l1` / `l1v2` / `l1v3` / `all`）。
+   合并方式：三段流水线**函数体逐字保留**，只对跨批重名的常量与函数加 `V1_` / `V2_` / `V3_`
+   前缀（逐字相同的 `LEVELS` / `_i100` / `_i1000` 保留一份共享），公共脚手架（`write_js` /
+   `main` / JS 包装 / 清单）只写一份。587 + 460 + 445 = 1492 行 → 1362 行；文件 3 个 → 1 个。
+   顺带把 `l1v3` 的 14 组名单字面量改为 `shm.datasets.L1_CAMPAIGNS`（C3 变幅 + C4 谱载）。
+
+   **核对**：先对 `dashboard/data/*.js` 全量建 MD5 基线（39 个），再用统一入口生成到临时目录
+   比对 —— 39 个里 **28 个逐字节一致**；另 **11 个恰是 `l1v3` 的试件包，差异只有第 1 行注释头**
+   （旧头写 `export_dashboard_l1_v3.py`，新头写 `export_dashboard.py --ds l1v3`；去掉该行后
+   11/11 逐字节一致）。三批交付包 `l1/check_dashboard_pkg.py --ds {l1,l1v2,l1v3}` 均「全部通过」。
+
+4. **`l1/step0_v2.py` 合并进 `l1/step0.py`**（新增 `--batch c1|c2`）。两条预处理流水线
+   （C1：LUNA 逐行 + FBG + AE 用 `vallenae` 列名；C2：LUNA 段级聚合 + AE 1 s 分箱）
+   **函数体逐字保留**，入口改名 `process_luna_c1` / `process_fbg_c1` / `process_ae_c1` /
+   `process_luna_c2` / `process_ae_c2`，公共脚手架（import / 路径 / `print_header` / 统一
+   `main`）只写一份；顺带删掉全仓无引用的死函数 `load_ae_vallenae`（`process_ae_c1` 早已
+   改走 `ae_io.read_hits_vallenae`）。539 + 350 = 889 行 → 879 行；文件 2 个 → 1 个。
+   两批组名单改由 `shm.datasets.L1_CAMPAIGNS` 派生，并新增 `--root`（只改**输出**根，
+   输入侧仍读本目录）与 `--dry-run`。
+
+   **核对**：把重跑结果落到 scratch（输入侧用 junction 指回真数据），再与 `E:\l1` 下
+   **已交付的 CSV 逐字节比对**：
+   - C2 `L1-49`：`声发射` / `分布式应变` / `_peak` / `_amp` / `dfos_anchor` → **5/5 一致**；
+   - C1 `L1-09`：`声发射`(188.7 MB) / `光纤`(47.5 MB) / `分布式应变`(16.3 MB) → **3/3 一致**；
+   - 闭环：用 `l1/results/_logs/_orig_pyc/step0_v2.pyc`（原始字节码，可直接运行）复跑
+     `--groups L1-49 --skip-ae` → 4 个 DFOS 产物同样与已交付 CSV **逐字节一致**
+     ⇒ 交付 CSV 不是过期产物，**合并脚本 = 原脚本 = 交付 CSV**。
+
+5. **`l1/fbg_profile.py` + `fbg_coverage.py` + `fbg_variants.py` 合并为 `l1/fbg_tools.py`**
+   （子命令 `profile` / `coverage` / `variants`）。FBG 这一路的三个角色 —— 产线（生成
+   `_l1fbgprof_*.npz`）、覆盖体检（只读）、口径对比与诊断（读 npz）—— 合成一个入口：
+   外面套一层子命令分发，每个子命令仍是**原样的 argparse 参数**（`<子命令> -h` 看）。
+   函数体逐字保留，只做三处机械改名：三个 `main` → `profile_main` / `coverage_main` /
+   `variants_main`（后两个改为接收 `argv`），两处同名但逐字不同的 `_data_l1` →
+   `_data_l1_prof` / `_data_l1_cov`。235 + 202 + 807 = 1244 行 → 1183 行；文件 3 个 → 1 个。
+
+   **核对**：先把原脚本备份到 `l1/results/_logs/_orig_src/`，用**原脚本**复跑一遍确认现有
+   产物不是过期品，再用合并脚本跑同样三步比对：
+   - `variants`：`_l1fbgvar_*.npz` **12/12 逐字节一致**、`l1_fbgvariant_rank.csv` 一致，
+     屏幕输出只差「写出 -> 绝对路径」那一行（运行目录不同）；
+   - `profile`：`_l1fbgprof_*.npz` **13/13 逐字节一致**、`l1_fbgprof_rank.csv` 一致，
+     stdout 只差路径与 RuntimeWarning 的文件名/行号；
+   - `coverage` 与 `coverage --load-h L1-31`：stdout **逐行 0 差异**。
+
+6. **`run.py` 扩成四类数据集统一入口**。原来只认 `main` / `l1` 两个数据集，任务说明是一张
+   三列表；现在数据集为 `main` / `l1` / `phmdc`，`DESC` 改成 `DESC[数据集][任务]`，
+   `--list` 按数据集分组打印（任务名前缀 `[C1]` / `[C2]` / `[C3+C4]`）。
+   给 `l1` 补齐三批入口：`prepare-c2`（`step0.py --batch c2`）、`degree-v2`、
+   `ae-dta`（`ae_dta.py export` → `l1/AE特征概览.csv`）、`ae-frames`、`ae-cycle`、
+   `hi-ae`、`hi-hit`、`fbg` / `fbg-qa` / `fbg-variants`（`fbg_tools.py` 三个子命令）、
+   `meta`、`dashboard-v2` / `dashboard-v3`；`phmdc` 新增 `step0` 至 `step5`。
+   任务数：main 10 / l1 21 / phmdc 6（`--task all` 去重后分别为 13 / 21 / 7 条命令）。
+
+   **核对**：任务矩阵里的脚本路径全部存在（程序化断言）；6 组 `--dry-run` 抽查命令拼装正确；
+   `--` 透传、未知任务提示、`all` 去重计数、`--help` 全部正常。
+   同时改掉两处过期表述：主 `README.md` 的「数据集 C 不接入 `run.py`」、
+   `phmdc/README.md` 的「接入 `run.py` 未做 / 未开始」（改称已完成，并说明原计划新建的
+   `phmdc/analyze.py` 未新建，直接复用 `step*.py`）。
+
+7. **文档同步（本阶段）**：把脚本改名/合并的影响逐处落到文档上 —— 主 `README.md` 补齐
+   **L1 第三批（C3 变幅 + C4 谱载）** 的缺失章节（新增 §3.4：数据、六项工作、四项成果），
+   并修正「三套数据 24 组」为「四套数据 35 组」（§0 速查表、§5.1/5.2、§7 交付物清单新增三批行）；
+   `phmdc/README.md` 的「接入 `run.py` 未做」改为已完成（含「原计划的 `analyze.py` 未新建」）；
+   `docs/待办与未决问题.md` 的账目段补一张**旧名 → 新入口**对照表（并声明产物路径未变）。
+   全仓 `.md` 的脚本名引用已零残留（只保留 `details.md` §33 与合并文件 docstring 里的
+   “本文件由 … 合并而来”出处说明）。
+
+8. **术语清理：L1 的「第几批」→ 模态分组名**（2026-10-06，用户提出）。用户指出两点：
+   「第一/二/三批只是下载时间不同，来源一样」「B 与 C 都是 L1，为什么分开」。核对后确认：
+   **来源确实是同一个**（ReMAP/TU-Delft L1 公开集），但四组的**模态与格式真的不同**
+   —— AE 是 Vallen `.pridb` 还是 PAC/Mistras `.DTA`、有 FBG / 有 DFOS / 两者都无、
+   加载谱是恒幅 / 变幅 / 谱载、AE 时钟是否慢 8 天 —— 代码必须分支；**错的只是名字**。
+
+   改法：`L1_CAMPAIGNS` 四个 key 换成 `L1 恒幅+FBG+DFOS` / `L1 恒幅+DFOS` /
+   `L1 变幅VA+FBG` / `L1 谱载+FBG`；新增 `CAMPAIGN_ALIAS`（`C1` 至 `C4`）、`ALIAS_OF`、
+   `campaign()`、`campaign_members()`；6 个消费者改走它；代码里 128 处措辞同步。
+   文档侧：数据集口径收敛成 **`main` / `l1` / `phmdc`**（主 `README.md` 的四节标题、
+   §0 速查表、§7 交付物清单、§9 总结，以及本文件〈…不能做什么〉的标题全部去掉 A/B/C/D；
+   **章节号刻意没有重排** —— 那会波及约 150 处交叉引用）。`docs/待办与未决问题.md` 补了分组别名表。
+
+   ⚠️ **顺手修掉一个潜伏 bug**：`l1/survey_groups.py` 的 `CLOCK_SHIFT_DAYS` 又抄了一份 key，
+   改名后 `CLOCK_SHIFT_DAYS.get(camp)` 会**静默返回 `None`** ⇒ 交付表「时钟平移(天)」整列变空。
+   已改为从 `L1_CAMPAIGNS` 派生。
+
+   **核对**：`campaign('C4')` / `campaign_members('C3')` / `meta('L1-31')['campaign']` /
+   `clock_shift_days` / `ae_frames.CLOCK_SHIFT` 取值全部正确；导出器**去掉 docstring 的 AST 对比**
+   只剩 `V3_GROUPS` / `V3_VA_GROUPS` / `_SPECS` / `main` 的 help 四处按预期变化（所有 `pack*`
+   与计算函数逐字未变）；重生成三批看板后与改名前的交付产物比对 —— 39 个里 **26 个逐字节一致**，
+   13 个变化 = 11 个 `l1v3` 试件包（阶段 3 已接受的注释头）+ 2 个清单，且清单的**字段级 diff
+   只有 `ds.name`**（`groups` 数组与其余字段全等）；三批交付包校验全部通过；
+   `L1数据记录.xlsx` 的「批次」列改名「数据分组」并新增「别名」列后已重生成（exit 0）。
+
+**教训（合并类重构的通用做法）**
+
+- 机械合并**不要手抄**：先写一次性生成器做逐字搬运（产完即删），手抄 1500 行必然出错。
+- 改名必须排除**属性访问**：`_deg.CYCS_PER_PT` 里的 `CYCS_PER_PT` 不能加前缀 —— 第一次生成
+  就踩了这个坑，产出 `_deg.V1_CYCS_PER_PT`（`py_compile` 查不出，运行时才 AttributeError）。
+  正则要带 `(?<![\w'".])`。
+- 「逐字相同就去重」还要判**它是否引用了被改名的符号**：`BLK_FRAMES = 500 // STEP` 一旦 `STEP`
+  改名就不能再共享，否则共享副本指向错误的值。
+- 交付产物**先建基线哈希**，改完逐项核对并解释每一处差异（否则无从判断是重构还是改坏）。
+- **改写脚本前先备份**：本仓没有 git 客户端（`.git` 有对象但取不出来）。本轮合并 step0 时
+  直接覆盖了 `l1/step0.py`，原文本只剩 `__pycache__` 里的字节码。已把两份原始 `.pyc`
+  留档到 `l1/results/_logs/_orig_pyc/`（`.pyc` 可 `python x.pyc` 直接运行，正是它让
+  "原脚本 == 交付 CSV" 这条闭环成立）。以后**动手前先 `Copy-Item` 原文件到 `results/_logs/`**。
+- **落盘流水线的等价性验证**：`--root`（只改输出根）+ **junction** 把输入指回真数据，
+  就能重跑整条写盘链路并与交付产物做逐字节 diff —— 比"字段级比对"强得多，也不用碰交付数据。
+- **比对屏幕输出前先统一 IO 编码**（`PYTHONIOENCODING=utf-8`）：同一份 `coverage` 输出，
+  未设时两边差 48 行（原脚本过 GBK 控制台变成乱码），设好后 **0 差异**。
+- **多工具合并入口，用「子命令 + 转发 rest argv」最省风险**：每个子命令保留自己的 argparse，
+  参数名一个都不用改，也就不必重新验证每个旋钮的语义。
+
 
 
 

@@ -21,8 +21,9 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(HERE))
 import run_ablation as ra                                       # noqa: E402
 
-# 注意：run_ablation 导入时已包装 sys.stdout，这里不要再包一次
-# （重复包装同一 buffer，前一个 wrapper 被 GC 会关掉底层流）。
+# 注意：run_ablation 现在用 `sys.stdout.reconfigure` 设编码（2026-10-06 改，安全）。
+# 仍然**不要**写 `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, ...)`：
+# 那是另建一层 wrapper 共用同一 buffer，前一个被 GC 时会关掉底层流。
 
 RUNS = os.path.join(HERE, 'results',
                     sys.argv[1] if len(sys.argv) > 1 else 'v2_runs.jsonl')

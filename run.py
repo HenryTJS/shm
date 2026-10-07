@@ -1,18 +1,26 @@
 # -*- coding: utf-8 -*-
-"""统一入口 —— 在两类数据集间自由切换并执行对应任务
+"""统一入口 —— 在四类数据集间自由切换并执行对应任务
 
 数据集:
-  main : 内部疲劳机主样本 016-020 (服役期渐进损伤)
-  l1   : 公开集 ReMAP/TU-Delft L1-03/04/05/09 (冲击后疲劳)
+  main  : 内部疲劳机主样本 016-020 (服役期渐进损伤)
+  l1    : 公开集 ReMAP/TU-Delft L1 —— **共 27 组**，按**模态/格式/加载谱**分四组：
+          L1 恒幅+FBG+DFOS（短别名 C1）/ L1 恒幅+DFOS（C2）/ L1 变幅VA+FBG（C3）/ L1 谱载+FBG（C4）
+  phmdc : PHM 2020 DC 轴承 (T1 至 T8 退化外推)
 
 用法:
-  python run.py --list                      # 查看任务矩阵
-  python run.py --dataset main --task degree
-  python run.py --dataset l1   --task degree
-  python run.py --dataset l1   --task all
-  python run.py --dataset l1   --task paper -- --groups L1-03   # '--' 之后透传给底层脚本
+  python run.py --list                      # 查看任务矩阵（按数据集分组）
+  python run.py --dataset main   --task degree
+  python run.py --dataset l1     --task degree          # C1 的 D(t)
+  python run.py --dataset l1     --task degree-v2       # C2 的段级 D(t)
+  python run.py --dataset l1     --task dashboard-v3    # L1 变幅VA/谱载 看板
+  python run.py --dataset phmdc  --task step1
+  python run.py --dataset l1     --task all             # 全部任务
+  python run.py --dataset l1     --task all --dry-run   # 只打印要跑的命令
+  python run.py --dataset l1     --task paper -- --groups L1-03   # '--' 之后透传给底层脚本
 
-说明: 本脚本是"任务调度器", 不重写算法; 每类数据集的任务映射到既有脚本(见下表)。
+说明: 本脚本是"任务调度器", 不重写算法; 每类数据集的任务映射到既有脚本（见 --list）。
+      `--dataset l1` 涵盖三批；分组差异由底层脚本的 `--batch` / `--ds` 选择。
+      `--task all` 会把标 (重) 的任务（训练、全量重建缓存）一起跑，先想清楚。
 """
 import os
 import sys
@@ -24,6 +32,13 @@ PY = sys.executable
 
 # ============ 任务矩阵 ============
 # 每个 task -> 若干条底层命令(不带 python 前缀); 'all' 为该数据集全部任务。
+# 每类数据集的简介（--list 用）
+DATASETS = {
+    'main': '内部疲劳机主样本 016-020（服役期渐进损伤）',
+    'l1': 'ReMAP/TU-Delft L1 公开集（27 组；四组 = 恒幅+FBG+DFOS / 恒幅+DFOS / 变幅VA+FBG / 谱载+FBG）',
+    'phmdc': 'PHM 2020 DC 轴承（T1 至 T8，退化外推）',
+}
+
 L1_DEGREE = ['l1/evaluate_l1_degree.py', '--baseline', '--strain-evidence',
              '--fusion', 'max', '--params', 'rise=0.05']
 
@@ -44,6 +59,7 @@ TASKS = {
         'dashboard': [['main/export_dashboard.py']],          # → dashboard/data/
     },
     'l1': {
+        # ---- L1 恒幅+FBG+DFOS（L1-03/04/05/09，有 FBG）----
         'prepare':  [['l1/step0.py']],                       # 原始 .pridb/.txt → CSV
         'degree':   [L1_DEGREE],                             # D(t) + 三级预警
         'curves':   [L1_DEGREE],
@@ -51,34 +67,95 @@ TASKS = {
         'paper-l23': [['l1/reproduce_broer_l23.py', '--mode', 'all']],  # 论文 Level2 + Level3
         'dfos':     [['l1/evaluate_l1_dfos.py', '--mode', 'hi']],     # 分布式应变逐块
         'fiber-hi': [['l1/evaluate_l1.py', '--mode', 'hi']],          # 光纤(FBG)块级 HI
-        'dashboard': [['l1/export_dashboard_l1.py']],                  # → dashboard/data/
+        # ---- L1 恒幅+DFOS（L1-49 至 L1-60，无 FBG）----
+        'prepare-c2': [['l1/step0.py', '--batch', 'c2']],             # LUNA 段级 + AE 1s 分箱
+        'degree-v2':  [['l1/evaluate_l1_degree_v2.py']],              # 段级 D(t)
+        # ---- L1 变幅VA+FBG + L1 谱载+FBG（AE .DTA + FBG）----
+        'ae-dta':     [['l1/ae_dta.py', 'export']],                    # .DTA 体检概览（交付物）
+        'ae-frames':  [['l1/ae_frames.py']],                          # AE 600 s 帧 → npz
+        'ae-cycle':   [['l1/ae_cycle.py']],                           # 循环轴 → npz
+        # ---- 跨分组 ----
+        'hi-ae':    [['l1/evaluate_l1_hi_ae.py']],                     # 离线复评 HI_AE(默认 --batch 2)
+        'hi-hit':   [['l1/ae_hi.py']],                                 # C3/C4 的 HI_hit
+        'fbg':      [['l1/fbg_tools.py', 'profile']],                  # → _l1fbgprof_*.npz
+        'fbg-qa':   [['l1/fbg_tools.py', 'coverage']],                 # FBG 覆盖体检
+        'fbg-variants': [['l1/fbg_tools.py', 'variants']],             # 10 口径横向对比
+        'meta':     [['l1/pdf_specimen_meta.py', '--write'],
+                     ['l1/survey_groups.py']],                         # 元信息表 / 记录表
+        'dashboard':    [['l1/export_dashboard.py', '--ds', 'l1']],    # → dashboard/data/
+        'dashboard-v2': [['l1/export_dashboard.py', '--ds', 'l1v2']],
+        'dashboard-v3': [['l1/export_dashboard.py', '--ds', 'l1v3']],
+    },
+    'phmdc': {
+        'step0': [['phmdc/step0.py']],                                # → labels.csv / index.csv
+        'step1': [['phmdc/step1.py'],                                 # 特征 + 可行性 + 基线自洽
+                  ['phmdc/step1_model.py']],                          # LOSO 8 折 + 对照臂
+        'step2': [['phmdc/step2.py', '--chans', '2']],                # 1D 波形 CNN（训练）
+        'step3': [['phmdc/step3_extrap.py']],                         # 自检 + T7/T8 外推
+        'step4': [['phmdc/step4_perm.py', '--n-perm', '300',
+                   '--n-perm-global', '150', '--scheme', 'both']],    # 置换检验
+        'step5': [['phmdc/step5_uncertainty.py']],                    # t 区间 / bootstrap
     },
 }
 
+# 每个数据集的 task -> (名称, 说明)。名称带 "(重)" 表示耗时长或需要训练。
 DESC = {
-    'prepare':  ('数据准备/预处理', 'prepare_data.py align: 多源对齐', 'step0.py: 原始→CSV'),
-    'labels':   ('弱标签/失效锚', 'prepare_data.py weaklabels: b2/b3 弱标签', '（无弱标签；以 n_f 为失效锚）'),
-    'degree':   ('连续损伤度 D(t)+分级', 'evaluate.py degree: D 达阈/单调', 'evaluate_l1_degree.py: 基线重定义+应变漂移证据'),
-    'warning':  ('预警 onset/分级', 'evaluate.py warning: A-预警', '（含在 degree 输出的 results/l1_degree.csv）'),
-    'curves':   ('D(t) 曲线出图', 'evaluate.py curves: 5 组曲线', 'evaluate_l1_degree.py: 逐组图'),
-    'paper':    ('论文图表', 'evaluate.py paper: 四联图+流程图', 'reproduce_broer_l1.py: 论文 Level1/4 复现'),
-    'paper-l23': ('论文 L2/L3 复现', '—', 'reproduce_broer_l23.py: L3a 精确复现; L3b 未复现; AE 支路已接入(PCA2 73-75%)'),
-    'dfos':     ('分布式应变分析', '—', 'evaluate_l1_dfos.py: 逐块+热图'),
-    'fiber-hi': ('光纤块级 HI', '—', 'evaluate_l1.py: FBG 块级 HI'),
-    'robust':   ('稳健性/统计', 'robustness.py: sens/loso/ablation/stats', '— （未做）'),
-    'fusion':   ('源融合对照', 'fusion_compare.py: 5 组 × 9 配置', '—'),
-    'grade':    ('级别层异源分级', 'grade_compare.py: 刚度损失闸门', '—'),
-    'dashboard': ('看板数据导出', 'export_dashboard.py → dashboard/data/', 'export_dashboard_l1.py → dashboard/data/'),
+    'main': {
+        'prepare':  ('数据准备/预处理', 'prepare_data.py align：多源对齐'),
+        'labels':   ('弱标签/失效锚', 'prepare_data.py weaklabels：b2/b3 弱标签'),
+        'degree':   ('连续损伤度 D(t)+分级', 'evaluate.py degree：D 达阈/单调'),
+        'warning':  ('预警 onset/分级', 'evaluate.py warning：A-预警'),
+        'curves':   ('D(t) 曲线出图', 'evaluate.py curves：5 组曲线'),
+        'paper':    ('论文图表', 'evaluate.py paper：四联图+流程图'),
+        'robust':   ('稳健性/统计', 'robustness.py sens/loso/ablation/stats'),
+        'fusion':   ('源融合对照', 'fusion_compare.py：5 组 × 9 配置'),
+        'grade':    ('级别层异源分级', 'grade_compare.py：刚度损失闸门'),
+        'dashboard': ('看板数据导出', 'export_dashboard.py → dashboard/data/'),
+    },
+    'l1': {
+        'prepare':  ('[恒幅+FBG+DFOS] 原始 → CSV', 'step0.py（LUNA 逐行 + FBG + AE；--only 只重生一类）'),
+        'prepare-c2': ('[恒幅+DFOS] 原始 → CSV', 'step0.py --batch c2（LUNA 段级 + AE 1 s 分箱）'),
+        'degree':   ('[恒幅+FBG+DFOS] D(t)+分级', 'evaluate_l1_degree.py：基线重定义 + 应变漂移证据'),
+        'degree-v2': ('[恒幅+DFOS] 段级 D(t)', 'evaluate_l1_degree_v2.py：DFOS 脚部应变 + markers 锚'),
+        'curves':   ('[恒幅+FBG+DFOS] D(t) 出图', 'evaluate_l1_degree.py：逐组图'),
+        'paper':    ('论文 Level1/4', 'reproduce_broer_l1.py --mode all'),
+        'paper-l23': ('论文 Level2/3', 'reproduce_broer_l23.py --mode all（L3b 未复现）'),
+        'dfos':     ('分布式应变逐块', 'evaluate_l1_dfos.py --mode hi'),
+        'fiber-hi': ('光纤块级 HI', 'evaluate_l1.py --mode hi'),
+        'hi-ae':    ('离线复评 HI_AE', 'evaluate_l1_hi_ae.py（默认 --batch 2；见 §7 同名覆盖警告）'),
+        'hi-hit':   ('[变幅VA/谱载] HI_hit', 'ae_hi.py（累积 AE 命中数；非因果，只作离线复评）'),
+        'ae-dta':   ('[变幅VA/谱载] AE 体检概览 (重)', 'ae_dta.py export → l1/AE特征概览.csv（交付物）'),
+        'ae-frames': ('[变幅VA/谱载] AE 600 s 帧 (重)', 'ae_frames.py → results/_l1ae_frames_*.npz'),
+        'ae-cycle': ('[跨分组] 循环轴 (重)', 'ae_cycle.py → results/_l1cyc_*.npz（口径 holdgap）'),
+        'fbg':      ('FBG 剖面指标', 'fbg_tools.py profile → results/_l1fbgprof_*.npz'),
+        'fbg-qa':   ('FBG 覆盖体检', 'fbg_tools.py coverage（不读数据内容，快）'),
+        'fbg-variants': ('FBG 口径对比', 'fbg_tools.py variants（10 口径 + 单组诊断）'),
+        'meta':     ('试件元信息/记录表', 'pdf_specimen_meta.py --write + survey_groups.py'),
+        'dashboard':    ('[恒幅+FBG+DFOS] 看板数据', 'export_dashboard.py --ds l1'),
+        'dashboard-v2': ('[恒幅+DFOS] 看板数据', 'export_dashboard.py --ds l1v2'),
+        'dashboard-v3': ('[C3+C4] 看板数据', 'export_dashboard.py --ds l1v3'),
+    },
+    'phmdc': {
+        'step0': ('标签/索引', 'step0.py → labels.csv / index.csv（幂等，约 20 s）'),
+        'step1': ('特征 + LOSO', 'step1.py + step1_model.py（32 特征，8 折 + 10 对照臂）'),
+        'step2': ('1D 波形 CNN (重)', 'step2.py --chans 2（默认 5 seeds × 200 epochs）'),
+        'step3': ('自检 + T7/T8 外推', 'step3_extrap.py（约 10 s；T8 只能作方法演示）'),
+        'step4': ('置换检验 (重)', 'step4_perm.py --n-perm 300 --scheme both'),
+        'step5': ('t 区间 / bootstrap', 'step5_uncertainty.py（约 10 s）'),
+    },
 }
 
 
 def print_matrix():
-    print('任务矩阵 (dataset × task):\n')
-    hdr = f'{"task":<10}{"说明":<20}{"main (016-020)":<40}{"l1 (L1-03/04/05/09)":<40}'
-    print(hdr)
-    print('-' * len(hdr))
-    for t, (name, m, l) in DESC.items():
-        print(f'{t:<10}{name:<20}{m:<40}{l:<40}')
+    print('任务矩阵 (dataset × task)：\n')
+    for ds, tasks in TASKS.items():
+        print(f'== {ds} —— {DATASETS[ds]}')
+        for t in tasks:
+            name, note = DESC.get(ds, {}).get(t, ('', ''))
+            print(f'   {t:<15}{name:<24}{note}')
+        print()
+    print('用法: python run.py --dataset <数据集> --task <任务> [--dry-run] [-- <透传参数>]')
+    print('标 (重) 的任务耗时长或需要训练；`--task all` 会把这些一起跑。')
 
 
 def resolve(dataset, task):
@@ -103,7 +180,8 @@ def resolve(dataset, task):
 
 def main():
     ap = argparse.ArgumentParser(description='多源损伤度 D(t) —— 数据集统一入口')
-    ap.add_argument('--dataset', choices=list(TASKS), help='数据源: main | l1')
+    ap.add_argument('--dataset', choices=list(TASKS),
+                    help='数据源: ' + ' | '.join(TASKS))
     ap.add_argument('--task', help='任务名 (见 --list), 或 all')
     ap.add_argument('--list', action='store_true', help='打印任务矩阵')
     ap.add_argument('--paths', action='store_true', help='打印数据集路径映射（paths.json）并自检')

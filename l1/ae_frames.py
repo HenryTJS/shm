@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""L1 新组（C3 变幅 / C4 谱载）AE **帧级聚合** —— 把 1.96 亿条 hit 压成可分析的帧表。
+"""L1 新组（L1 变幅VA+FBG / L1 谱载+FBG）AE **帧级聚合** —— 把 1.96 亿条 hit 压成可分析的帧表。
 
 为什么需要它
 ------------
@@ -49,10 +49,14 @@ FRAME_S = 600.0
 A_THRESHOLD = 62.0            # 幅值阈值下限（dB），b 值基线；L1-41 为 67，组内自动取实测最小值
 BINS = np.arange(60.0, 101.0, 1.0)     # 熵的分箱
 
-# AE 时钟相对 FBG 日历的实测平移（天）：C4 谱载批慢 8 天，C3 变幅批同步
-CLOCK_SHIFT = {'L1-06': 0, 'L1-13': 0, 'L1-14': 0, 'L1-24': 0,
-               'L1-25': 8, 'L1-27': 8, 'L1-29': 8, 'L1-30': 8, 'L1-31': 8,
-               'L1-34': 8, 'L1-35': 8, 'L1-36': 8, 'L1-41': 8, 'L1-44': 8}
+# AE 时钟相对 FBG 日历的实测平移（天）：L1 谱载+FBG 组慢 8 天，L1 变幅VA+FBG 组同步
+# **唯一来源 = shm.datasets** 的分组表（原来这里又硬编码了一份）
+if REPO not in sys.path:
+    sys.path.insert(0, REPO)
+from shm.datasets import L1_CAMPAIGNS, clock_shift_days            # noqa: E402
+
+CLOCK_SHIFT = {g: clock_shift_days(g)
+               for d in L1_CAMPAIGNS.values() for g in d['members']}
 
 # 只需这几个特征；kind: u8/u16/i32/f32
 _WANT = {'RISE': 1, 'COUN': 3, 'DURATION': 5, 'AMP': 6,
@@ -202,7 +206,7 @@ def group_frames(gid, root=None, frame_s=FRAME_S, verbose=True):
     """把一组的全部卷按**日历时间**拼成一条帧序列。
 
     每卷的相对时间从 0 重新计时，因此用「该卷采集起始时刻 + RTOT」当绝对坐标，
-    再加上实测的 AE→FBG 钟差（C4 谱载批 8 天）。这样跨卷、跨天自动对齐。
+    再加上实测的 AE→FBG 钟差（L1 谱载+FBG批 8 天）。这样跨卷、跨天自动对齐。
     """
     root = root or _data_l1()
     shift = CLOCK_SHIFT.get(gid, 0)

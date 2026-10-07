@@ -33,7 +33,6 @@ RA/AF 绝对值跨试件不可比（受增益/几何影响），故：
 输出: results/_l1_raf_{gid}.npz + figures/l1_raf_{gid}.png
 """
 import os
-import io
 import sys
 import argparse
 import sqlite3
@@ -45,7 +44,12 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# 必须用 reconfigure（不用 TextIOWrapper(sys.stdout.buffer)：会共用 buffer，
+# 新 wrapper 被回收时把底层 stdout 一起关掉）
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:                       # noqa: BLE001
+    pass
 ROOT = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(ROOT, 'results')
 FIG = os.path.join(ROOT, 'figures')

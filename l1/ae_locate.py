@@ -36,7 +36,6 @@ PDF 明确给出两个方向的声速，差异达 60%：
 import argparse
 import csv
 import glob
-import io
 import os
 import re
 import sqlite3
@@ -45,10 +44,12 @@ import sys
 import numpy as np
 
 # ⚠️ Windows 控制台默认 GBK，输出含 µ/→ 等字符会 UnicodeEncodeError 直接崩。
-# 与 ae_raf.py / step0_v2.py / ae_shape_features.py 保持同一写法。
+# ⚠️ 必须用 reconfigure：`sys.stdout = io.TextIOWrapper(sys.stdout.buffer, ...)`
+# 会另建一层 wrapper 共用同一 buffer，新 wrapper 一旦被回收（重新赋值/GC）
+# 底层 stdout 就被连带关闭，后续打印全部 ValueError。
 try:
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
-except Exception:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:                       # noqa: BLE001
     pass
 
 HERE = os.path.dirname(os.path.abspath(__file__))

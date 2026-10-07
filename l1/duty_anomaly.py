@@ -8,7 +8,7 @@
 
 先排除掉两条不成立的线索
 ------------------------
-1. **窗距**：`fbg_variants --batch` 报的「窗距中位」只统计**加载窗之间**的间隔
+1. **窗距**：`fbg_tools.py variants --batch` 报的「窗距中位」只统计**加载窗之间**的间隔
    （停机窗不计入）⇒ 它天然看不见停机。实测 L1-31 与 L1-41 都是 406 s，
    而 gp 分别是 0.474 与 0.870 ⇒ 窗距解释不了 gp 的差异。
 2. **跨度**：L1-31 的 `span_h = 716.8 h` 里含 08-09 至 08-25 一段
@@ -222,7 +222,7 @@ def marks(gids, root):
     from ae_dta import iter_messages, _rtot
     print('=' * 118)
     print('.DTA 采集开关时间轴（ID 128=开始 / 129=停止 / 130=暂停，载荷 = 6 字节相对时间）')
-    print('  用途：证明「AE 在某个时段是否在录」。C4 谱载批的 AE 时钟比 FBG 慢整 8 天')
+    print('  用途：证明「AE 在某个时段是否在录」。L1 谱载+FBG批的 AE 时钟比 FBG 慢整 8 天')
     print('  （ae_frames.CLOCK_SHIFT），本表打印的是 **AE 自己的挂钟**，与 FBG 日历差 8 天。')
     print('=' * 118)
     for gid in gids:

@@ -3,13 +3,13 @@
 
 与 evaluate_l1_degree.py 的差异（那套依赖 FBG 块应变）：
   - 应变证据改用 **DFOS 脚部应变**（ODiSi-B 左/右脚空间段均值），
-    取自 step0_v2.py 的段级 `{gid}分布式应变.csv`
+    取自 `step0.py --batch c2` 的段级 `{gid}分布式应变.csv`
   - cycle 锚改用 **DFOS 测量段**（`l1_time_align.dfos_cycles`，按寿命均匀校准），
     因第二批 `段数×500/n_f` 实测 0.26~1.68（不恒为 1，PDF 亦注明 PA 测量会重置计数）
   - AE 事件按段聚合（段内峰值 sqrt(energy)），AE 时间经 markers 墙钟映射到 cycle
 
 ⚠️ 口径说明（2026-09-14 修订）：
-  初版用段级**中位**分布，丢失了段内 valley/peak 行的区分。现已由 `step0_v2.py`
+  初版用段级**中位**分布，丢失了段内 valley/peak 行的区分。现已由 `step0.py --batch c2`
   额外输出 `{gid}分布式应变_peak.csv`（段内**压缩峰值载荷行** = 两脚应变均值最负的行），
   本脚本优先用它 → 应变证据与第一批 FBG 的「块级循环幅值」语义一致。
 

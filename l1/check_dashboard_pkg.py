@@ -3,7 +3,7 @@
 
 为什么需要它
 ------------
-`export_dashboard_l1_v3.py` 生成的是 JS（`window.SHM_DATA['L1-xx'] = {...};`），
+`export_dashboard.py --ds l1v3` 生成的是 JS（`window.SHM_DATA['L1-xx'] = {...};` ），
 字段名错一个、数组长度差一个，前端都不会报错，只会**静默画歪或空白**。
 本脚本把每条 `window.SHM_DATA` 反解成 JSON，逐项校验：
 

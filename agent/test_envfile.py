@@ -1,11 +1,14 @@
 # -*- coding: utf-8 -*-
 """`.env` 加载器与 key 优先级的回归测试（零依赖、不联网）。"""
-import io
 import os
 import sys
 import tempfile
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# 见 gen_cases.py：必须用 reconfigure，不能用 TextIOWrapper(sys.stdout.buffer)
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:                       # noqa: BLE001
+    pass
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 

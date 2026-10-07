@@ -194,8 +194,8 @@ def ae_features(gid, grid, nf):
     """AE → 寿命进度 → 网格特征: hits/s, log-energy 峰值。
 
     兼容两种 AE CSV 格式:
-      V2 (`step0_v2.py`): 已是 1 s bin 聚合, 列 = time, n_hits, energy, amplitude
-      V1 (`step0.py`)   : hit 级原始记录, 列 = time, channel, amplitude, energy, ...
+      V2 (`step0.py --batch c2`): 已是 1 s bin 聚合, 列 = time, n_hits, energy, amplitude
+      V1 (`step0.py --batch c1`): hit 级原始记录, 列 = time, channel, amplitude, energy, ...
                           → 此处现场按 1 s bin 聚合成同样的 n_hits / energy
     """
     fp = os.path.join(ROOT, gid, f'{gid}声发射.csv')
@@ -377,7 +377,7 @@ def main():
     ap.add_argument('--groups', default=','.join(GROUPS))
     ap.add_argument('--grid', type=int, default=GRID)
     ap.add_argument('--queries', default='20,40,60,80',
-                    help='查询点(寿命%)')
+                    help='查询点(寿命%%；argparse 会对 help 做 %% 格式化，裸 %% 会崩)')
     a = ap.parse_args()
     grid = a.grid
     gid_list = [g.strip() for g in a.groups.split(',')]

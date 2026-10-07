@@ -43,7 +43,6 @@
 """
 import argparse
 import collections
-import io
 import itertools
 import json
 import os
@@ -55,8 +54,13 @@ from concurrent.futures import ThreadPoolExecutor
 
 # line_buffering：不加的话终端里是块缓冲（4~8 KB），
 # 而十几条进度总共不到 1 KB —— 长跑时看起来就像卡死了。
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8',
-                              errors='replace', line_buffering=True)
+# 用 reconfigure，**不要**用 `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, ...)`：
+# 那样会另建一层 wrapper 共用同一 buffer，新 wrapper 一旦被回收（重新赋值/GC）
+# 底层 stdout 就被连带关闭，后续打印全部 ValueError（2026-10-06 实测踩到）。
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
+except Exception:                       # noqa: BLE001
+    pass
 HERE = os.path.dirname(os.path.abspath(__file__))
 # Python 会把脚本所在目录放在 sys.path[0]。本目录里的 .py 若与标准库同名，
 # 会**遮蔽标准库** —— 曾有一个 inspect.py，导致 numpy 2.x 内部 `import inspect`

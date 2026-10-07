@@ -7,11 +7,14 @@ P16 处置建议须附证据，以及 maintenance 工具的定级一致性。
 这些用例同时是**论文里「物理约束有效性」的定性证据**：
 每条规则都给出「应拦截」与「应放过」两侧样本，避免规则只会拒答。
 """
-import io
 import os
 import sys
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# 见 gen_cases.py：必须用 reconfigure，不能用 TextIOWrapper(sys.stdout.buffer)
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:                       # noqa: BLE001
+    pass
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 

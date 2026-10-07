@@ -54,7 +54,7 @@ def load_fbg_blocks(gid):
 
     旧组（有 FBG）：用 FBG 时间戳 >GAP_S 的间隔划分块（每块 ≈5000 cycles）。
     第二批（L1-49..L1-56，**无 FBG**）：用 DFOS 自己的测量段
-    （`{gid}dfos_anchor.csv`，由 step0_v2.py 生成），丢弃行数 <30 的碎片段。
+    （`{gid}dfos_anchor.csv`，由 `step0.py --batch c2` 生成），丢弃行数 <30 的碎片段。
     实测段结构：每段 ≈120 行 @1 Hz（≈119 s），段间 ≈373 s。
     """
     fp = os.path.join(ROOT, gid, f'{gid}光纤.csv')

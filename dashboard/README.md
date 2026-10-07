@@ -41,7 +41,7 @@ C:\Users\ASUS\.conda\envs\xjtushm\python.exe -m http.server 8080
 | **损伤度仪表**   | 实时 D 值、分级色环、三档阈值刻度、峰值 D、寿命进度、剩余裕度                                                                                                           |
 | **D(t) 趋势**    | D 曲线 + risk 曲线、0.25/0.55/0.85 阈值带、b2/b3 锚、**论文 HI_F 灰色参考线**（仅 L1 第一批）、实时游标与跟随读数                                                             |
 | **分级预警**     | 三级指示灯（注意/预警/临危）、各级触发时刻、综合判定文案、证据条（e_ae / e_st / risk）                                                                                  |
-| **多源子面板**   | ① AE：事件率柱 + 峰值能量(log) ② FBG：多通道实时曲线 ③ 应变：波形 + 滑动波动 σ（L1 换为**FBG 块均值 + DFOS 局部峰**） ④ 证据层分解                           |
+| **多源子面板**   | ① AE：事件率柱 + 峰值能量(log) ② FBG：多通道实时曲线 ③ 应变：波形 + 滑动波动 σ（L1 换为**FBG 块均值 + DFOS 局部峰**） ④ 证据层分解。**② ③ 仅作信号展示，不参与 D(t) 计算**（交付口径 = AE 单源，见主 `README.md` §1.3(c)）；无对应源时面板显示「未接入」 |
 | **空间分布面板** | **仅 L1**：左 = 相对基线偏离**热图**（x=位置 mm, y=循环数，随回放自上而下生长）；右 = 当前块**空间分布曲线** vs 基线(块 0) + 偏离填充。主样本自动隐藏 |
 | **底栏**         | 报警与事件日志、多源通道健康表                                                                                                                                          |
 
@@ -82,12 +82,12 @@ set PY=C:\Users\ASUS\.conda\envs\xjtushm\python.exe
 %PY% main\export_dashboard.py               # 默认导出 11 组 (016-020 + 022-027)
 %PY% main\export_dashboard.py 016 017       # 指定组（注意: PowerShell 会吃掉前导零，
                                             #   脚本内已 zfill(3) 兜底）
-%PY% l1\export_dashboard_l1.py              # L1 第一批 4 组
-%PY% l1\export_dashboard_l1.py L1-03 L1-05  # 指定组
-%PY% l1\export_dashboard_l1.py --out <dir>  # 自定义输出目录
-%PY% l1\export_dashboard_l1_v2.py              # L1 第二批 9 组（无 FBG）
-%PY% l1\export_dashboard_l1_v2.py L1-49 L1-55  # 指定组
-%PY% l1\export_dashboard_l1_v2.py --out <dir>  # 自定义输出目录
+%PY% l1\export_dashboard.py --ds l1              # L1 第一批 4 组
+%PY% l1\export_dashboard.py --ds l1 L1-03 L1-05  # 指定组
+%PY% l1\export_dashboard.py --ds l1v2            # L1 第二批 9 组（无 FBG）
+%PY% l1\export_dashboard.py --ds l1v3            # L1 第三批（C3 变幅 + C4 谱载）
+%PY% l1\export_dashboard.py --ds all             # 三批全部
+%PY% l1\export_dashboard.py --ds l1 --out <dir>  # 自定义输出目录
 ```
 
 | 数据集 | 流程                                                                                           | 降采样                                                 |
@@ -115,12 +115,14 @@ L1-55→87.1%、L1-56→92.1%、L1-59→98.7%、L1-60→93.3%，均与 `l1/resul
 
 ```
 dashboard/data/
-├── index.js       # 主样本清单与摘要 (window.SHM_INDEX)          ← export_dashboard.py
+├── index.js       # 主样本清单与摘要 (window.SHM_INDEX)           ← main/export_dashboard.py
 ├── 016.js ...     # 主样本每组数据包 (window.SHM_DATA[gid])
-├── index_l1.js    # L1 第一批清单 (window.SHM_DATASETS['l1'])    ← export_dashboard_l1.py
+├── index_l1.js    # L1 第一批清单 (window.SHM_DATASETS['l1'])     ← l1/export_dashboard.py --ds l1
 ├── L1-03.js ...   # L1 第一批数据包 (window.SHM_DATA[gid])
-├── index_l1v2.js  # L1 第二批清单 (window.SHM_DATASETS['l1v2'])  ← export_dashboard_l1_v2.py
-└── L1-49.js ...   # L1 第二批数据包 (window.SHM_DATA[gid])
+├── index_l1v2.js  # L1 第二批清单 (window.SHM_DATASETS['l1v2'])   ← l1/export_dashboard.py --ds l1v2
+├── L1-49.js ...   # L1 第二批数据包 (window.SHM_DATA[gid])
+├── index_l1v3.js  # L1 第三批清单 (window.SHM_DATASETS['l1v3'])   ← l1/export_dashboard.py --ds l1v3
+└── L1-06.js ...   # L1 第三批数据包 (window.SHM_DATA[gid])
 ```
 
 ---
@@ -256,8 +258,10 @@ dashboard/
 ```
 
 > 在 N 个试件上扩展：主样本改 `main/export_dashboard.py` 尾部的组参；
-> L1 第一批改 `l1/export_dashboard_l1.py`、第二批改 `l1/export_dashboard_l1_v2.py`
-> （组集来自各自脚本的 `GROUPS`，新增试件放入 `l1/L1-xx/` 即可，无需改代码）。
+> L1 三批统一入口是 `l1/export_dashboard.py --ds {l1,l1v2,l1v3}`——
+> 第一/二批组集来自 `evaluate_l1_degree.META` 与 `evaluate_l1_degree_v2.GROUPS`，
+> 第三批组集来自 `shm.datasets.L1_CAMPAIGNS`（C3 变幅 + C4 谱载），
+> 新增试件放入 `l1/L1-xx/` 并在 `shm/datasets.py` 登记即可，无需改导出器。
 > 新增一个数据集：写一个导出器生成 `window.SHM_DATASETS['<id>']` + 同名清单，
 > 并在 `index.html` 里加一行 `<script src="data/index_<id>.js"></script>`。
 

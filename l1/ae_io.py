@@ -6,9 +6,9 @@
 `.pridb` 的 `Time` 是**各次采集自己的起算秒数**（采集中断后重开会从 ~0 重算），
 不是墙钟。若一个试件有多个 `.pridb`，**直接按 `Time` 拼接会把两个会话交错**：
 
-- `l1/step0.py` 旧行为：`concat` → `drop_duplicates(subset='time')` → `sort_values('time')`
+- `l1/step0.py --batch c1` 旧行为：`concat` → `drop_duplicates(subset='time')` → `sort_values('time')`
   （注释写「可能时间有重叠」⇒ 作者以为有重复，但实测两段**零重合**，去重无效）
-- `l1/step0_v2.py` / `ae_locate.py` / `ae_raf.py` / `ae_shape_features.py`：
+- `l1/step0.py --batch c2` / `ae_locate.py` / `ae_raf.py` / `ae_shape_features.py`：
   `sorted(glob(...))` + 按 `Time` 排序（同样交错）
 
 ## 实测两组有多段

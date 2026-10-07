@@ -57,7 +57,6 @@ Level 2 —— 损伤定位（论文 §"Level 2: damage localization"）
   python l1/reproduce_broer_l23.py --sweep                # 判据敏感度扫描
 """
 import argparse
-import io
 import os
 import sys
 
@@ -74,8 +73,7 @@ if HERE not in sys.path:
     sys.path.insert(0, HERE)
 
 try:                                    # Windows 控制台 GBK → µε/℃ 会崩
-    sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8',
-                                  errors='replace', line_buffering=True)
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace', line_buffering=True)
 except Exception:                       # noqa: BLE001
     pass
 

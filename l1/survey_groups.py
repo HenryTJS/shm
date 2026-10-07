@@ -11,7 +11,7 @@
         Damage locations variable.pdf          变幅组 冲击/脱粘位置
         table of specimen cycles to failure.pdf 谱载组 载荷级别与各级循环
         Damage locations spectrum.pdf          谱载组 冲击/脱粘位置
-  3) 汇总成 8 个 sheet 的 xlsx（试件总表 / 批次定义 / 数据资产 / 采集场次与时钟 /
+  3) 汇总成 8 个 sheet 的 xlsx（试件总表 / 分组定义 / 数据资产 / 采集场次与时钟 /
      接入注意 / FBG采集覆盖 / 长空隙清单 / AE特征概览）
 
 为什么单独成脚本（而不是直接接入 `l1/` 现有管线）：
@@ -21,7 +21,7 @@
     实现 MistrasDTA 逐字段一致，详见 `l1/ae_dta.py` 头部注释）
   · **FBG 是 Micron Optics sm130 的 `Sensors.<时间戳>.txt`**（ENLIGHT 导出），
     10 个应变通道（R1-R5 / L1-L5）+ 10 个波长通道；**采样率 = 1000 / Data Interleave**，
-    变幅组 5 Hz、谱载组 10 Hz —— **两批不一致**
+    变幅组 5 Hz、谱载组 10 Hz —— **两组不一致**
   · 新增组**只有 AE + FBG**，没有 LUNA(DFOS) 与 PZT 数据
 
 用法：
@@ -48,23 +48,22 @@ try:                                   # 头部时间 / FBG 时间戳解析复�
 except Exception:                      # noqa: BLE001
     dta_start_time = fbg_stamps = None
 
-# 4 个 campaign 的成员（来源见上：C3/C4 由 PDF 表推出；C1/C2 沿用既有分组）
-C1_CA1 = ['L1-03', 'L1-04', 'L1-05', 'L1-09']                          # Broer 2021，恒幅
-C2_CA2 = ['L1-49', 'L1-50', 'L1-51', 'L1-52', 'L1-54',
-          'L1-55', 'L1-56', 'L1-59', 'L1-60']                            # 恒幅二批
-C3_VA = ['L1-06', 'L1-13', 'L1-14', 'L1-24']                            # 变幅（本次新增）
-C4_SP = ['L1-25', 'L1-27', 'L1-29', 'L1-30', 'L1-31', 'L1-34',
-         'L1-35', 'L1-36', 'L1-41', 'L1-44']                             # 谱载（本次新增）
+# 4 个模态分组的成员：**唯一来源 = shm.datasets**（原来这里又抄了一份四组名单）
+# 'C1' 至 'C4' 只是短别名；语义名（模态 + 格式 + 加载谱）见 shm/datasets.py。
+_REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _REPO not in sys.path:
+    sys.path.insert(0, _REPO)
+from shm.datasets import (ALIAS_OF, L1_CAMPAIGNS,                  # noqa: E402
+                            campaign_members)
+
+C1_CA1 = campaign_members('C1')                                        # L1 恒幅+FBG+DFOS
+C2_CA2 = campaign_members('C2')                                        # L1 恒幅+DFOS
+C3_VA = campaign_members('C3')                                         # L1 变幅VA+FBG
+C4_SP = campaign_members('C4')                                         # L1 谱载+FBG
 NEW = set(C3_VA) | set(C4_SP)
-CAMPAIGN = {}
-for _g in C1_CA1:
-    CAMPAIGN[_g] = 'C1 恒幅一批'
-for _g in C2_CA2:
-    CAMPAIGN[_g] = 'C2 恒幅二批'
-for _g in C3_VA:
-    CAMPAIGN[_g] = 'C3 变幅 VA'
-for _g in C4_SP:
-    CAMPAIGN[_g] = 'C4 谱载'
+CAMPAIGN = {g: c for c, d in L1_CAMPAIGNS.items() for g in d['members']}
+# 恒幅两组（PDF 只给组内统一的单一载荷，无分级）
+_CONST_AMP = {CAMPAIGN[g] for g in C1_CA1 + C2_CA2}
 
 
 # --------------------------------------------------------------- 路径
@@ -317,10 +316,10 @@ def ae_in_window(gid, t0, t1):
 
 # ------------------------------------------------- 采集场次 / 时钟（实测）
 # 实测结论（2026-09-30 由文件头 ASCII 起始时刻、文件写入时间、FBG 分块时间三方对齐得出）：
-#   C3 变幅批：AE 采集时钟与 FBG 时钟同步（偏差 0 天）
-#   C4 谱载批：AE 采集时钟比 FBG 慢整 8 天（AE 全部时间需 +8 天才是 FBG 日历）
+#   L1 变幅VA+FBG批：AE 采集时钟与 FBG 时钟同步（偏差 0 天）
+#   L1 谱载+FBG批：AE 采集时钟比 FBG 慢整 8 天（AE 全部时间需 +8 天才是 FBG 日历）
 # 注意：这里只确定「两组之间的相对平移」，绝对日期仍需数据方确认。
-CLOCK_SHIFT_DAYS = {'C3 变幅 VA': 0, 'C4 谱载': 8}
+CLOCK_SHIFT_DAYS = {c: d['clock_shift_days'] for c, d in L1_CAMPAIGNS.items()}
 
 
 def ae_segments(root, gid):
@@ -502,7 +501,8 @@ def main(do_print_only=False):
         fbgp = fbg_profile(gd)
         shift = CLOCK_SHIFT_DAYS.get(camp)
 
-        rec = {'组号': g, '状态': '新增' if g in NEW else '既有', '批次': camp,
+        rec = {'组号': g, '状态': '新增' if g in NEW else '既有',
+               '数据分组': camp, '别名': ALIAS_OF.get(camp, ''),
                '组内PDF': '有' if os.path.exists(os.path.join(gd, g + '.pdf')) else '无',
                'AE': '有' if 'AE' in subs else '无',
                'AE格式': '', 'AE文件数': 0,
@@ -534,10 +534,10 @@ def main(do_print_only=False):
                                      for x in c['级别'])
             rec['n_f(总循环)'] = int(c['总循环'])
             rec['n_f来源'] = 'table of specimen cycles to failure.pdf（含 Total 行）'
-        # 恒幅两批：PDF 给的是「批次统一」的单一载荷，无分级
-        if not rec['载荷级别(kN)'] and camp in ('C1 恒幅一批', 'C2 恒幅二批'):
-            rec['冲击能量'] = '10 J（批次统一）'
-            rec['载荷级别(kN)'] = '-6.5/-65（批次统一）'
+        # 恒幅两组：PDF 给的是「组内统一」的单一载荷，无分级
+        if not rec['载荷级别(kN)'] and camp in _CONST_AMP:
+            rec['冲击能量'] = '10 J（组内统一）'
+            rec['载荷级别(kN)'] = '-6.5/-65（组内统一）'
             rec['各级循环'] = '等幅，无分级'
         if g in imp1:
             x, y, kind = imp1[g]
@@ -574,17 +574,17 @@ def main(do_print_only=False):
         sheet1.append(rec)
 
         for r in scan_assets(gd):
-            sheet3.append({'组号': g, '批次': camp, **r})
+            sheet3.append({'组号': g, '数据分组': camp, **r})
 
         for i, s in enumerate(segs, 1):
-            sheet5.append({'组号': g, '批次': camp, '类型': 'AE 采集段',
+            sheet5.append({'组号': g, '数据分组': camp, '类型': 'AE 采集段',
                            '编号/窗口': '%s' % s['file'], '体积MB': s['mb'],
                            'AE 头部起始': s['head'],
                            'AE 写入(结束)': _fmt_dt(s['mtime']),
                            'FBG 日历(平移后)': _shift_txt(s['head'], shift),
                            '说明': ae_seg_note(segs, i - 1)})
         for w in fbgp.get('windows', []):
-            sheet5.append({'组号': g, '批次': camp, '类型': 'FBG 窗口',
+            sheet5.append({'组号': g, '数据分组': camp, '类型': 'FBG 窗口',
                            '编号/窗口': '%s → %s（%d 天）' % (w[0], w[-1], len(w)),
                            '体积MB': '', 'AE 头部起始': '', 'AE 写入(结束)': '',
                            'FBG 日历(平移后)': '',
@@ -598,19 +598,19 @@ def main(do_print_only=False):
     df1['n_f(总循环)'] = df1['n_f(总循环)'].astype('Int64')
 
     sheet2 = pd.DataFrame([
-        dict(批次='C1 恒幅一批', 成员=' '.join(C1_CA1), 来源PDF='Impact_Locations.pdf（+ 各组 L1-xx.pdf 给 n_f）',
+        dict(数据分组='L1 恒幅+FBG+DFOS', 别名='C1', 成员=' '.join(C1_CA1), 来源PDF='Impact_Locations.pdf（+ 各组 L1-xx.pdf 给 n_f）',
              加载方式='10 J 冲击成 BVID → 等幅压-压疲劳', 载荷='−6.5 / −65 kN', 频率='2 Hz',
-             模态='AE(.pridb) + FBG + LUNA(DFOS)', 特点='论文 Broer 2021 Level1–4 复现对象；唯一同时有 AE+FBG+DFOS 的一批'),
-        dict(批次='C2 恒幅二批', 成员=' '.join(C2_CA2), 来源PDF='Damage locations.pdf（+ 各组 L1-xx.pdf 给 n_f）',
+             模态='AE(.pridb) + FBG + LUNA(DFOS)', 特点='论文 Broer 2021 Level1–4 复现对象；唯一同时有 AE+FBG+DFOS 的一组'),
+        dict(数据分组='L1 恒幅+DFOS', 别名='C2', 成员=' '.join(C2_CA2), 来源PDF='Damage locations.pdf（+ 各组 L1-xx.pdf 给 n_f）',
              加载方式='10 J 冲击 → 等幅压-压疲劳', 载荷='−6.5 / −65 kN', 频率='2 Hz',
              模态='AE(.pridb) + LUNA(DFOS)；无 FBG', 特点='已判定「不支持跨试件统一阈值的在线预警」：组间 AE 事件率相差 3 倍以上，自适应阈值反而比固定阈值差'),
-        dict(批次='C3 变幅 VA（新增）', 成员=' '.join(C3_VA), 来源PDF='tables of cycles variable.pdf + Damage locations variable.pdf',
+        dict(数据分组='L1 变幅VA+FBG', 别名='C3', 成员=' '.join(C3_VA), 来源PDF='tables of cycles variable.pdf + Damage locations variable.pdf',
              加载方式='阶梯变幅：逐级加大载荷，每级跑固定循环数；冲击位置在加筋条脚',
              载荷='−4.0/−40 → −4.5/−45 → −5.0/−50 → −5.5/−55 → −6.0/−60 kN（逐级）',
              频率='PDF 未给；实测反解 1.075 至 1.148 Hz（4 组，口径 holdgap）',
              模态='AE(.DTA, Mistras AEwin) + FBG(sm130, 5 Hz)',
-             特点='4 组共用同一套载荷级别 → 与恒幅批的「单一载荷」形成对照；对照组上无 DFOS'),
-        dict(批次='C4 谱载（新增）', 成员=' '.join(C4_SP), 来源PDF='table of specimen cycles to failure.pdf + Damage locations spectrum.pdf',
+             特点='4 组共用同一套载荷级别 → 与恒幅两组的「单一载荷」形成对照；本组无 DFOS'),
+        dict(数据分组='L1 谱载+FBG', 别名='C4', 成员=' '.join(C4_SP), 来源PDF='table of specimen cycles to failure.pdf + Damage locations spectrum.pdf',
              加载方式='多级块谱，每试件级别各自递增；L1-29 / L1-30 含 pristine（未冲击）段',
              载荷='按试件不同：−45.9 ~ −82.0 kN 之间多级组合',
              频率='PDF 未给；实测反解 1.821 至 2.119 Hz（7 个长测试组，口径 holdgap）',
@@ -633,7 +633,7 @@ def main(do_print_only=False):
              影响='`l1_meta.load_meta()` 对新组返回 None',
              建议='把 campaign PDF 解析结果固化成本表，或给 l1_meta 加 campaign 分支'),
         dict(项目='FBG 采样率', 现状='变幅组 5 Hz（Interleave 200）· 谱载组 10 Hz（Interleave 100）',
-             影响='两批不能直接合并；且载荷频率若为 2 Hz 会欠采样（同 DFOS 的老问题）',
+             影响='两组不能直接合并；且载荷频率若为 2 Hz 会欠采样（同 DFOS 的老问题）',
              建议='按批分别读取；先确认实际加载频率'),
         dict(项目='FBG 记录粒度', 现状='变幅组 1–2 个约 17 MB 的连续记录；谱载组上千个约 45 KB 的小文件',
              影响='没有统一的「5000 cycle 一块」锚（老组靠 FBG 块锚做时间对齐）',
@@ -642,10 +642,10 @@ def main(do_print_only=False):
              影响='老组那些依赖 DFOS 的证据（`e_strain`、DFOS 块级 HI、空间热图）在新组不可用',
              建议='新组按「AE 单源 + FBG 辅助」设计分析口径'),
         dict(项目='载荷频率', 现状='PDF 均未写频率（老组为 2 Hz）。现已从 AE+FBG 时序反解：变幅批 1.075 至 1.148 Hz；谱载批 1.821 至 2.119 Hz',
-             影响='① 影响块定义与预警提前量口径；② 两批相差近一倍，不能合并处理',
-             建议='向数据方书面确认（尤其变幅批的 1.1 Hz）；批次间差异是设备还是加载程序尚未知'),
+             影响='① 影响块定义与预警提前量口径；② 两组相差近一倍，不能合并处理',
+             建议='向数据方书面确认（尤其变幅批的 1.1 Hz）；分组间差异是设备还是加载程序尚未知'),
         dict(项目='AE 采集口径', 现状='新组为另一套采集系统（PCI2/DiSP），阈值与增益未知',
-             影响='正是「AE 阈值/增益跨 campaign 不同」的又一例，跨批比较须谨慎',
+             影响='正是「AE 阈值/增益跨 campaign 不同」的又一例，跨分组比较须谨慎',
              建议='先统计各组的 AE 事件数与幅值分布做横向体检'),
         dict(项目='AE 时钟平移', 现状='实测：谱载批(C4) 的 AE 文件时钟比 FBG 慢整 8 天；变幅批(C3) 两者同步',
              影响='不做平移，AE 与 FBG 的时间轴差 8 天，跨模态时间对齐必然失败',
@@ -679,8 +679,8 @@ def main(do_print_only=False):
              建议='换盘只改 paths.json 的 data_root 再跑 -Apply；'
                   'relink_data.ps1 的通配展开已改为「仓库侧 ∪ 数据盘侧」，盘上新增的组会自动补齐'),
         dict(项目='分析窗长', 现状='剖面分析按 140 行切一个窗 ⇒ 变幅批（5 Hz）= 28.0 s；谱载批（10 Hz）= 14.0 s',
-             影响='两批的「一块」物理时长不同，跨批比 e_st 的采样密度会失真（形状漂移本身仍可比）',
-             建议='跨批只比趋势不比绝对值；窗长写在此处，避免后人误以为两批都是 28 s'),
+             影响='两组的「一块」物理时长不同，跨分组比 e_st 的采样密度会失真（形状漂移本身仍可比）',
+             建议='跨分组只比趋势不比绝对值；窗长写在此处，避免后人误以为两组都是 28 s'),
         dict(项目='load_h 的定义（勿误读）',
              现状='load_h = sum(g) x 600 s / 3600，求和只跑在**AE 帧网格**上；'
                   '而帧网格是稀疏的 —— 只为有事件的时段建帧（L1-25 有 1668 帧，帧号跨度却是 5586，最大缺口 576.33 h）',
@@ -697,7 +697,7 @@ def main(do_print_only=False):
         camp = CAMPAIGN.get(g, '?')
         cov = fbg_coverage(gdir, rate=fbg_rate(gdir)[0])
         f, lh, fill = resolved_freq(g)
-        rec = {'组号': g, '批次': camp}
+        rec = {'组号': g, '数据分组': camp}
         if cov is None:
             rec.update({'FBG文件数': None, '文件间隔s': None, '跨度h': None,
                         '>2h空隙数': None, '空隙合计h': None,
@@ -711,7 +711,7 @@ def main(do_print_only=False):
             for (a, b) in cov['gaps']:
                 ev, tot = ae_in_window(g, a, b)
                 sheet7.append(dict(
-                    组号=g, 批次=camp,
+                    组号=g, 数据分组=camp,
                     起=_fmt_dt(a), 止=_fmt_dt(b),
                     时长h=round((b - a) / 3600.0, 1),
                     区间内AE事件=ev,
@@ -736,12 +736,12 @@ def main(do_print_only=False):
         sheet6.append(rec)
     df6 = pd.DataFrame(sheet6)
     df7 = pd.DataFrame(sheet7) if sheet7 else pd.DataFrame(
-        [dict(组号='(无)', 批次='', 起='', 止='', 时长h=None,
+        [dict(组号='(无)', 数据分组='', 起='', 止='', 时长h=None,
               区间内AE事件=None, 占全程AE事件比=None, 判定='无 >2 h 空隙')])
 
     with pd.ExcelWriter(OUT_XLSX, engine='openpyxl') as w:
         df1.to_excel(w, sheet_name='试件总表', index=False)
-        sheet2.to_excel(w, sheet_name='批次定义', index=False)
+        sheet2.to_excel(w, sheet_name='分组定义', index=False)
         df3.to_excel(w, sheet_name='数据资产', index=False)
         df5.to_excel(w, sheet_name='采集场次与时钟', index=False)
         sheet4.to_excel(w, sheet_name='接入注意', index=False)
@@ -758,7 +758,7 @@ def main(do_print_only=False):
 
     with pd.option_context('display.width', 220, 'display.max_columns', 50):
         print('\n===== 试件总表 =====')
-        print(df1[['组号', '状态', '批次', '组内PDF', 'AE格式', 'AE文件数',
+        print(df1[['组号', '状态', '数据分组', '别名', '组内PDF', 'AE格式', 'AE文件数',
                    'FBG', 'FBG采样率Hz', 'FBG文件数', 'DFOS(LUNA)',
                    '冲击能量', 'n_f(总循环)']].to_string(index=False))
     return df1, sheet2, df3, sheet4

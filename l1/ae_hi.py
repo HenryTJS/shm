@@ -54,10 +54,11 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(HERE, 'results')
 
-N_F = {'L1-06': 202300, 'L1-13': 243000, 'L1-14': 217000, 'L1-24': 242000,
-       'L1-25': 1580000, 'L1-27': 529000, 'L1-29': 1300000, 'L1-30': 10150,
-       'L1-31': 966000, 'L1-34': 1400, 'L1-35': 452000, 'L1-36': 4500,
-       'L1-41': 1820000, 'L1-44': 1160000}
+# n_f：**唯一来源 = shm.datasets**（这里原本还有一份重复的硬编码，已删）
+REPO = os.path.dirname(HERE)
+if REPO not in sys.path:
+    sys.path.insert(0, REPO)
+from shm.datasets import N_F                                        # noqa: E402
 
 
 def t_at(hi, axis, level):

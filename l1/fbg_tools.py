@@ -1,74 +1,43 @@
 # -*- coding: utf-8 -*-
-"""FBG 剖面指标升级版 —— 多口径横向对比 + 单组诊断。
+"""L1 的 FBG（光纤光栅）工具链 —— 剖面指标产线 + 覆盖体检 + 口径对比
+=================================================================
 
-背景
-----
-初版 `fbg_profile.py` 只给一个形状距离：
+三个子命令，覆盖 FBG 这一路的全部工作：
 
-    shape_l1 = |prof_k - prof_0|_1          （prof 为 10 通道按窗归一化剖面）
+| 子命令     | 干什么                                                                 | 产物 |
+| ---------- | ---------------------------------------------------------------------- | ---- |
+| `profile`  | 扫 FBG 原始文件（`FBG/*.txt`）→ 每个加载窗的 10 通道**归一化应变剖面**与形状指标 | `results/_l1fbgprof_{gid}.npz` + `results/l1_fbgprof_rank.csv` |
+| `coverage` | 文件级覆盖体检 + 空隙归因（不读数据内容）；`--load-h` 追加 `g_load` 补值核查 | 只打印报告 |
+| `variants` | 10 个形状口径横向对比 + 单组诊断（`--dump/--qc/--b-diag/--b-why/--qc-causal/--rank-check/--batch`） | `results/_l1fbgvar_*.npz` |
 
-跨 13 组得到 rho(shape_l1, 窗序) 正 7 / 负 1 / 弱 5，|rho| 中位 0.59（全场最高），
-但是**基线只取首窗**，且只有一种距离度量。本轮做两件事（用户选择 D + B）：
+为什么要用「形状」而不是「幅值」：同一加载窗内 10 个通道的应变峰值受载荷级支配
+（级间差 12 至 15%，还会波动 30%）⇒ 绝对值不可比；把它**按窗归一化**成 10 维分布向量后，
+载荷级的整体缩放被消掉，剩下的就是**应变剖面的形状**。脱粘/分层扩展会改变载荷路径
+⇒ 剖面形状漂移，这正是老组 B 批用 DFOS 验证过的物理量。
 
-  D) 在同一份剖面上横向对比 10 类口径，区分「全窗」与「暖机后」两个评价区间；
-  B) 诊断唯一明显反例 **L1-31**（shape_l1 rho = -0.559）。
-
-结论（2026-10-02 实测）
-----------------------
-
-   口径           全窗 P/N/W   |rho|中位    暖机后 P/N/W   |rho|中位
-   l1_first         7/1/4       0.64        8/1/3        0.58   ← 初版
-   l1_ref10         8/0/4       0.83        8/0/4        0.77
-   l1_ref25        10/0/2       0.73       11/0/1        0.80   ← 推荐
-   cos_first        7/1/4       0.67        7/1/4        0.68
-   js_first         8/1/3       0.52        8/2/2        0.48
-   l1_last         0/11/1       0.87         ——          ——     ← 伪
-   l1_mean          1/4/7       0.16         ——          ——     ← 伪
-   path            12/0/0       1.00         ——          ——     ← 构造性单调
-   cent_d           3/3/6       0.38         ——          ——
-   asym_d           3/4/5       0.34         ——          ——
-
-⇒ **把基线从「单个首窗」换成「前 25% 加载窗的中位剖面」，反例归零，
-   |rho| 中位 0.58 升到 0.80，并同时修好 L1-27（-0.23 → +0.72）
-   与 L1-31（-0.82 → +0.70）。**
-
-⚠️ 三条必须写进交付的边界
-  1. `path` 的 rho=1.00 是**累积路径长度只增不减**的数学必然，不是独立证据。
-  2. `l1_last` / `l1_mean` 的强负相关同理（离终值/均值越近，绝对值必然越小）。
-  3. Spearman 只看秩 ⇒ **单调变换不改变秩**，换轴后排名不变是数学必然，
-     不构成稳健性证据。
-
-混杂检验（重要）：`shape_l1` 会不会只是在跟踪载荷水平（p2p）？
-  |rho(l1_first, p2p)| 中位 0.262；|rho(l1_ref10, p2p)| 中位 0.326。
-  均远低于与寿命的相关 ⇒ **形状漂移不是载荷水平的替身**。
-
-口径清单（每窗一个标量）
-  l1_first   |p_k - p_0|_1                      初版口径
-  l1_ref10   |p_k - median(p[:10%])|_1          **稳健基线**（首 10% 中位，抗单窗异常）
-  l1_ref25   |p_k - median(p[:25%])|_1          更宽的稳健基线
-  l1_last    |p_k - p_{N-1}|_1                  非因果（上界参考）
-  l1_mean    |p_k - mean(p)|_1                  非因果（上界参考）
-  cos_first  1 - cos(p_k, p_0)                  角度距离
-  js_first   Jensen-Shannon(p_k, p_0)           分布距离（对单通道尖峰更敏感）
-  path       cumsum |p_k - p_{k-1}|_1           累积路径长度（必须单调不减）
-  cent_d     |centroid_k - centroid_0|          质心漂移（老组 B 批口径）
-  asym_d     |asym_k - asym_0|                  左右不对称漂移
-
-按窗序算 Spearman rho（与初版口径一致，便于直接对比）。
-强 = |rho| >= 0.5，中 = 0.3 至 0.5，弱 = < 0.3。
-
-只读 `results/_l1fbgprof_*.npz`，**不需要 E: 盘**。
+交付口径：**`shape_rob25`**（与前 25% 加载窗的中位剖面的 L1 距离）。初版 `shape_l1`
+（与首窗比）有一个反例（L1-31 得 -0.56）；换中位基线后反例归零、|rho| 中位 0.64 升到
+0.83。`variants` 的对比表就是这条结论的证据，见 `docs/details.md`。
 
 用法
 ----
-    python l1/fbg_variants.py                 # 全部组，出对比表
-    python l1/fbg_variants.py --dump L1-31    # 单组逐窗诊断
-    python l1/fbg_variants.py --qc            # 窗质量 / 载荷级匹配诊断（L1-14 查因）
-    python l1/fbg_variants.py --b-diag        # B 选了寿命的哪一段（已否证“时间带”假设）
-    python l1/fbg_variants.py --b-why         # 拆开 B：子集内容 vs 重算基线
-    python l1/fbg_variants.py --qc-causal     # A 的门槛能否改成因果形式（在线化）
-    python l1/fbg_variants.py --rank-check    # 核验排名统计量的基线口径（待办 1.5）
-    python l1/fbg_variants.py --batch         # 按 FBG 记录格式分批评估 rho（待办 1.1）
+    python l1/fbg_tools.py profile                  # 全部有 FBG 的组
+    python l1/fbg_tools.py profile L1-29 L1-41      # 指定组
+    python l1/fbg_tools.py coverage                 # 1 + 2（快）
+    python l1/fbg_tools.py coverage --load-h L1-31 L1-29   # 追加 g_load 补值核查（慢）
+    python l1/fbg_tools.py variants                 # 全部组，出对比表
+    python l1/fbg_tools.py variants --dump L1-31    # 单组逐窗诊断
+    python l1/fbg_tools.py variants --qc --b-diag   # 可组合几个诊断开关
+
+每个子命令的完整参数用 `python l1/fbg_tools.py <子命令> -h` 查看。
+
+说明
+----
+本文件由 `l1/fbg_profile.py`(235 行)、`l1/fbg_coverage.py`(202 行)、
+`l1/fbg_variants.py`(807 行) 合并而来：三段函数体**逐字保留**，只把三个 `main`
+改名成 `profile_main` / `coverage_main` / `variants_main`（后两个改为接收 argv），
+并把两处重名的 `_data_l1` 改名 `_data_l1_prof` / `_data_l1_cov`；公共脚手架
+（import / HERE / RES / 子命令分发）只写一份。见 `docs/details.md` §33。
 """
 
 import argparse
@@ -84,7 +53,363 @@ from scipy.stats import spearmanr
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(HERE, 'results')
+os.makedirs(RES, exist_ok=True)
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+if os.path.dirname(HERE) not in sys.path:
+    sys.path.insert(0, os.path.dirname(HERE))
 
+from ae_cycle import scan_fbg, P2P_LOAD                    # noqa: E402
+
+# ==================================================================
+# 子命令 profile —— FBG 应变剖面指标产线（写 results/_l1fbgprof_*.npz）
+# ==================================================================
+MIN_WIN = 5
+
+
+def profile_of(buf):
+    """一个窗的 10 通道峰峰值向量 → 归一化分布 + 特征。"""
+    a = np.asarray(buf, dtype=float)
+    with np.errstate(all='ignore'):
+        p2p = np.nanmax(a, axis=0) - np.nanmin(a, axis=0)
+    p2p = np.where(np.isfinite(p2p) & (p2p > 0), p2p, 0.0)
+    s = p2p.sum()
+    if s <= 0:
+        return None
+    v = p2p / s
+    A = v[:5].sum()
+    B = v[5:].sum()
+    idx = np.arange(len(v), dtype=float)
+    return {'prof': v, 'centroid': float((v * idx).sum()),
+            'argmax': int(np.argmax(v)), 'asym': float((A - B))}
+
+
+def group_profile(gid, root=None):
+    """该组的加载窗剖面序列 → 特征数组。"""
+    root = root or _data_l1_prof()
+    recs = []
+    for f in sorted(glob.glob(os.path.join(root, gid, 'FBG', '*.txt'))):
+        # 逐窗：scan_fbg 已按窗给出 (t, p2p)；这里要 10 通道，单独再扫一遍
+        recs.extend(_scan_windows(f))
+    if len(recs) < MIN_WIN:
+        return None
+    recs.sort(key=lambda r: r['t'])
+    prof = np.asarray([r['prof'] for r in recs])
+    base = prof[0]
+    l1 = np.abs(prof - base).sum(axis=1)
+    # 稳健基线：前 10% / 25% 加载窗的**中位剖面**，抗单窗异常。
+    # 实测（见 `fbg_tools.py variants`）：单首窗口径有 1 个反例（L1-31 为 -0.56），
+    # 换中位基线后反例归零，|rho| 中位由 0.64 升到 0.83（全窗）/ 0.80（暖机后）。
+    n = prof.shape[0]
+    k10 = max(1, int(round(n * 0.10)))
+    k25 = max(1, int(round(n * 0.25)))
+    rob10 = np.abs(prof - np.median(prof[:k10], axis=0)).sum(axis=1)
+    rob25 = np.abs(prof - np.median(prof[:k25], axis=0)).sum(axis=1)
+    return {'t': np.asarray([r['t'] for r in recs]),
+            'p2p_med': np.asarray([r['p2p'] for r in recs]),
+            'p2p_ch': np.asarray([r['p2p_ch'] for r in recs]),
+            'shape_l1': l1,
+            'shape_rob10': rob10,
+            'shape_rob25': rob25,
+            'centroid': np.asarray([r['centroid'] for r in recs]),
+            'argmax': np.asarray([r['argmax'] for r in recs]),
+            'asym': np.asarray([r['asym'] for r in recs]),
+            'prof': prof}
+
+
+def _scan_windows(path, window_lines=140):
+    """与 ae_cycle.scan_fbg 同样的分窗方式，但保留 10 通道向量。
+
+    表头按**内容**识别（首个能解析出时间戳且第 3 到 12 列均为浮点的行）。
+    注意：标定式行有 17 列，**不能**用「字段数 >= 12」当数据判据。
+    实测结果与旧版硬编码 `i < 60` 逐位相同（数据确实从第 60 行起）。
+    """
+    from ae_cycle import _file_dt, _parse_ts
+    ref = _file_dt(path)
+    out, buf, t0 = [], [], None
+    with open(path, encoding='utf-8', errors='replace') as fh:
+        for ln in fh:
+            p = ln.split()
+            if len(p) < 12:
+                continue
+            try:
+                vals = [float(x) for x in p[2:12]]
+            except ValueError:
+                continue
+            ts = _parse_ts(p[0] + ' ' + p[1], ref)
+            if ts is None:               # 表头残留行
+                continue
+            if t0 is None:
+                t0 = ts
+            buf.append(vals)
+            if len(buf) >= window_lines:
+                r = _win(buf, t0)
+                if r:
+                    out.append(r)
+                buf, t0 = [], None
+    if buf:
+        r = _win(buf, t0)
+        if r:
+            out.append(r)
+    return out
+
+
+def _win(buf, t0):
+    if t0 is None or not buf:
+        return None
+    d = profile_of(buf)
+    if d is None:
+        return None
+    a = np.asarray(buf, dtype=float)
+    with np.errstate(all='ignore'):
+        p2 = np.nanmax(a, axis=0) - np.nanmin(a, axis=0)
+    # 逐通道峰峰值要**在过滤前**留副本：过滤后长度可能不足 10，
+    # 而看板的 FBG 面板要求固定 10 个通道。非有限值补 0。
+    p2_ch = np.where(np.isfinite(p2), p2, 0.0)
+    p2 = p2[np.isfinite(p2)]
+    if len(p2) == 0:
+        return None
+    med = float(np.median(p2))
+    if med <= P2P_LOAD:                # 只留加载窗
+        return None
+    r = {'t': t0, 'p2p': med, 'p2p_ch': p2_ch}
+    r.update(d)
+    return r
+
+
+def profile_main(argv):
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+    root = _data_l1_prof()
+    gids = argv or sorted(d for d in os.listdir(root)
+                          if d.startswith('L1-')
+                          and glob.glob(os.path.join(root, d, 'FBG', '*.txt')))
+    try:
+        from scipy.stats import spearmanr
+    except Exception:                                        # noqa: BLE001
+        spearmanr = None
+    print('%-7s %7s %10s %10s %10s %10s' % (
+        '组', '加载窗', 'shapeL1中位', '末段L1', 'rho(L1,窗序)', '质心漂移'))
+    rows = []
+    for gid in gids:
+        d = group_profile(gid, root)
+        if d is None:
+            print('%-7s %7s' % (gid, '窗数不足'))
+            continue
+        np.savez_compressed(os.path.join(RES, '_l1fbgprof_%s.npz' % gid),
+                            t=d['t'], p2p_med=d['p2p_med'], p2p_ch=d['p2p_ch'],
+                            shape_l1=d['shape_l1'],
+                            shape_rob10=d['shape_rob10'],
+                            shape_rob25=d['shape_rob25'],
+                            centroid=d['centroid'], argmax=d['argmax'],
+                            asym=d['asym'], prof=d['prof'])
+        n = len(d['t'])
+        idx = np.arange(n, dtype=float)
+        rho = np.nan
+        if spearmanr is not None and n >= 8:
+            rho = float(spearmanr(idx, d['shape_l1'])[0])
+        k = max(int(n * 0.3), 1)
+        rows.append((gid, n, float(np.median(d['shape_l1'])),
+                     float(np.median(d['shape_l1'][-k:])), rho,
+                     float(d['centroid'][-k:].mean() - d['centroid'][:k].mean())))
+        print('%-7s %7d %10.3f %10.3f %10.3f %10.3f'
+              % (gid, n, np.median(d['shape_l1']), np.median(d['shape_l1'][-k:]),
+                 rho, rows[-1][5]))
+    if rows:
+        import csv
+        out = os.path.join(RES, 'l1_fbgprof_rank.csv')
+        with open(out, 'w', newline='', encoding='utf-8-sig') as fh:
+            w = csv.writer(fh)
+            w.writerow(['组号', '加载窗', 'shapeL1中位', '末段L1', 'rho_shapeL1_vs_窗序',
+                        '质心漂移'])
+            w.writerows(rows)
+        rr = [r[4] for r in rows if np.isfinite(r[4])]
+        if rr:
+            print('\nrho(形状漂移, 窗序) 方向：正 %d / 负 %d / 弱 %d（共 %d 组），|rho| 中位 %.2f'
+                  % (sum(1 for v in rr if v > 0.3), sum(1 for v in rr if v < -0.3),
+                     sum(1 for v in rr if abs(v) <= 0.3), len(rr),
+                     float(np.median(np.abs(rr)))))
+        print('已写出 ->', out)
+    return 0
+
+
+def _data_l1_prof():
+    here = HERE
+    root = os.path.dirname(here)
+    if root not in sys.path:
+        sys.path.insert(0, root)
+    try:
+        from shm import paths
+        p = os.path.join(paths.data_root(), 'l1')
+        if os.path.isdir(p):
+            return p
+    except Exception:                                        # noqa: BLE001
+        pass
+    return here
+
+
+# ==================================================================
+# 子命令 coverage —— FBG 采集覆盖体检与空隙归因（只读文件与 npz，不写产物）
+# ==================================================================
+FRAME_S = 600.0
+
+
+def _data_l1_cov():
+    if os.path.dirname(HERE) not in sys.path:
+        sys.path.insert(0, os.path.dirname(HERE))
+    try:
+        from shm import paths
+        p = os.path.join(paths.data_root(), 'l1')
+        if os.path.isdir(p):
+            return p
+    except Exception:                                        # noqa: BLE001
+        pass
+    return HERE
+
+
+def _file_times(fs):
+    import datetime
+    return np.array([
+        datetime.datetime.strptime(os.path.basename(f)[8:22],
+                                   '%Y%m%d%H%M%S').timestamp() for f in fs])
+
+
+def survey(root):
+    """文件级体检 + 空隙归因。"""
+    print('=' * 104)
+    print('FBG 文件级覆盖体检（活跃期覆盖率 = 小间隙内的实有文件 / 应有 slot）')
+    print('=' * 104)
+    hdr = (f"{'组':<8}{'文件':>6}{'间隔s':>7}{'跨度h':>8}{'>2h空隙':>9}{'空隙h':>8}"
+           f"{'活跃覆盖率':>11}{'有效观测h':>11}{'空隙内AE事件':>13}{'判定':>12}")
+    print(hdr)
+    print('-' * len(hdr))
+    rows = []
+    for gid in sorted(os.listdir(root)):
+        fs = sorted(glob.glob(os.path.join(root, gid, 'FBG', '*.txt')))
+        if not fs:
+            continue
+        if len(fs) < 4:
+            # 单文件/双文件大文件组（L1-03/04/05/06/09/13/14/24/34…）：
+            # 「文件间隔」和「空隙」概念不适用，整条试验就在文件内容里
+            tot = sum(os.path.getsize(f) for f in fs) / 1e6
+            print(f'{gid:<8}{len(fs):>6}  （大文件组，共 {tot:.0f} MB，不做覆盖/空隙判定）')
+            continue
+        tt = _file_times(fs)
+        if len(tt) < 2:
+            continue
+        g = np.diff(tt)
+        small = g[g <= 7200]
+        iv = float(np.median(small)) if len(small) else float(np.median(g))
+        span = (tt[-1] - tt[0]) / 3600.0
+        big = g[g > 7200]
+        exp = small.sum() / iv
+        act = len(fs) - len(big)
+        cov = 100.0 * act / max(exp, 1.0)
+
+        # 空隙归因：该区间内 AE 事件数
+        ae_ev, ae_tot, note = 0.0, 0.0, '—'
+        p = os.path.join(RES, '_l1ae_frames_%s.npz' % gid)
+        if len(big) and os.path.exists(p):
+            z = np.load(p, allow_pickle=True)
+            td = np.asarray(z['t_day'], dtype=float)
+            n = np.asarray(z['n'], dtype=float)
+            ae_tot = float(n.sum())
+            idx = np.where(g > 7200)[0]
+            for i in idx:
+                m = (td >= tt[i] / 86400.0) & (td <= tt[i + 1] / 86400.0)
+                ae_ev += float(n[m].sum())
+            frac = 100.0 * ae_ev / max(ae_tot, 1.0)
+            note = ('试验暂停' if frac <= 2.0 else '**需查**（空隙内有活动 %.2f%%）' % frac)
+        rows.append((gid, len(fs), iv, span, len(big), big.sum() / 3600.0, cov,
+                     len(fs) * 20.0 / 3600.0, ae_ev, ae_tot, note))
+
+    for r in rows:
+        print(f'{r[0]:<8}{r[1]:>6}{r[2]:>7.0f}{r[3]:>8.1f}{r[4]:>9}'
+              f'{r[5]:>8.1f}{r[6]:>10.1f}%{r[7]:>11.1f}{r[8]:>13.0f}{r[10]:>12}')
+
+    print('\n读法：')
+    print('  · 「活跃覆盖率」才是覆盖率；跨度里的长空隙若同时 AE 事件近零，属试验暂停。')
+    print('  · 「有效观测h」= 文件数 x 20 s —— 突发式采集的真实观测时长，通常远小于跨度。')
+    return rows
+
+
+def load_h_check(root, gids):
+    """补值体检：扫 FBG 内容，统计真实加载占比与只用实测的加载时长。"""
+    from ae_cycle import scan_fbg, P2P_LOAD
+    print('\n' + '=' * 104)
+    print('补值体检：AE 帧（600 s）与 FBG 突发（420 s / 240 s，每文件 2 个 140 行窗）的对齐')
+    print('=' * 104)
+    for gid in gids:
+        p = os.path.join(RES, '_l1cyc_%s.npz' % gid)
+        q = os.path.join(RES, '_l1ae_frames_%s.npz' % gid)
+        if not os.path.exists(q):
+            print(f'{gid}: 缺 AE 帧表')
+            continue
+        z = np.load(q, allow_pickle=True)
+        t_sec = z['frame'].astype(float) * FRAME_S
+
+        pts = []
+        n_files = 0
+        for f in sorted(glob.glob(os.path.join(root, gid, 'FBG', '*.txt'))):
+            n_files += 1
+            pts.extend(scan_fbg(f))
+        if not pts:
+            print(f'{gid}: 无 FBG 窗')
+            continue
+        pts.sort(key=lambda x: x[0])
+        tf = np.array([x[0] for x in pts])
+        lf = np.array([1.0 if x[1] > P2P_LOAD else 0.0 for x in pts])
+        gp = float(lf.mean())
+
+        cnt = np.array([int(((tf >= t - FRAME_S / 2) &
+                             (tf < t + FRAME_S / 2)).sum()) for t in t_sec])
+        imp = int((cnt < 3).sum())
+        # ⚠️ 有效观测时长必须按**文件数 x 20 s** 算；按窗数算会高估约 2 倍
+        obs_h = n_files * 20.0 / 3600.0
+        frac_load = float(lf.mean())
+        load_h_meas = obs_h * frac_load
+
+        old = np.load(p, allow_pickle=True) if os.path.exists(p) else None
+        lh_old = float(old['load_h']) if old is not None else float('nan')
+        nf = float(old['n_f']) if (old is not None and old['n_f']) else float('nan')
+        f_old = float(old['f_hz']) if old is not None else float('nan')
+
+        print(f'\n--- {gid} ---')
+        print(f'  AE 帧 {len(t_sec)}  每帧 ±300 s 内 FBG 窗数中位 {np.median(cnt):.0f}'
+              f'  <3 的帧 {imp} ({100.0*imp/len(t_sec):.1f}%)'
+              f'  <1 的帧 {int((cnt < 1).sum())}')
+        print(f'  FBG 文件 {n_files}  窗 {len(tf)}  加载窗 {int(lf.sum())}  '
+              f'真实全局加载占比 gp={gp:.3f}')
+        print(f'  FBG 有效观测 {obs_h:.1f} h（= 文件数 x 20 s），其中加载 {load_h_meas:.1f} h')
+        print(f'  旧口径 load_h={lh_old:.1f} h（含外推）→ 反解 f={f_old:.3f} Hz')
+        if load_h_meas > 0 and np.isfinite(nf):
+            fm = nf / (load_h_meas * 3600)
+            print(f'  若只用 FBG 实测时长：f = {nf:.0f}/({load_h_meas:.1f} x 3600) '
+                  f'= {fm:.2f} Hz  <-- **荒谬值，说明此路不通**')
+            need_h = nf / 2.0 / 3600.0
+            print(f'  按名义 2 Hz 反推需要的加载时长 = {need_h:.1f} h，'
+                  f'而 FBG 只观测到 {obs_h:.1f} h（{100.0*obs_h/need_h:.0f}%）')
+            print('  ⇒ 结论：FBG 观测时长远短于加载时长，load_h **不可能**由 FBG 直接测得，'
+                  '只能外推；因此本组的「反解载荷频率」自检**不可靠**，'
+                  '不能反过来当作数据异常的证据。')
+
+
+def coverage_main(argv=None):
+    ap = argparse.ArgumentParser()
+    ap.add_argument('--load-h', nargs='*', default=[],
+                    help='对这些组追加补值体检（需扫 FBG，较慢）')
+    ap.add_argument('--root', default=None)
+    a = ap.parse_args(argv)
+    root = a.root or _data_l1_cov()
+    print(f'数据根目录: {root}')
+    survey(root)
+    if a.load_h:
+        load_h_check(root, a.load_h)
+
+
+# ==================================================================
+# 子命令 variants —— 10 个剖面口径的横向对比与诊断（读 _l1fbgprof_*.npz）
+# ==================================================================
 VARIANTS = ['l1_first', 'l1_ref10', 'l1_ref25', 'l1_last', 'l1_mean',
             'cos_first', 'js_first', 'path', 'cent_d', 'asym_d']
 
@@ -206,7 +531,7 @@ def analyze(warm=WARM, save=True):
     """全窗 + 暖机后双口径对比。"""
     data = _collect()
     if not data:
-        print('没有可用的 _l1fbgprof_*.npz（需先跑 fbg_profile.py 生成 prof 字段）')
+        print('没有可用的 _l1fbgprof_*.npz（需先跑 fbg_tools.py profile 生成 prof 字段）')
         return None
     gids = list(data)
     allrows, postrows, confrows = [], [], []
@@ -652,7 +977,7 @@ def rank_check(warm=WARM):
     return rows, rank_fix
 
 
-BATCH_A = ['L1-06', 'L1-13', 'L1-14', 'L1-24']      # C3 变幅 VA，连续长记录型 FBG
+BATCH_A = ['L1-06', 'L1-13', 'L1-14', 'L1-24']      # L1 变幅VA+FBG，连续长记录型 FBG
 
 
 def _acf1(y):
@@ -669,7 +994,7 @@ def _acf1(y):
 def _block_perm_rho(shape, n_perm=400, block=20, seed=7):
     """循环分块置换的零分布 —— 保留自相关、只打乱顺序。
 
-    ⚠️ 为什么不能用「随机子样本」当零分布：批次 A 是**连续长记录**上的 28 s 切片，
+    ⚠️ 为什么不能用「随机子样本」当零分布：分组 A 是**连续长记录**上的 28 s 切片，
     相邻窗强自相关，随机打散会破坏这个结构，零分布偏窄 ⇒ p 值偏小。
     循环分块置换把序列按 block 长度切块再随机拼接，**保留了块内结构**。
     """
@@ -692,17 +1017,17 @@ def _block_perm_rho(shape, n_perm=400, block=20, seed=7):
 def batch_review(warm=WARM, n_perm=400, block=20):
     """按 FBG 记录格式分批评估 `shape_rob25` 的 rho（待办 1.1）。
 
-    动机：批次 A（C3 变幅，L1-06/13/14/24）是**连续长记录**型 FBG ——
+    动机：分组 A（L1 变幅VA+FBG，L1-06/13/14/24）是**连续长记录**型 FBG ——
     相邻窗是同一条记录上的 28 s 切片，强自相关；
-    批次 B（C4 谱载）是**每 7 分钟 20 秒快照** —— 窗之间近乎独立。
-    同一个 rho 在两批的**有效样本量**相差很多，
+    分组 B（L1 谱载+FBG）是**每 7 分钟 20 秒快照** —— 窗之间近乎独立。
+    同一个 rho 在两组的**有效样本量**相差很多，
     所以直接比较「|rho| 中位」或「反例数」并不对等。
 
     本诊断给出：每组窗数、相邻窗时距中位、剖面序列的滞后 1 自相关、
     有效样本量 n_eff = n(1-a1)/(1+a1)，以及
       · rho —— 固定基线（全窗 `l1_ref25`）口径的暖机后 rho；
       · p_block —— 循环分块置换零分布下 |rho| 的 p 值（保留自相关）。
-    再按批次汇总，回答「批次 A 的 4 组是否撑得住同一个结论」。
+    再按分组汇总，回答「分组 A 的 4 组是否撑得住同一个结论」。
     """
     data = _collect()
     if not data:
@@ -733,7 +1058,7 @@ def batch_review(warm=WARM, n_perm=400, block=20):
         print('%-7s %4s %6d %9.1f %8.3f %8s | %8.3f %8.3f'
               % (g, b, n, dt, a1, ('%.0f' % neff) if ok_eff else '退化*', rho, p))
 
-    print('\n按批次汇总（固定基线口径）')
+    print('\n按分组汇总（固定基线口径）')
     print('%-4s %4s %10s %10s %16s %10s %11s' % (
         '批', '组数', '|rho|中位', 'rho 中位', '反例(rho<-0.3)', 'acf1中位', 'n_eff中位'))
     for b in ('A', 'B'):
@@ -760,7 +1085,7 @@ def batch_review(warm=WARM, n_perm=400, block=20):
     return rows
 
 
-def main():
+def variants_main(argv=None):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     ap = argparse.ArgumentParser()
@@ -784,7 +1109,7 @@ def main():
                     help='载荷级匹配带宽（相对中位 p2p），默认 0.10')
     ap.add_argument('--qc-rel', type=float, default=QC_REL,
                     help='窗质量控制门槛（相对中位 p2p），默认 0.80')
-    a = ap.parse_args()
+    a = ap.parse_args(argv)
     if a.dump:
         dump(a.dump)
     elif a.batch:
@@ -802,6 +1127,56 @@ def main():
     else:
         analyze(warm=a.warm)
 
+# ==================================================================
+# 子命令分发
+# ==================================================================
+USAGE = """L1 的 FBG 工具链 —— 选一个子命令：
+
+  profile    扫 FBG 原始文件 → results/_l1fbgprof_{gid}.npz + l1_fbgprof_rank.csv
+             python l1/fbg_tools.py profile [L1-29 L1-41 ...]
+  coverage   文件级覆盖体检 + 空隙归因（快，不读数据内容）
+             python l1/fbg_tools.py coverage [--load-h L1-31 L1-29] [--root DIR]
+  variants   10 个口径横向对比 + 单组诊断
+             python l1/fbg_tools.py variants [--dump L1-31 | --qc | --b-diag | --b-why |
+                                              --qc-causal | --rank-check | --batch]
+
+每个子命令的完整参数：python l1/fbg_tools.py <子命令> -h
+"""
+
+PROFILE_USAGE = """用法: python l1/fbg_tools.py profile [组号 ...]
+
+  不带组号 = 处理全部「FBG 目录下有 .txt」的组。
+  产物: results/_l1fbgprof_{gid}.npz 与 results/l1_fbgprof_rank.csv
+        （字段: t / p2p_med / p2p_ch / shape_l1 / shape_rob10 / shape_rob25 /
+                 centroid / argmax / asym / prof）
+"""
+
+_SUBS = {
+    'profile': profile_main,
+    'coverage': coverage_main,
+    'variants': variants_main,
+}
+
+
+def main():
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    argv = sys.argv[1:]
+    if not argv or argv[0] in ('-h', '--help'):
+        print(USAGE)
+        return 0
+    cmd, rest = argv[0], argv[1:]
+    fn = _SUBS.get(cmd)
+    if fn is None:
+        print(f'未知子命令: {cmd}')
+        print(USAGE)
+        return 2
+    if cmd == 'profile' and any(x in ('-h', '--help') for x in rest):
+        print(PROFILE_USAGE)          # profile 的子参数是「组号」，没有 argparse
+        return 0
+    r = fn(rest)
+    return 0 if r is None else r
+
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

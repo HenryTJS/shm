@@ -16,7 +16,7 @@ A. Broer et al. 2021, Struct Health Monit 20(2) —— Level 4 严重度
    `HI_F = 0.5·HI_AE + 0.5·HI_OF`，其中 **HI_AE = 每 500 cycles 累积 AE 能量**
    （全局累积 → 天然单调）；论文自述其优点是 "inherent monotonic behavior
    with the number of fatigue cycles"。
-   已在 `reproduce_broer_l1.py` 复现：第一批 4 组 t85 = **79~95%** 寿命（不早报）。
+   已在 `reproduce_broer_l1.py` 复现：L1 恒幅+FBG+DFOS 4 组 t85 = **79~95%** 寿命（不早报）。
 B. Galanopoulos et al. 2021, Sensors 21, 5701（同一批试件的 HI 开发论文）
    - 选 500 cycles 作窗口的理由：趋势平滑，且能与 FBG 共享同一测量区间以便融合；
    - Eq.10 `HI_AE(t) = Σ_{i=t-T}^{t} F(i)`，T = 500 cycles，F = hits 或 RA
@@ -39,11 +39,11 @@ B. Galanopoulos et al. 2021, Sensors 21, 5701（同一批试件的 HI 开发论�
   - 以及最实用的一条：**先用各试件失效值的中位作阈值，再反算各组的达阈寿命百分比** ——
     这直接回答"会不会过早临危"。
   - 另对照 Broer Level-4 的**自归一化 + 固定分数**（各组自身归一化后取 0.50/0.85）→
-    其 t85 可与第一批已复现的 79~95% 直接比较（见表 t85_*）。
+    其 t85 可与L1 恒幅+FBG+DFOS已复现的 79~95% 直接比较（见表 t85_*）。
 
 用法:
-  python evaluate_l1_hi_ae.py                      # 第二批 9 组（默认）
-  python evaluate_l1_hi_ae.py --batch both         # 并入第一批 4 组对照
+  python evaluate_l1_hi_ae.py                      # L1 恒幅+DFOS 9 组（默认）
+  python evaluate_l1_hi_ae.py --batch both         # 并入L1 恒幅+FBG+DFOS 4 组对照
   python evaluate_l1_hi_ae.py --groups L1-49,L1-60
 输出:
   results/l1_hi_ae.csv           逐组 × 逐指标
@@ -105,9 +105,9 @@ _RB = None
 def _cycle_of(gid, t, nf):
     """时间 → cycle。
 
-    有 `{gid}dfos_anchor.csv` 的组（第二批，无 FBG）用 DFOS 段锚
+    有 `{gid}dfos_anchor.csv` 的组（L1 恒幅+DFOS，无 FBG）用 DFOS 段锚
     （`clip_out_of_life=True`：剔除冲击前 BI 事件，它们不属于疲劳寿命）；
-    否则（第一批）回退 FBG 块锚 —— 按文件路径加载，避免与本模块同目录互相遮蔽。
+    否则（L1 恒幅+FBG+DFOS）回退 FBG 块锚 —— 按文件路径加载，避免与本模块同目录互相遮蔽。
     """
     if os.path.exists(os.path.join(ROOT, gid, f'{gid}dfos_anchor.csv')):
         return ta.time_to_cycle(gid, t, nf, method='seg', clip_out_of_life=True)
@@ -151,7 +151,7 @@ def hi_of_group(gid):
         print(f'  [{gid}] AE 空 → 跳过')
         return None
     t = ae['time'].to_numpy(float)
-    # 第二批 = 1 s bin 带 n_hits；第一批 = 命中级（每行 1 个事件）→ 与导出器同约定
+    # L1 恒幅+DFOS = 1 s bin 带 n_hits；L1 恒幅+FBG+DFOS = 命中级（每行 1 个事件）→ 与导出器同约定
     n_hits = (ae['n_hits'].to_numpy(float) if 'n_hits' in ae.columns
               else np.ones(len(ae), float))
     en = np.maximum(ae['energy'].to_numpy(float), 0.0)
@@ -349,7 +349,7 @@ def main():
     #     prognosability（跨试件可比性）。这是本数据集论文 B 的原始诉求。
     #  ② t50/t85_pct：各组**自身归一化**后取 0.50/0.85 固定分数 → 即 Broer 2021
     #     Level-4 实际用的方案（离线，靠各 HI 单调性使归一化后 起0终1），
-    #     可与第一批已复现的 t85 = 79~95% 直接对比。
+    #     可与L1 恒幅+FBG+DFOS已复现的 t85 = 79~95% 直接对比。
     rows = []
     for g, s in series.items():
         for v in VARIANTS:

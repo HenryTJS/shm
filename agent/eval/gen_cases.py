@@ -27,12 +27,18 @@
     python agent/eval/gen_cases.py            # 生成 cases.json
 """
 import collections
-import io
 import json
 import os
 import sys
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# Windows 控制台 GBK → 含 µ/→ 会 UnicodeEncodeError。用 reconfigure，
+# **不要**用 `sys.stdout = io.TextIOWrapper(sys.stdout.buffer, ...)`：
+# 那样会另建一层 wrapper 共用同一 buffer，新 wrapper 一旦被回收
+# （重新赋值/GC）底层 stdout 就被连带关闭，后续打印全部 ValueError。
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:                       # noqa: BLE001
+    pass
 HERE = os.path.dirname(os.path.abspath(__file__))
 # 同 run_ablation.py：移除本目录，避免其中的 .py 遮蔽标准库模块（如 inspect）。
 while HERE in sys.path:

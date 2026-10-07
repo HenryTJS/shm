@@ -21,14 +21,18 @@
 输出: results/_l1_ae_shape_{gid}.npz  （life + 各特征，长度 N_BIN）
 """
 import os
-import io
 import sys
 import argparse
 import sqlite3
 import numpy as np
 import pandas as pd
 
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+# 必须用 reconfigure（不用 TextIOWrapper(sys.stdout.buffer)：会共用 buffer，
+# 新 wrapper 被回收时把底层 stdout 一起关掉）
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+except Exception:                       # noqa: BLE001
+    pass
 ROOT = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(ROOT, 'results')
 sys.path.insert(0, ROOT)
@@ -100,7 +104,7 @@ def compute(gid, n_bin=N_BIN):
                     bins_amp[b].append(a_s[s:e].astype(np.float32))
                     bins_eny[b].append(e_s[s:e].astype(np.float32))
         con.close()
-        print(f'    {fn}: 已读')
+        print(f'    {os.path.basename(fp)}: 已读')
     print(f'  [{gid}] 总 hits={n_total:,}')
 
     keys = ['b_val', 'amp_p50', 'amp_p90', 'amp_p99', 'amp_r90', 'amp_r95',
