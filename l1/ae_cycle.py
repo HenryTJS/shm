@@ -81,7 +81,22 @@ FBG 是**突发式**采集（每文件 20 s 数据，文件间隔 420 s 或 240 
     python l1/ae_cycle.py --groups L1-29        # 指定组
     python l1/ae_cycle.py --f-hz 2.0            # 指定载荷频率（默认按 n_f 反解）
     python l1/ae_cycle.py --fill mean           # 旧口径（仅供复现历史结果）
-输出：results/_l1cyc_{gid}.npz（frame / cycle / g_load / fill / 自检信息）
+
+细帧格（2026-10-08 新增）
+------------------------
+有些组的总循环数极少（L1-34 只有 1400 cycle，试验仅 0.2 h），在 600 s 帧格上
+只落下 **2 帧**，会被下游「至少 3 个有效帧」的门槛静默丢弃。`ae_frames.py` 本来
+就能出 60 s 帧（`--frame-s 60 --tag 60s` → `_l1ae_frames60s_{gid}.npz`），本模块
+现在也能在 60 s 格上**原生重建**循环轴 —— 不是插值：帧号本身等于 `t_epoch/frame_s`，
+所以 `frame * frame_s` 直接就是绝对时刻，换帧长不需要任何重标定。
+
+    python l1/ae_cycle.py --frame-s 60 --tag 60s --groups L1-34
+
+⚠️ `--tag` 必须与 `--frame-s` 配套（'' 对 600、'60s' 对 60），否则读到别的帧表。
+⚠️ 帧长一变，`AE_PAUSE_WIN` 需**等比缩放**（见 `_pause_win`），否则静默判据
+   会从「局部约 100 min 无事」缩到「局部约 10 min 无事」，明显变严。
+
+输出：results/_l1cyc{tag}_{gid}.npz（frame / cycle / g_load / fill / 自检信息）
 """
 
 import collections
@@ -110,7 +125,7 @@ FRAME_S = 600.0
 BURST_GAP = 60.0            # 相邻窗前隔超过它就分成两个「突发」
 MAX_CARRY = 1200.0          # 离最近突发超过它就算「长停录段」，需 AE 静默才判停机
 AE_PAUSE_FRAC = 0.05        # 长停录段内局部 AE 率低于组内中位的该比例 -> 判停机
-AE_PAUSE_WIN = 10           # 局部中位的半窗（帧）
+AE_PAUSE_WIN = 10           # 局部中位的半窗（帧，**以 600 s 帧为基准**）；细格按帧长等比缩放
 FILL = 'holdgap'            # 默认口径；可改 'mean' 复现旧结果
 
 # 总循环数（失效循环数 n_f）：**唯一来源 = shm.datasets**
@@ -290,8 +305,11 @@ def group_load(gid, root=None):
     return pts
 
 
-def build(gid, root=None, f_hz=None, n_f=None, frame_s=FRAME_S, fill=FILL):
+def build(gid, root=None, f_hz=None, n_f=None, frame_s=FRAME_S, fill=FILL, tag=''):
     """建循环轴：返回 dict(frame, cycle, g_load, ...)。
+
+    `tag` 与 `frame_s` **必须配套**：'' 对 600 s 帧（`_l1ae_frames_{gid}`），
+    '60s' 对 60 s 帧（`_l1ae_frames60s_{gid}`）。见模块 docstring「细帧格」。
 
     ⚠️ **`load_h` 的定义（2026-10-05 明确，勿误读为日历占空比）**
     ------------------------------------------------------------
@@ -309,7 +327,7 @@ def build(gid, root=None, f_hz=None, n_f=None, frame_s=FRAME_S, fill=FILL):
     ⇒ 但用它反解频率 `f = n_f / load_h` 是自洽的：
       分母与「事件在什么时候被记下来」共用同一张网格。
     """
-    fr = _load_frames(gid, frame_s)
+    fr = _load_frames(gid, frame_s, tag)
     if fr is None:
         return None
     frame, t_sec, n_hits = fr
@@ -321,7 +339,8 @@ def build(gid, root=None, f_hz=None, n_f=None, frame_s=FRAME_S, fill=FILL):
     else:
         tf = np.asarray([p[0] for p in pts])
         lf = np.asarray([1.0 if p[1] > P2P_LOAD else 0.0 for p in pts])
-        g = _ratio_on_grid(t_sec, tf, lf, frame_s, fill=fill, n_hits=n_hits)
+        g = _ratio_on_grid(t_sec, tf, lf, frame_s, fill=fill, n_hits=n_hits,
+                           pause_win=_pause_win(frame_s))
         src = 'FBG %d 窗，全局加载占比 %.3f，fill=%s' % (len(pts), float(lf.mean()), fill)
     span = float(t_sec[-1] - t_sec[0])
     load_s = float(np.sum(g)) * frame_s
@@ -331,7 +350,8 @@ def build(gid, root=None, f_hz=None, n_f=None, frame_s=FRAME_S, fill=FILL):
     cycle = np.cumsum(g * frame_s * f_use)
     res = {'frame': np.asarray(frame), 't_epoch': t_sec, 'g_load': g,
            'cycle': cycle, 'f_hz': float(f_use), 'load_h': load_s / 3600.0,
-           'span_h': span / 3600.0, 'n_f': n_f, 'src': src, 'fill': fill}
+           'span_h': span / 3600.0, 'n_f': n_f, 'src': src, 'fill': fill,
+           'tag': tag, 'frame_s': float(frame_s)}
     return res
 
 
@@ -369,7 +389,17 @@ def _ae_silent(n_hits, win=AE_PAUSE_WIN, frac=AE_PAUSE_FRAC):
     return local < frac * max(ref, 1.0)
 
 
-def _ratio_on_grid(t_sec, tf, lf, frame_s, fill=FILL, n_hits=None):
+def _pause_win(frame_s):
+    """AE 静默判据的半窗（帧）—— 以 600 s 帧的 10 帧为基准**等比缩放**。
+
+    判据的物理含义是「局部几小时一个事件都没有」，基准窗 = 10 x 600 s ≈ 100 min。
+    改帧长时若不缩放，60 s 帧的窗会缩到 10 min，判据明显变严 ——
+    会把「试验在跑、只是恰好没事件」的短段误判成停机，从而白丢真实加载。
+    """
+    return max(1, int(round(AE_PAUSE_WIN * FRAME_S / float(frame_s))))
+
+
+def _ratio_on_grid(t_sec, tf, lf, frame_s, fill=FILL, n_hits=None, pause_win=None):
     """AE 帧网格上的加载占比。
 
     fill='holdgap'（默认）：把突发状态**零阶保持**到网格（最近突发，最近邻）。
@@ -398,6 +428,8 @@ def _ratio_on_grid(t_sec, tf, lf, frame_s, fill=FILL, n_hits=None):
         return g
     if fill != 'holdgap':
         raise ValueError('未知 fill: %r' % fill)
+    if pause_win is None:
+        pause_win = AE_PAUSE_WIN
     tb, sb = _bursts(tf, lf)
     idx = np.searchsorted(tb, t_sec)
     left = np.clip(idx - 1, 0, len(tb) - 1)
@@ -407,15 +439,19 @@ def _ratio_on_grid(t_sec, tf, lf, frame_s, fill=FILL, n_hits=None):
     g = np.where(dl <= dr, sb[left], sb[right])
     far = np.minimum(dl, dr) > MAX_CARRY
     if n_hits is not None and len(n_hits) == len(t_sec):
-        g = np.where(far & _ae_silent(n_hits), 0.0, g)
+        g = np.where(far & _ae_silent(n_hits, win=pause_win), 0.0, g)
     else:                                        # 无 AE 信息时退回纯时间阈值
         g = np.where(far, 0.0, g)
     return g
 
 
-def _load_frames(gid, frame_s):
-    """返回 (帧序号, 帧时刻秒, 每帧 AE 事件数)。"""
-    p = os.path.join(RES, '_l1ae_frames_%s.npz' % gid)
+def _load_frames(gid, frame_s, tag=''):
+    """返回 (帧序号, 帧时刻秒, 每帧 AE 事件数)。
+
+    帧号本身 = int(t_epoch / frame_s)（见 `ae_frames.py::scan_file`），
+    所以 `frame * frame_s` 就是绝对时刻，换帧长无需重标定。
+    """
+    p = os.path.join(RES, '_l1ae_frames%s_%s.npz' % (tag, gid))
     if not os.path.exists(p):
         return None
     z = np.load(p, allow_pickle=True)
@@ -436,15 +472,26 @@ def _data_l1():
     return HERE
 
 
-def groups_with_frames():
-    return sorted(os.path.basename(p)[len('_l1ae_frames_'):-4]
-                  for p in glob.glob(os.path.join(RES, '_l1ae_frames_*.npz')))
+def groups_with_frames(tag=''):
+    """有该帧格产物的组。
+
+    ⚠️ **不能用前缀切片**：`_l1ae_frames60s_L1-06.npz` 切出来是 `60s_L1-06`，
+    会被当成一个不存在的组名去 build（静默返回 None）。必须按正则严格匹配。
+    """
+    pat = re.compile(r'^_l1ae_frames%s_(L1-\d+)\.npz$' % re.escape(tag))
+    out = []
+    for p in glob.glob(os.path.join(RES, '_l1ae_frames*_L1-*.npz')):
+        m = pat.match(os.path.basename(p))
+        if m:
+            out.append(m.group(1))
+    return sorted(set(out))
 
 
 def main(argv):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
     gids, f_hz, fill = [], None, FILL
+    frame_s, tag = FRAME_S, ''
     i = 0
     while i < len(argv):
         if argv[i] == '--f-hz':
@@ -453,26 +500,33 @@ def main(argv):
         elif argv[i] == '--fill':
             fill = argv[i + 1]
             i += 2
+        elif argv[i] == '--frame-s':
+            frame_s = float(argv[i + 1])
+            i += 2
+        elif argv[i] == '--tag':
+            tag = argv[i + 1]
+            i += 2
         elif argv[i] == '--groups':
             gids.extend(argv[i + 1:])
             break
         else:
             gids.append(argv[i])
             i += 1
-    gids = gids or groups_with_frames()
-    print('加载状态重建口径 fill=%s（BURST_GAP=%.0fs, MAX_CARRY=%.0fs）'
-          % (fill, BURST_GAP, MAX_CARRY))
+    gids = gids or groups_with_frames(tag)
+    print('加载状态重建口径 fill=%s（BURST_GAP=%.0fs, MAX_CARRY=%.0fs, 帧长 %.0fs, '
+          'tag=%r, 静默半窗 %d 帧）'
+          % (fill, BURST_GAP, MAX_CARRY, frame_s, tag, _pause_win(frame_s)))
     print('%-7s %6s %8s %8s %9s %11s %9s %10s' % (
         '组', '帧数', '跨度h', '加载h', '反解f(Hz)', '名义2Hz预测n_f', 'PDF n_f', '偏差@2Hz'))
     for gid in gids:
-        r = build(gid, f_hz=f_hz, fill=fill)
+        r = build(gid, f_hz=f_hz, fill=fill, frame_s=frame_s, tag=tag)
         if r is None:
-            print('%-7s 无帧表，跳过' % gid)
+            print('%-7s 无帧表（tag=%r），跳过' % (gid, tag))
             continue
         nf = r['n_f'] or 0
         pred = r['load_h'] * 3600.0 * (f_hz or F_NOMINAL)
         dev = (pred - nf) / nf * 100 if nf else float('nan')
-        np.savez_compressed(os.path.join(RES, '_l1cyc_%s.npz' % gid), **r)
+        np.savez_compressed(os.path.join(RES, '_l1cyc%s_%s.npz' % (tag, gid)), **r)
         print('%-7s %6d %8.1f %8.1f %9.3f %11.0f %9.0f %9.1f%%  %s'
               % (gid, len(r['frame']), r['span_h'], r['load_h'], r['f_hz'],
                  pred, nf, dev, r['src']))

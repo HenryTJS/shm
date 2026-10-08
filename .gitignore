@@ -27,6 +27,8 @@ phmdc/T[1-9]/
 !**/results/**/*.csv
 !**/results/**/*.txt
 !**/results/**/*.xlsx
+# 子集试跑产物（`ae_hi.py` 的防覆盖护栏会写它，见 docs/details.md §44）：属草稿，不提交
+**/results/*_partial.csv
 !phmdc/*.csv
 !phmdc/*.xlsx
 !l1/*.csv

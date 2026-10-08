@@ -38,6 +38,15 @@
 ⚠️ 口径说明：累积量自归一化**必然用到终值** ⇒ 这是**离线复评**，不是在线预警。
 老组（B 批 4 组 t85 中位 92.6%、C 批 9 组 92.1%）就是这个口径，所以这里的结果与它们可比。
 
+帧格回落（2026-10-08 新增）
+--------------------------
+总循环数极少的组（L1-34 只有 1400 cycle，试验仅 0.2 h）在 **600 s 帧格**上只落
+**2 帧**，会被「至少 3 个有效帧」的门槛挡掉 —— 这是**帧格分辨率**问题，不是数据问题。
+现改为**逐级回落**：600 s 不足 3 帧就自动改用 **60 s 细格**（需先跑
+`ae_frames.py --frame-s 60 --tag 60s` 与 `ae_cycle.py --frame-s 60 --tag 60s`）。
+输出多一列 `帧长s` 标明用的是哪一格；细格的 `反解f_Hz` 会略高（格越细，
+`load_h` 的离散化误差越小），但 `cycle` 末值恒等于 `n_f`（由构造保证）。
+
 用法
 ----
     python l1/ae_hi.py                # 全部组
@@ -47,6 +56,7 @@
 
 import glob
 import os
+import re
 import sys
 
 import numpy as np
@@ -59,6 +69,11 @@ REPO = os.path.dirname(HERE)
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 from shm.datasets import N_F                                        # noqa: E402
+
+# 帧格候选 (tag, 帧长s)：先用 600 s 生产口径，有效帧不足则回落到 60 s 细格。
+# 见模块 docstring「帧格回落」。
+GRIDS = (('', 600.0), ('60s', 60.0))
+MIN_FRAMES = 3              # 「有效帧」下限；低于它就换更细的帧格
 
 
 def t_at(hi, axis, level):
@@ -91,16 +106,32 @@ def _hi_metrics(counts, axis, label):
             label + '_尾段单调': round(mono_tail(hi), 3)}
 
 
-def run(gid, min_hits=1):
-    fp = os.path.join(RES, '_l1ae_frames_%s.npz' % gid)
+def run(gid, min_hits=1, min_frames=MIN_FRAMES):
+    """逐级回落，取第一个「有效帧足够」的帧格；都不够则返回 None。"""
+    for tag, frame_s in GRIDS:
+        d = _run_grid(gid, tag, frame_s, min_hits, min_frames)
+        if d is not None:
+            return d
+    return None
+
+
+def _run_grid(gid, tag, frame_s, min_hits, min_frames):
+    """在指定帧格上算一遍；帧表缺失或有效帧不足则返回 None。"""
+    fp = os.path.join(RES, '_l1ae_frames%s_%s.npz' % (tag, gid))
     if not os.path.exists(fp):
         return None
     z = np.load(fp, allow_pickle=True)
     n = z['n'].astype(float)
     m = n >= min_hits
-    if m.sum() < 3:
+    if m.sum() < min_frames:
         return None
-    cp = os.path.join(RES, '_l1cyc_%s.npz' % gid)
+    cp = os.path.join(RES, '_l1cyc%s_%s.npz' % (tag, gid))
+    if tag and not os.path.exists(cp):
+        # 回落到了细格但细格循环轴还没建 —— 横轴会退化成帧序号（不是循环分数），
+        # 必须显式喊出来，否则 t85 会被当成循环口径引用。
+        print('  ⚠️ %s 回落到 tag=%r 帧格，但缺 %s ⇒ 横轴退化为帧序号；'
+              '请先跑 ae_cycle.py --frame-s 60 --tag 60s --groups %s'
+              % (gid, tag, os.path.basename(cp), gid))
     if os.path.exists(cp):
         c = np.load(cp, allow_pickle=True)
         idx = {int(f): i for i, f in enumerate(c['frame'])}
@@ -119,7 +150,7 @@ def run(gid, min_hits=1):
     hi_eng = np.cumsum(z['ener_sum']) / np.cumsum(z['ener_sum'])[-1]
     a = axis / np.nanmax(axis)
     d = {'组号': gid, 'n_f': N_F.get(gid), '轴': axis_name, '反解f_Hz': round(f_hz, 3),
-         '有效帧': int(m.sum())}
+         '有效帧': int(m.sum()), '帧长s': int(frame_s)}
     # 三种累积口径并列输出**只作对比**：交付主曲线是 HI_hit（全部 hit）。
     # 通道 2 在「逐帧活动度」口径下最优，但在累积 t85 上极差最大（§7 / §29）。
     for key, lab in (('n', 'HI_hit'), ('n_ch1', 'HI_ch1'), ('n_ch2', 'HI_ch2')):
@@ -129,11 +160,25 @@ def run(gid, min_hits=1):
     return d
 
 
+def _groups_with_frames():
+    """有 600 s 帧表（生产口径）的组。
+
+    ⚠️ **不能用前缀切片**：`_l1ae_frames60s_L1-06.npz` 会切出 `60s_L1-06` 这种
+    假组名，再交给 run() 就静默返回 None。必须按正则严格匹配。
+    """
+    pat = re.compile(r'^_l1ae_frames_(L1-\d+)\.npz$')
+    out = []
+    for p in glob.glob(os.path.join(RES, '_l1ae_frames*_L1-*.npz')):
+        m = pat.match(os.path.basename(p))
+        if m:
+            out.append(m.group(1))
+    return sorted(set(out))
+
+
 def main(argv):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
-    gids = argv or sorted(os.path.basename(p)[len('_l1ae_frames_'):-4]
-                          for p in glob.glob(os.path.join(RES, '_l1ae_frames_*.npz')))
+    gids = argv or _groups_with_frames()
     rows = []
     print('%-7s %-6s %8s %10s %10s %10s %10s %10s %8s' % (
         '组', '轴', 'n_f', 'HI_hit_t85', 'HI_ch1_t85', 'HI_ch2_t85',
@@ -141,15 +186,27 @@ def main(argv):
     for gid in gids:
         d = run(gid)
         if d is None:
+            print('%-7s 两档帧格的有效帧都不足，跳过' % gid)
             continue
         rows.append(d)
-        print('%-7s %-6s %8s %10s %10s %10s %10s %10s %8s'
+        print('%-7s %-6s %8s %10s %10s %10s %10s %10s %8s  %s'
               % (gid, d['轴'], d['n_f'], d.get('HI_hit_t85'), d.get('HI_ch1_t85'),
                  d.get('HI_ch2_t85'), d.get('HI_eng_t85'), d.get('HI_ch2_t50'),
-                 d.get('HI_ch2_尾段单调')))
+                 d.get('HI_ch2_尾段单调'),
+                 '' if d['帧长s'] == 600 else '<- 60 s 细格回落'))
     if rows:
         import csv
-        out = os.path.join(RES, 'l1_ae_hi.csv')
+        # ⚠️ 同名互覆护栏（2026-10-08）：带组名只跑**子集**时，绝不能覆盖全量交付产物
+        # `l1_ae_hi.csv` —— 这个坑在 `docs/待办与未决问题.md` §7 记了很久，实测真的会踩
+        # （子集跑一次就把 14 行缩成 3 行）。子集结果改写 `_l1_ae_hi_partial.csv`。
+        all_g = sorted(_groups_with_frames())
+        subset = sorted(r['组号'] for r in rows)
+        full = bool(all_g) and subset == all_g
+        out = os.path.join(RES, 'l1_ae_hi.csv' if full
+                           else '_l1_ae_hi_partial.csv')
+        if not full:
+            print('\n⚠️ 本次只跑了 %d / %d 组 ⇒ 结果写 `%s`，**不动**交付产物 `l1_ae_hi.csv`'
+                  % (len(rows), len(all_g), os.path.basename(out)))
         keys = []
         for r in rows:
             for k in r:
