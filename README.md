@@ -24,10 +24,6 @@ rem 看板：双击 dashboard\index.html ；Agent：%PY% agent\cli.py --demo
 三个数据集都已接入 `run.py`（`--dataset main | l1 | phmdc`）：L1 的**三批**由底层脚本的 `--batch`（`step0.py`）
 选择，任务名带 `[恒幅+FBG+DFOS]` / `[恒幅+DFOS]` / `[变幅VA/谱载]` 前缀。
 
-> **数据位置（重要）**：数据本体**只在外接盘**（当前 `E:\`），仓库里是 **64 个目录联接**（junction）。
-> **新增数据一律直接放到外接盘**，不允许先拷进 `D:` 盘再搬迁。查状态：`%PY% shm\paths.py`。
-> 详见 [`QUICKSTART.md`](QUICKSTART.md) §2 与 `paths.json`。
-
 ---
 
 ## 0. 一页纸速查
@@ -41,11 +37,6 @@ rem 看板：双击 dashboard\index.html ；Agent：%PY% agent\cli.py --demo
 | **phmdc**（外部，8 件）                | ✅ 方法标定           | 特征**1.501 mm** / CNN **1.692 mm**；置换检验全部低于零分布下界                                                                              |
 | **数字大屏**                           | ✅ 可用               | **main** 11 组试件在线语义回放（L1 三批看板包已随在线口径下线）                                                                                    |
 | **自然语言 Agent**                     | ✅ 已实现             | **10** 工具 + 16 条物理约束；**24 + 22** 回归用例通过                                                                                        |
-
-> **仓库结构**：生产脚本 **53** 个（整理前 78；不含 `l1/attic/` 里 17 个归档脚本）。`main/` 由 12 个合成 4 个
-> （`pipeline.py` / `verify.py` / `export_dashboard.py` / `eval_common.py`）；`l1/` 的 13 个一次性诊断脚本与
-> 4 个在线口径脚本归档到 `l1/attic/`（含 `README.md` 说明）；`tools/`（D→E 数据迁移脚本）已删除。
-> 逐文件说明见 [`docs/仓库地图.md`](docs/仓库地图.md)。
 
 ---
 
