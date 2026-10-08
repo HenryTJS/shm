@@ -53,6 +53,10 @@ except Exception:
 # 全局配置
 # ============================================================
 ROOT = os.path.dirname(os.path.abspath(__file__))
+PROJ = os.path.dirname(ROOT)                   # 仓库根（本脚本在仓库内，ROOT = phmdc/）
+if PROJ not in sys.path:
+    sys.path.insert(0, PROJ)
+from shm.paths import repo_rel                 # noqa: E402  产物里只写相对路径，见该函数
 
 SPECIMENS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']
 TRAIN = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6']
@@ -543,7 +547,7 @@ def main():
     say('=' * 78)
     say('PHM2019 铝搭接件（数据集 D） Step 0 数据规整 & 核对报告')
     say('生成时间: %s' % pd.Timestamp.now().strftime('%Y-%m-%d %H:%M:%S'))
-    say('数据根目录: %s' % ROOT)
+    say('数据根目录: %s' % repo_rel(ROOT))
     say('=' * 78)
 
     # ---------- 解析 ----------

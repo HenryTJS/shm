@@ -1,0 +1,5 @@
+﻿setting,nA,nC,nE,nD,mean_abs_err,mean_lead,cfg
+LOSO(留一选参),5,0,0,0,1.629,,1 种/5 折
+default(样本内),5,0,0,0,2.046,28.314,default
+oracle(事后最优),5,0,0,0,1.629,28.731,rise=0.156
+最差配置(网格内),5,0,0,0,3.167,27.193,rise=0.084

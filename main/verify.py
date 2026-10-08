@@ -45,6 +45,7 @@ from eval_common import (GROUPS, DEFAULT, cfg_id, run_cfg, table_for,          #
 from shm.streaming import StreamSimulator, ChunkedDataReader                   # noqa: E402
 from shm.damage_index import OnlineDamageIndex, _AmpChannel                    # noqa: E402
 from shm.config import EXT_BLOCK_PTS, FO_PARAMS, GRADE_GATE                    # noqa: E402
+from shm.paths import repo_rel                                                 # noqa: E402
 
 # ==========================================================================
 # 段 1/7  原 main/evaluate_baselines.py（349 行，正文逐字保留；改名 main→bl_main, OUT→BL_OUT）
@@ -394,7 +395,7 @@ def bl_main():
           '故 016-020 的该列可当作标签无关的复核。')
     print('    · f_est 为可计算的物理锚（AE 块能量峰值位置），对无 b2/b3 的组也适用。')
 
-    print(f'\nsaved {os.path.abspath(BL_OUT)}')
+    print(f'\nsaved {repo_rel(BL_OUT)}')
 
 
 # ==========================================================================
@@ -573,7 +574,7 @@ def loso_main():
           f'|err| {fd["err_loso"].abs().mean():.2f} '
           f'（default {ref["default_abs_err"]:.2f}, '
           f'oracle {ref["oracle_abs_err"]:.2f}）')
-    print(f'\nsaved {os.path.abspath(OUT_FOLD)} / {os.path.abspath(OUT_SUM)}')
+    print(f'\nsaved {repo_rel(OUT_FOLD)} / {repo_rel(OUT_SUM)}')
 
 
 # ==========================================================================
@@ -1004,7 +1005,7 @@ def acol_main():
     pv = sub.pivot(index='cfg', columns='gid', values='grade').reindex(order)
     pv['全部A'] = (pv == 'A').all(axis=1)
     print(pv.to_string())
-    print(f'\nsaved {os.path.abspath(a.out)}')
+    print(f'\nsaved {repo_rel(a.out)}')
 
 
 # ==========================================================================

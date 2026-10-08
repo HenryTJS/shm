@@ -1,0 +1,6 @@
+﻿par,desc,ch_0_7,ch_1_0,ch_1_3,nA_default,EtoA,AtoE
+rise,,5,0,0,5,0,0
+fall,,5,0,0,5,0,0
+acc_scale,,5,0,0,5,0,0
+estrain_w,,5,0,0,5,0,0
+lift,,5,0,0,5,0,0

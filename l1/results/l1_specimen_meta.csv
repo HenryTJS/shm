@@ -1,0 +1,440 @@
+﻿gid,field,value,unit,source,page
+L1-03,source,l1\L1-03\L1-03.pdf,,l1\L1-03\L1-03.pdf,
+L1-03,skin_width_mm,165.0,,l1\L1-03\L1-03.pdf,
+L1-03,skin_length_mm,240.0,,l1\L1-03\L1-03.pdf,
+L1-03,vel_longitudinal_ms,5586.59,,l1\L1-03\L1-03.pdf,
+L1-03,vel_lateral_ms,4054.05,,l1\L1-03\L1-03.pdf,
+L1-03,vel_caveat,"performed after specimen failure, but considering sensor failure, these measurements might not be useful",,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_1_x,145.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_1_y,190.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_2_x,145.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_2_y,20.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_3_x,20.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_3_y,50.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_4_x,20.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,ae_sensor_4_y,220.0,mm,l1\L1-03\L1-03.pdf,
+L1-03,sensor_frame,skin-side (from bottom left),,l1\L1-03\L1-03.pdf,
+L1-03,load_level_1,-6.5~-65 kN x152458,,l1\L1-03\L1-03.pdf,
+L1-03,impact_J,10.0,,l1\L1-03\L1-03.pdf,
+L1-03,impact_loc_raw,stiffener foot (right) 5cm from right edge 8cm from bottom,,l1\L1-03\L1-03.pdf,
+L1-03,imp_x_mm,50.0,mm,Impact_Locations.pdf,1
+L1-03,imp_y_mm,80.0,mm,Impact_Locations.pdf,1
+L1-03,imp_kind,impact_location,,Impact_Locations.pdf,1
+L1-03,imp_page,1,,Impact_Locations.pdf,1
+L1-04,source,l1\L1-04\L1-04.pdf,,l1\L1-04\L1-04.pdf,
+L1-04,skin_width_mm,166.0,,l1\L1-04\L1-04.pdf,
+L1-04,skin_length_mm,242.0,,l1\L1-04\L1-04.pdf,
+L1-04,vel_longitudinal_ms,5797.1,,l1\L1-04\L1-04.pdf,
+L1-04,vel_lateral_ms,4328.22,,l1\L1-04\L1-04.pdf,
+L1-04,vel_caveat,"performed after specimen failure, but considering sensor failure, these measurements might not be useful",,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_1_x,145.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_1_y,190.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_2_x,145.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_2_y,20.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_3_x,20.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_3_y,50.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_4_x,20.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,ae_sensor_4_y,220.0,mm,l1\L1-04\L1-04.pdf,
+L1-04,sensor_frame,skin-side (from bottom left),,l1\L1-04\L1-04.pdf,
+L1-04,load_level_1,-6.5~-65 kN x280098,,l1\L1-04\L1-04.pdf,
+L1-04,impact_J,10.0,,l1\L1-04\L1-04.pdf,
+L1-04,impact_loc_raw,on skin near right side as seen from stiffener. 2.5 cm from right edge x 8 cm from bottom,,l1\L1-04\L1-04.pdf,
+L1-04,imp_x_mm,25.0,mm,Impact_Locations.pdf,2
+L1-04,imp_y_mm,80.0,mm,Impact_Locations.pdf,2
+L1-04,imp_kind,impact_location,,Impact_Locations.pdf,2
+L1-04,imp_page,2,,Impact_Locations.pdf,2
+L1-05,source,l1\L1-05\L1-05.pdf,,l1\L1-05\L1-05.pdf,
+L1-05,skin_width_mm,165.5,,l1\L1-05\L1-05.pdf,
+L1-05,skin_length_mm,242.0,,l1\L1-05\L1-05.pdf,
+L1-05,vel_longitudinal_ms,6329.11,,l1\L1-05\L1-05.pdf,
+L1-05,vel_lateral_ms,4212.45,,l1\L1-05\L1-05.pdf,
+L1-05,vel_caveat,"performed after specimen failure, but considering sensor failure, these measurements might not be useful",,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_1_x,145.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_1_y,190.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_2_x,145.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_2_y,20.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_3_x,20.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_3_y,50.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_4_x,20.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,ae_sensor_4_y,220.0,mm,l1\L1-05\L1-05.pdf,
+L1-05,sensor_frame,skin-side (from bottom left),,l1\L1-05\L1-05.pdf,
+L1-05,load_level_1,-6.5~-65 kN x144969,,l1\L1-05\L1-05.pdf,
+L1-05,impact_J,10.0,,l1\L1-05\L1-05.pdf,
+L1-05,impact_loc_raw,on stiffener (left stiffener). 5 cm from left edge x 8 cm from top,,l1\L1-05\L1-05.pdf,
+L1-05,imp_x_mm,80.0,mm,Impact_Locations.pdf,3
+L1-05,imp_y_mm,50.0,mm,Impact_Locations.pdf,3
+L1-05,imp_kind,impact_location,,Impact_Locations.pdf,3
+L1-05,imp_page,3,,Impact_Locations.pdf,3
+L1-09,source,l1\L1-09\L1-09.pdf,,l1\L1-09\L1-09.pdf,
+L1-09,skin_width_mm,165.5,,l1\L1-09\L1-09.pdf,
+L1-09,skin_length_mm,242.0,,l1\L1-09\L1-09.pdf,
+L1-09,vel_longitudinal_ms,6321.07,,l1\L1-09\L1-09.pdf,
+L1-09,vel_lateral_ms,3857.79,,l1\L1-09\L1-09.pdf,
+L1-09,vel_caveat,"performed after specimen failure, but considering sensor failure, these measurements might not be useful",,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_1_x,145.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_1_y,190.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_2_x,145.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_2_y,20.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_3_x,20.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_3_y,50.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_4_x,20.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,ae_sensor_4_y,220.0,mm,l1\L1-09\L1-09.pdf,
+L1-09,sensor_frame,skin-side (from bottom left),,l1\L1-09\L1-09.pdf,
+L1-09,load_level_1,-6.5~-65 kN x133281,,l1\L1-09\L1-09.pdf,
+L1-09,impact_J,10.0,,l1\L1-09\L1-09.pdf,
+L1-09,impact_loc_raw,on stiffener (centre). 8.25 from edge x 10 cm from top right,,l1\L1-09\L1-09.pdf,
+L1-09,imp_x_mm,100.0,mm,Impact_Locations.pdf,4
+L1-09,imp_y_mm,82.5,mm,Impact_Locations.pdf,4
+L1-09,imp_kind,impact_location,,Impact_Locations.pdf,4
+L1-09,imp_page,4,,Impact_Locations.pdf,4
+L1-49,source,l1\L1-49\L1-49.pdf,,l1\L1-49\L1-49.pdf,
+L1-49,skin_width_mm,165.0,,l1\L1-49\L1-49.pdf,
+L1-49,skin_length_mm,243.22,,l1\L1-49\L1-49.pdf,
+L1-49,vel_longitudinal_ms,6426.0,,l1\L1-49\L1-49.pdf,
+L1-49,vel_lateral_ms,4064.0,,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_1_x,145.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_1_y,190.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_2_x,145.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_2_y,20.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_3_x,20.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_3_y,50.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_4_x,20.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,ae_sensor_4_y,220.0,mm,l1\L1-49\L1-49.pdf,
+L1-49,sensor_frame,skin-side (from bottom left),,l1\L1-49\L1-49.pdf,
+L1-49,load_level_1,-6.5~-65 kN x5000,,l1\L1-49\L1-49.pdf,
+L1-49,load_level_2,-6.5~-65 kN x43702,,l1\L1-49\L1-49.pdf,
+L1-49,impact_J,10.0,,l1\L1-49\L1-49.pdf,
+L1-49,impact_loc_raw,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,,l1\L1-49\L1-49.pdf,
+L1-49,loc_kind,impact_center,,Damage locations.pdf,1
+L1-49,loc_x_mm,115.0,mm,Damage locations.pdf,1
+L1-49,loc_y_mm,160.0,mm,Damage locations.pdf,1
+L1-49,loc_y_hi_mm,,mm,Damage locations.pdf,1
+L1-49,loc_side,stiffener,,Damage locations.pdf,1
+L1-49,loc_page,1,,Damage locations.pdf,1
+L1-50,source,l1\L1-50\L1-50.pdf,,l1\L1-50\L1-50.pdf,
+L1-50,skin_width_mm,165.0,,l1\L1-50\L1-50.pdf,
+L1-50,skin_length_mm,244.11,,l1\L1-50\L1-50.pdf,
+L1-50,vel_longitudinal_ms,6470.57,,l1\L1-50\L1-50.pdf,
+L1-50,vel_lateral_ms,4077.18,,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_1_x,145.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_1_y,190.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_2_x,145.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_2_y,20.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_3_x,20.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_3_y,50.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_4_x,20.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,ae_sensor_4_y,220.0,mm,l1\L1-50\L1-50.pdf,
+L1-50,sensor_frame,skin-side (from bottom left),,l1\L1-50\L1-50.pdf,
+L1-50,load_level_1,-6.5~-65 kN x5000,,l1\L1-50\L1-50.pdf,
+L1-50,load_level_2,-6.5~-65 kN x60500,,l1\L1-50\L1-50.pdf,
+L1-50,impact_J,10.0,,l1\L1-50\L1-50.pdf,
+L1-50,impact_loc_raw,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,,l1\L1-50\L1-50.pdf,
+L1-50,loc_kind,impact_center,,Damage locations.pdf,2
+L1-50,loc_x_mm,115.0,mm,Damage locations.pdf,2
+L1-50,loc_y_mm,160.0,mm,Damage locations.pdf,2
+L1-50,loc_y_hi_mm,,mm,Damage locations.pdf,2
+L1-50,loc_side,stiffener,,Damage locations.pdf,2
+L1-50,loc_page,2,,Damage locations.pdf,2
+L1-51,source,l1\L1-51\L1-51.pdf,,l1\L1-51\L1-51.pdf,
+L1-51,skin_width_mm,164.83,,l1\L1-51\L1-51.pdf,
+L1-51,skin_length_mm,246.25,,l1\L1-51\L1-51.pdf,
+L1-51,vel_longitudinal_ms,6535.0,,l1\L1-51\L1-51.pdf,
+L1-51,vel_lateral_ms,4090.0,,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_1_x,145.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_1_y,190.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_2_x,145.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_2_y,20.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_3_x,20.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_3_y,50.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_4_x,20.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,ae_sensor_4_y,220.0,mm,l1\L1-51\L1-51.pdf,
+L1-51,sensor_frame,skin-side (from bottom left),,l1\L1-51\L1-51.pdf,
+L1-51,load_level_1,-6.5~-65 kN x5000,,l1\L1-51\L1-51.pdf,
+L1-51,load_level_2,-6.5~-65 kN x89431,,l1\L1-51\L1-51.pdf,
+L1-51,impact_J,10.0,,l1\L1-51\L1-51.pdf,
+L1-51,impact_loc_raw,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,,l1\L1-51\L1-51.pdf,
+L1-51,loc_kind,impact_center,,Damage locations.pdf,3
+L1-51,loc_x_mm,115.0,mm,Damage locations.pdf,3
+L1-51,loc_y_mm,160.0,mm,Damage locations.pdf,3
+L1-51,loc_y_hi_mm,,mm,Damage locations.pdf,3
+L1-51,loc_side,stiffener,,Damage locations.pdf,3
+L1-51,loc_page,3,,Damage locations.pdf,3
+L1-52,source,l1\L1-52\L1-52.pdf,,l1\L1-52\L1-52.pdf,
+L1-52,skin_width_mm,165.0,,l1\L1-52\L1-52.pdf,
+L1-52,skin_length_mm,242.19,,l1\L1-52\L1-52.pdf,
+L1-52,vel_longitudinal_ms,6729.0,,l1\L1-52\L1-52.pdf,
+L1-52,vel_lateral_ms,4289.0,,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_1_x,145.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_1_y,190.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_2_x,145.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_2_y,20.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_3_x,20.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_3_y,50.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_4_x,20.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,ae_sensor_4_y,220.0,mm,l1\L1-52\L1-52.pdf,
+L1-52,sensor_frame,skin-side (from bottom left),,l1\L1-52\L1-52.pdf,
+L1-52,load_level_1,-6.5~-65 kN x368558,,l1\L1-52\L1-52.pdf,
+L1-52,impact_J,10.0,,l1\L1-52\L1-52.pdf,
+L1-52,impact_loc_raw,on stiffener (right stiffener). 5 cm from left edge x 8 cm from top,,l1\L1-52\L1-52.pdf,
+L1-52,loc_kind,impact_center,,Damage locations.pdf,4
+L1-52,loc_x_mm,115.0,mm,Damage locations.pdf,4
+L1-52,loc_y_mm,160.0,mm,Damage locations.pdf,4
+L1-52,loc_y_hi_mm,,mm,Damage locations.pdf,4
+L1-52,loc_side,stiffener,,Damage locations.pdf,4
+L1-52,loc_page,4,,Damage locations.pdf,4
+L1-54,source,l1\L1-54\L1-54.pdf,,l1\L1-54\L1-54.pdf,
+L1-54,skin_width_mm,165.0,,l1\L1-54\L1-54.pdf,
+L1-54,skin_length_mm,241.25,,l1\L1-54\L1-54.pdf,
+L1-54,vel_longitudinal_ms,6529.0,,l1\L1-54\L1-54.pdf,
+L1-54,vel_lateral_ms,4049.0,,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_1_x,145.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_1_y,190.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_2_x,145.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_2_y,20.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_3_x,20.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_3_y,50.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_4_x,20.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,ae_sensor_4_y,220.0,mm,l1\L1-54\L1-54.pdf,
+L1-54,sensor_frame,skin-side (from bottom left),,l1\L1-54\L1-54.pdf,
+L1-54,load_level_1,-6.5~-65 kN x510961,,l1\L1-54\L1-54.pdf,
+L1-54,impact_J,10.0,,l1\L1-54\L1-54.pdf,
+L1-54,impact_loc_raw,on stiffener (right stiffener). 5 cm from left edge x 8 cm from top,,l1\L1-54\L1-54.pdf,
+L1-54,loc_kind,impact_center,,Damage locations.pdf,5
+L1-54,loc_x_mm,115.0,mm,Damage locations.pdf,5
+L1-54,loc_y_mm,160.0,mm,Damage locations.pdf,5
+L1-54,loc_y_hi_mm,,mm,Damage locations.pdf,5
+L1-54,loc_side,stiffener,,Damage locations.pdf,5
+L1-54,loc_page,5,,Damage locations.pdf,5
+L1-55,source,l1\L1-55\L1-55.pdf,,l1\L1-55\L1-55.pdf,
+L1-55,skin_width_mm,164.95,,l1\L1-55\L1-55.pdf,
+L1-55,skin_length_mm,242.74,,l1\L1-55\L1-55.pdf,
+L1-55,vel_longitudinal_ms,6623.0,,l1\L1-55\L1-55.pdf,
+L1-55,vel_lateral_ms,2933.0,,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_1_x,145.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_1_y,190.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_2_x,145.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_2_y,20.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_3_x,20.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_3_y,50.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_4_x,20.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,ae_sensor_4_y,220.0,mm,l1\L1-55\L1-55.pdf,
+L1-55,sensor_frame,skin-side (from bottom left),,l1\L1-55\L1-55.pdf,
+L1-55,load_level_1,-6.5~-65 kN x5000,,l1\L1-55\L1-55.pdf,
+L1-55,load_level_2,-6.5~-65 kN x221356,,l1\L1-55\L1-55.pdf,
+L1-55,impact_J,10.0,,l1\L1-55\L1-55.pdf,
+L1-55,impact_loc_raw,on 5000 cycles stiffener (left fatigue stiffener). 5 cm from left edge x 8 cm from bottom,,l1\L1-55\L1-55.pdf,
+L1-55,loc_kind,impact_center,,Damage locations.pdf,6
+L1-55,loc_x_mm,50.0,mm,Damage locations.pdf,6
+L1-55,loc_y_mm,80.0,mm,Damage locations.pdf,6
+L1-55,loc_y_hi_mm,,mm,Damage locations.pdf,6
+L1-55,loc_side,stiffener,,Damage locations.pdf,6
+L1-55,loc_page,6,,Damage locations.pdf,6
+L1-56,source,l1\L1-56\L1-56.pdf,,l1\L1-56\L1-56.pdf,
+L1-56,skin_width_mm,165.0,,l1\L1-56\L1-56.pdf,
+L1-56,skin_length_mm,238.82,,l1\L1-56\L1-56.pdf,
+L1-56,vel_longitudinal_ms,6659.0,,l1\L1-56\L1-56.pdf,
+L1-56,vel_lateral_ms,4022.0,,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_1_x,145.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_1_y,190.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_2_x,145.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_2_y,20.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_3_x,20.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_3_y,50.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_4_x,20.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,ae_sensor_4_y,220.0,mm,l1\L1-56\L1-56.pdf,
+L1-56,sensor_frame,skin-side (from bottom left),,l1\L1-56\L1-56.pdf,
+L1-56,load_level_1,-6.5~-65 kN x5000,,l1\L1-56\L1-56.pdf,
+L1-56,load_level_2,-6.5~-65 kN x751226,,l1\L1-56\L1-56.pdf,
+L1-56,impact_J,10.0,,l1\L1-56\L1-56.pdf,
+L1-56,impact_loc_raw,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from left edge x 8 cm from top,,l1\L1-56\L1-56.pdf,
+L1-56,loc_kind,impact_center,,Damage locations.pdf,7
+L1-56,loc_x_mm,115.0,mm,Damage locations.pdf,7
+L1-56,loc_y_mm,160.0,mm,Damage locations.pdf,7
+L1-56,loc_y_hi_mm,,mm,Damage locations.pdf,7
+L1-56,loc_side,stiffener,,Damage locations.pdf,7
+L1-56,loc_page,7,,Damage locations.pdf,7
+L1-59,source,l1\L1-59\L1-59.pdf,,l1\L1-59\L1-59.pdf,
+L1-59,skin_length_mm,243.0,,l1\L1-59\L1-59.pdf,
+L1-59,vel_longitudinal_ms,6729.0,,l1\L1-59\L1-59.pdf,
+L1-59,vel_lateral_ms,4000.0,,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_1_x,145.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_1_y,190.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_2_x,145.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_2_y,20.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_3_x,20.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_3_y,50.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_4_x,20.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,ae_sensor_4_y,220.0,mm,l1\L1-59\L1-59.pdf,
+L1-59,sensor_frame,skin-side (from bottom left),,l1\L1-59\L1-59.pdf,
+L1-59,load_level_1,-6.5~-65 kN x5000,,l1\L1-59\L1-59.pdf,
+L1-59,load_level_2,-6.5~-65 kN x105137,,l1\L1-59\L1-59.pdf,
+L1-59,impact_J,10.0,,l1\L1-59\L1-59.pdf,
+L1-59,impact_loc_raw,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from left edge x 8 cm from top,,l1\L1-59\L1-59.pdf,
+L1-59,loc_kind,impact_center,,Damage locations.pdf,8
+L1-59,loc_x_mm,115.0,mm,Damage locations.pdf,8
+L1-59,loc_y_mm,160.0,mm,Damage locations.pdf,8
+L1-59,loc_y_hi_mm,,mm,Damage locations.pdf,8
+L1-59,loc_side,stiffener,,Damage locations.pdf,8
+L1-59,loc_page,8,,Damage locations.pdf,8
+L1-60,source,l1\L1-60\L1-60.pdf,,l1\L1-60\L1-60.pdf,
+L1-60,skin_width_mm,165.0,,l1\L1-60\L1-60.pdf,
+L1-60,skin_length_mm,242.41,,l1\L1-60\L1-60.pdf,
+L1-60,vel_longitudinal_ms,6550.0,,l1\L1-60\L1-60.pdf,
+L1-60,vel_lateral_ms,4116.0,,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_1_x,145.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_1_y,190.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_2_x,145.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_2_y,20.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_3_x,20.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_3_y,50.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_4_x,20.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,ae_sensor_4_y,220.0,mm,l1\L1-60\L1-60.pdf,
+L1-60,sensor_frame,skin-side (from bottom left),,l1\L1-60\L1-60.pdf,
+L1-60,load_level_1,-6.5~-65 kN x5000,,l1\L1-60\L1-60.pdf,
+L1-60,load_level_2,-6.5~-65 kN x165884,,l1\L1-60\L1-60.pdf,
+L1-60,impact_J,10.0,,l1\L1-60\L1-60.pdf,
+L1-60,impact_loc_raw,on 5000 cycles stiffener (left fatigue stiffener). 5 cm from left edge x 8 cm from bottom,,l1\L1-60\L1-60.pdf,
+L1-60,loc_kind,impact_center,,Damage locations.pdf,9
+L1-60,loc_x_mm,50.0,mm,Damage locations.pdf,9
+L1-60,loc_y_mm,80.0,mm,Damage locations.pdf,9
+L1-60,loc_y_hi_mm,,mm,Damage locations.pdf,9
+L1-60,loc_side,stiffener,,Damage locations.pdf,9
+L1-60,loc_page,9,,Damage locations.pdf,9
+L1-06,loc_kind,impact_center,,Damage locations variable.pdf,1
+L1-06,loc_x_mm,60.0,mm,Damage locations variable.pdf,1
+L1-06,loc_y_mm,75.0,mm,Damage locations variable.pdf,1
+L1-06,loc_y_hi_mm,,mm,Damage locations variable.pdf,1
+L1-06,loc_side,,,Damage locations variable.pdf,1
+L1-06,loc_page,1,,Damage locations variable.pdf,1
+L1-06,rootcyc_level_1,-4 to -40 kN x10000,,tables of cycles variable.pdf,
+L1-06,rootcyc_level_2,-4.5 to -45 kN x80000,,tables of cycles variable.pdf,
+L1-06,rootcyc_level_3,-5 to -50 kN x30000,,tables of cycles variable.pdf,
+L1-06,rootcyc_level_4,-5.5 to -55 kN x70000,,tables of cycles variable.pdf,
+L1-06,rootcyc_level_5,-6 to -60 kN x12300,,tables of cycles variable.pdf,
+L1-06,rootcyc_total,,cycles,tables of cycles variable.pdf,
+L1-13,loc_kind,impact_center,,Damage locations variable.pdf,3
+L1-13,loc_x_mm,115.0,mm,Damage locations variable.pdf,3
+L1-13,loc_y_mm,80.0,mm,Damage locations variable.pdf,3
+L1-13,loc_y_hi_mm,,mm,Damage locations variable.pdf,3
+L1-13,loc_side,,,Damage locations variable.pdf,3
+L1-13,loc_page,3,,Damage locations variable.pdf,3
+L1-13,rootcyc_level_1,-4 to -40 kN x10000,,tables of cycles variable.pdf,
+L1-13,rootcyc_level_2,-4.5 to -45 kN x80000,,tables of cycles variable.pdf,
+L1-13,rootcyc_level_3,-5 to -50 kN x90000,,tables of cycles variable.pdf,
+L1-13,rootcyc_level_4,-5.5 to -55 kN x63000,,tables of cycles variable.pdf,
+L1-13,rootcyc_total,,cycles,tables of cycles variable.pdf,
+L1-14,loc_kind,impact_center,,Damage locations variable.pdf,2
+L1-14,loc_x_mm,105.0,mm,Damage locations variable.pdf,2
+L1-14,loc_y_mm,60.0,mm,Damage locations variable.pdf,2
+L1-14,loc_y_hi_mm,,mm,Damage locations variable.pdf,2
+L1-14,loc_side,,,Damage locations variable.pdf,2
+L1-14,loc_page,2,,Damage locations variable.pdf,2
+L1-14,rootcyc_level_1,-4 to -40 kN x10000,,tables of cycles variable.pdf,
+L1-14,rootcyc_level_2,-4.5 to -45 kN x177000,,tables of cycles variable.pdf,
+L1-14,rootcyc_level_3,-5 to -50 kN x30000,,tables of cycles variable.pdf,
+L1-14,rootcyc_total,,cycles,tables of cycles variable.pdf,
+L1-24,loc_kind,impact_center,,Damage locations variable.pdf,5
+L1-24,loc_x_mm,115.0,mm,Damage locations variable.pdf,5
+L1-24,loc_y_mm,165.0,mm,Damage locations variable.pdf,5
+L1-24,loc_y_hi_mm,,mm,Damage locations variable.pdf,5
+L1-24,loc_side,,,Damage locations variable.pdf,5
+L1-24,loc_page,5,,Damage locations variable.pdf,5
+L1-24,rootcyc_level_1,-4 to -40 kN x20000,,tables of cycles variable.pdf,
+L1-24,rootcyc_level_2,-4.5 to -45 kN x75000,,tables of cycles variable.pdf,
+L1-24,rootcyc_level_3,-5 to -50 kN x25000,,tables of cycles variable.pdf,
+L1-24,rootcyc_level_4,-5.5 to -55 kN x62000,,tables of cycles variable.pdf,
+L1-24,rootcyc_level_5,-6 to -60 kN x60000,,tables of cycles variable.pdf,
+L1-24,rootcyc_total,,cycles,tables of cycles variable.pdf,
+L1-25,loc_kind,impact_center,,Damage locations spectrum.pdf,1
+L1-25,loc_x_mm,110.0,mm,Damage locations spectrum.pdf,1
+L1-25,loc_y_mm,60.0,mm,Damage locations spectrum.pdf,1
+L1-25,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,1
+L1-25,loc_side,skin,,Damage locations spectrum.pdf,1
+L1-25,loc_page,1,,Damage locations spectrum.pdf,1
+L1-25,rootcyc_level_1,-50.4 to -75 kN x1000000,,table of specimen cycles to failure.pdf,
+L1-25,rootcyc_level_2,-50.4 to -78 kN x580000,,table of specimen cycles to failure.pdf,
+L1-25,rootcyc_total,1580000,cycles,table of specimen cycles to failure.pdf,
+L1-27,loc_kind,impact_center,,Damage locations spectrum.pdf,2
+L1-27,loc_x_mm,105.0,mm,Damage locations spectrum.pdf,2
+L1-27,loc_y_mm,60.0,mm,Damage locations spectrum.pdf,2
+L1-27,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,2
+L1-27,loc_side,skin,,Damage locations spectrum.pdf,2
+L1-27,loc_page,2,,Damage locations spectrum.pdf,2
+L1-27,rootcyc_level_1,-50.4 to -69 kN x291000,,table of specimen cycles to failure.pdf,
+L1-27,rootcyc_level_2,-50.4 to -78 kN x238000,,table of specimen cycles to failure.pdf,
+L1-27,rootcyc_total,529000,cycles,table of specimen cycles to failure.pdf,
+L1-29,loc_kind,impact_center,,Damage locations spectrum.pdf,3
+L1-29,loc_x_mm,105.0,mm,Damage locations spectrum.pdf,3
+L1-29,loc_y_mm,60.0,mm,Damage locations spectrum.pdf,3
+L1-29,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,3
+L1-29,loc_side,skin,,Damage locations spectrum.pdf,3
+L1-29,loc_page,3,,Damage locations spectrum.pdf,3
+L1-29,rootcyc_level_1,-50.4 to -78 kN x60000 (pristine),,table of specimen cycles to failure.pdf,
+L1-29,rootcyc_level_2,-50.4 to -78 kN x240000 (impact 10 J),,table of specimen cycles to failure.pdf,
+L1-29,rootcyc_level_3,-55.2 to -78 kN x300000,,table of specimen cycles to failure.pdf,
+L1-29,rootcyc_level_4,-55.2 to -82 kN x600000,,table of specimen cycles to failure.pdf,
+L1-29,rootcyc_total,1300000,cycles,table of specimen cycles to failure.pdf,
+L1-30,loc_kind,impact_center,,Damage locations spectrum.pdf,4
+L1-30,loc_x_mm,105.0,mm,Damage locations spectrum.pdf,4
+L1-30,loc_y_mm,60.0,mm,Damage locations spectrum.pdf,4
+L1-30,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,4
+L1-30,loc_side,skin,,Damage locations spectrum.pdf,4
+L1-30,loc_page,4,,Damage locations spectrum.pdf,4
+L1-30,rootcyc_level_1,-45.9 to -78 kN x10000 (pristine),,table of specimen cycles to failure.pdf,
+L1-30,rootcyc_level_2,-45.9 to -78 kN x150 (impact),,table of specimen cycles to failure.pdf,
+L1-30,rootcyc_total,10150,cycles,table of specimen cycles to failure.pdf,
+L1-31,loc_kind,impact_center,,Damage locations spectrum.pdf,5
+L1-31,loc_x_mm,60.0,mm,Damage locations spectrum.pdf,5
+L1-31,loc_y_mm,65.0,mm,Damage locations spectrum.pdf,5
+L1-31,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,5
+L1-31,loc_side,skin,,Damage locations spectrum.pdf,5
+L1-31,loc_page,5,,Damage locations spectrum.pdf,5
+L1-31,rootcyc_level_1,-50.4 to -75 kN x500000,,table of specimen cycles to failure.pdf,
+L1-31,rootcyc_level_2,-50.4 to -78 kN x466000,,table of specimen cycles to failure.pdf,
+L1-31,rootcyc_total,966000,cycles,table of specimen cycles to failure.pdf,
+L1-34,loc_kind,impact_center,,Damage locations spectrum.pdf,6
+L1-34,loc_x_mm,60.0,mm,Damage locations spectrum.pdf,6
+L1-34,loc_y_mm,180.0,mm,Damage locations spectrum.pdf,6
+L1-34,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,6
+L1-34,loc_side,skin,,Damage locations spectrum.pdf,6
+L1-34,loc_page,6,,Damage locations spectrum.pdf,6
+L1-34,rootcyc_level_1,-45.9 to -78 kN x1400,,table of specimen cycles to failure.pdf,
+L1-34,rootcyc_total,,cycles,table of specimen cycles to failure.pdf,
+L1-35,loc_kind,impact_center,,Damage locations spectrum.pdf,7
+L1-35,loc_x_mm,60.0,mm,Damage locations spectrum.pdf,7
+L1-35,loc_y_mm,70.0,mm,Damage locations spectrum.pdf,7
+L1-35,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,7
+L1-35,loc_side,skin,,Damage locations spectrum.pdf,7
+L1-35,loc_page,7,,Damage locations spectrum.pdf,7
+L1-35,rootcyc_level_1,-45.9 to -64.5 kN x247000,,table of specimen cycles to failure.pdf,
+L1-35,rootcyc_level_2,-45.9 to -69 kN x92000,,table of specimen cycles to failure.pdf,
+L1-35,rootcyc_level_3,-45.9 to -75 kN x10000,,table of specimen cycles to failure.pdf,
+L1-35,rootcyc_level_4,-50.5 to -75 kN x73000,,table of specimen cycles to failure.pdf,
+L1-35,rootcyc_level_5,-50.4 to -78 kN x30000,,table of specimen cycles to failure.pdf,
+L1-35,rootcyc_total,452000,cycles,table of specimen cycles to failure.pdf,
+L1-36,loc_kind,impact_center,,Damage locations spectrum.pdf,8
+L1-36,loc_x_mm,105.0,mm,Damage locations spectrum.pdf,8
+L1-36,loc_y_mm,60.0,mm,Damage locations spectrum.pdf,8
+L1-36,loc_y_hi_mm,,mm,Damage locations spectrum.pdf,8
+L1-36,loc_side,skin,,Damage locations spectrum.pdf,8
+L1-36,loc_page,8,,Damage locations spectrum.pdf,8
+L1-36,rootcyc_level_1,-45.9 to -78 kN x4500,,table of specimen cycles to failure.pdf,
+L1-36,rootcyc_total,,cycles,table of specimen cycles to failure.pdf,
+L1-41,loc_kind,disbond_lower_edge,,Damage locations spectrum.pdf,9
+L1-41,loc_x_mm,82.5,mm,Damage locations spectrum.pdf,9
+L1-41,loc_y_mm,160.0,mm,Damage locations spectrum.pdf,9
+L1-41,loc_y_hi_mm,180.0,mm,Damage locations spectrum.pdf,9
+L1-41,loc_side,skin,,Damage locations spectrum.pdf,9
+L1-41,loc_page,9,,Damage locations spectrum.pdf,9
+L1-41,rootcyc_level_1,-45.9 to -64.5 kN x845000,,table of specimen cycles to failure.pdf,
+L1-41,rootcyc_level_2,-45.9 to -78 kN x1000000,,table of specimen cycles to failure.pdf,
+L1-41,rootcyc_total,1820000,cycles,table of specimen cycles to failure.pdf,
+L1-44,loc_kind,disbond_lower_edge,,Damage locations spectrum.pdf,10
+L1-44,loc_x_mm,60.0,mm,Damage locations spectrum.pdf,10
+L1-44,loc_y_mm,60.0,mm,Damage locations spectrum.pdf,10
+L1-44,loc_y_hi_mm,85.0,mm,Damage locations spectrum.pdf,10
+L1-44,loc_side,skin,,Damage locations spectrum.pdf,10
+L1-44,loc_page,10,,Damage locations spectrum.pdf,10
+L1-44,rootcyc_level_1,-55.2 to -78 kN x460,,table of specimen cycles to failure.pdf,
+L1-44,rootcyc_level_2,-45.9 to -59.7 kN x1160000,,table of specimen cycles to failure.pdf,
+L1-44,rootcyc_total,1160000,cycles,table of specimen cycles to failure.pdf,

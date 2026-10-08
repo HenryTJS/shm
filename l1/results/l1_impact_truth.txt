@@ -1,0 +1,47 @@
+组       PDF 原文（冲击点位置）                                  解析(边,cm)         skin坐标         实测质心(X,Y)
+----------------------------------------------------------------------------------------------------------------------------------
+L1-03   (未找到 Impact 10 Joules)                         right 5.00 cm / bottom 8.00 cm (50, 163)      (72, 100) n=5809  d=67mm
+L1-04   Impact 10 Joules Location on skin near right   right 2.50 cm / bottom 8.00 cm (25, 163)      (72, 111) n=5175  d=70mm
+L1-05   Impact 10 Joules Location on stiffener (left   left 5.00 cm / top 8.00 cm (115, 80)      (62, 131) n=3819  d=74mm
+L1-09   Impact 10 Joules Location on stiffener (cent   ? 8.25 cm / top 10.00 cm 解析失败           (92, 107) n=7375
+L1-49   Impact 10 Joules *impact after Location on 5   right 5.00 cm / top 8.00 cm (50, 80)       (52, 86) n=5801  d=7mm
+L1-50   Impact 10 Joules *impact after Location on 5   right 5.00 cm / top 8.00 cm (50, 80)       (81, 120) n=7922  d=51mm
+L1-51   Impact 10 Joules *impact after Location on 5   right 5.00 cm / top 8.00 cm (50, 80)       (49, 100) n=6797  d=20mm
+L1-52   Impact 10 Joules Location on stiffener (righ   left 5.00 cm / top 8.00 cm (115, 80)      (50, 52) n=6251  d=71mm
+L1-54   Impact 10 Joules Location on stiffener (righ   left 5.00 cm / top 8.00 cm (115, 80)      (73, 57) n=7637  d=48mm
+L1-55   Impact 10 Joules *impact after Location on 5   left 5.00 cm / bottom 8.00 cm (115, 163)     (85, 97) n=2477  d=72mm
+L1-56   Impact 10 Joules *impact after Location on 5   left 5.00 cm / top 8.00 cm (115, 80)      (79, 208) n=7700  d=133mm
+L1-59   Impact 10 Joules *impact after Location on 5   left 5.00 cm / top 8.00 cm (115, 80)      (65, 79) n=7079  d=50mm
+L1-60   Impact 10 Joules *impact after Location on 5   left 5.00 cm / bottom 8.00 cm (115, 163)     (75, 109) n=7017  d=67mm
+
+声速（PDF 实测）与 ae_locate.py 的 VEL 字典
+----------------------------------------------------------------------------------------------------------------------------------
+组       PDF 横向/纵向        VEL 字典           状态
+L1-03   4054.1 / 5586.6  （缺省 4064/6659）   故意不登记（PDF 自述 after-failure 测量不可信）
+L1-04   4328.2 / 5797.1  （缺省 4064/6659）   故意不登记（PDF 自述 after-failure 测量不可信）
+L1-05   4212.4 / 6329.1  （缺省 4064/6659）   故意不登记（PDF 自述 after-failure 测量不可信）
+L1-09   3857.8 / 6321.1  （缺省 4064/6659）   故意不登记（PDF 自述 after-failure 测量不可信）
+L1-49   4064.0 / 6426.0  4064.0 / 6426.0  OK
+L1-50   4077.2 / 6470.6  4077.2 / 6470.6  OK
+L1-51   4090.0 / 6535.0  4090.0 / 6535.0  OK
+L1-52   4289.0 / 6729.0  4289.0 / 6729.0  OK
+L1-54   4049.0 / 6529.0  4049.0 / 6529.0  OK
+L1-55   2933.0 / 6623.0  2933.0 / 6623.0  OK
+L1-56   4022.0 / 6659.0  4022.0 / 6659.0  OK
+L1-59   4000.0 / 6729.0  4000.0 / 6729.0  OK
+L1-60   4116.0 / 6550.0  4116.0 / 6550.0  OK
+
+结论
+==================================================================================================================================
+1. PDF 的冲击位置描述逐组不同（至少 5 类），ae_locate.py 原用单一常数 (50,80)。
+2. 改用任何统一坐标约定（含 180° 翻转）都无法同时自洽；
+   且 PDF 的 left/right 标注与实测 X 质心无相关性。
+3. 实测 X 质心 = 49,50,52,62,65,72,72,73,75,79,81,85,92 mm（n=13 组）
+   最大相邻空隙 = 10 mm（52→62）⇒ 分布呈弱双峰，
+   既非"同一真值下的散射"，也非 PDF 描述所能解释。
+4. → 仅 L1-49 的 (50,80) 与实测质心相差 7 mm
+   （≤10 mm 的组共 1 个 / 有质心的 12 组）⇒ 可作为单点验证。
+   其余组的"距冲击点"**不得作为定位准确性指标**；
+   定位结论只能用组内重复性 σ（与真值无关，故不受影响）。
+5. 要拿到可信真值，需 NDT 成像（PDF 提到 Phased array / IR Camera /
+   NDT before-after impact），但成像数据不在本仓库中。

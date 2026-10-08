@@ -32,13 +32,7 @@ pip install -r requirements.txt
 
 ## 2. 数据：**只在外接盘上**，仓库里不放数据
 
-原始数据约 **239 GB**，**全部放在外接盘**（当前 `E:\`）；仓库（`D:\`）里**不保存任何数据**。
-
-> 🔴 **规矩（2026-10-07 起）**：以后**新增数据一律直接放到外接盘**（如 `E:\l1\L1-xx`、`E:\main\0xx`），
-> **不允许从 D 盘进入** —— 不要先把数据拷进仓库再搬迁，也不要在仓库里保留数据副本。
-> D 盘只放代码与产物。
-
-**唯一配置入口是 `paths.json`**（换盘 / 换机器只改这一个文件，**不要改代码**）：
+原始数据全部放在外接盘，唯一配置入口**是 `paths.json`**：
 
 ```json
 { "data_root": "E:\\", ... }
@@ -145,13 +139,12 @@ python run.py --dataset phmdc --task step4 step5   rem 置换检验 / 不确定�
 
 直接用浏览器打开仓库根的 **`dashboard/index.html`**。
 顶栏可切换试件（当前只有**主样本 11 组**），逐帧回放 D(t)、多源信号与三级预警。
-（L1 的看板包已于 2026-10-07 随在线口径移除，见 `docs/details.md` §38。）
 
 数据包不在时要先导出：
 
 ```bat
 python run.py --dataset main --task dashboard
-python run.py --dataset l1   --task dashboard       rem 还有 dashboard-v2 / dashboard-v3
+python run.py --dataset l1   --task dashboard
 ```
 
 出包后建议校验一次：
@@ -194,8 +187,7 @@ python agent/cli.py --llm qwen2.5:3b                   rem 或 --llm http://...
 
 ⇒ 想确认某个脚本能不能跑，先看它 `import argparse` 没有。
 
-**② 脚本会在导入时 `chdir` 到自己所在目录。** 所以相对路径参数（如 `--out`）是相对**脚本目录**
-解释的，不是相对你敲命令的目录。要看"调用时目录"的脚本自己留了 `CWD0`。
+**② 脚本会在导入时 `chdir` 到自己所在目录。** 所以相对路径参数（如 `--out`）是相对**脚本目录**解释的，不是相对你敲命令的目录。要看"调用时目录"的脚本自己留了 `CWD0`。
 
 **③ PowerShell 会把 `021,022` 当成数字、吃掉前导零。** 传组号一定要加引号：
 
@@ -213,16 +205,16 @@ set PYTHONPATH=%CD%\l1
 python l1\attic\p2p_load_check.py
 ```
 
-**⑥ 图片里的中文。** 已在代码里设 `Microsoft YaHei / SimHei`；在 Linux 上跑要先装中文字体。
+**⑥ 图片里的中文。** 已在代码里设 `Microsoft YaHei / SimHei`。
 
 ---
 
 ## 9. 接下来读什么
 
-| 想知道                             | 看                                                      |
-| ---------------------------------- | ------------------------------------------------------- |
-| 每个文件干什么、哪些是入口/库/归档 | [`docs/仓库地图.md`](docs/仓库地图.md)                 |
-| 项目做了什么、结论是什么           | [`README.md`](README.md)                               |
-| 工程细节与全部实测记录（很长）     | [`docs/details.md`](docs/details.md)                   |
-| 数据在哪、怎么查状态               | 本文 §2 + `paths.json` + `python shm/paths.py`         |
-| 还没解决的问题                     | [`docs/待办与未决问题.md`](docs/待办与未决问题.md)     |
+| 想知道                             | 看                                                  |
+| ---------------------------------- | --------------------------------------------------- |
+| 每个文件干什么、哪些是入口/库/归档 | [`docs/仓库地图.md`](docs/仓库地图.md)             |
+| 项目做了什么、结论是什么           | [`README.md`](README.md)                           |
+| 工程细节与全部实测记录（很长）     | [`docs/details.md`](docs/details.md)               |
+| 数据在哪、怎么查状态               | 本文 §2 +`paths.json` + `python shm/paths.py`  |
+| 还没解决的问题                     | [`docs/待办与未决问题.md`](docs/待办与未决问题.md) |

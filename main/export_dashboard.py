@@ -44,18 +44,13 @@ from eval_common import ref_map                      # noqa: E402
 from shm.config import EXT_BLOCK_PTS, GRADE_GATE     # noqa: E402
 from shm.damage_index import OnlineDamageIndex       # noqa: E402
 from shm.streaming import StreamSimulator            # noqa: E402
+from shm.paths import repo_rel                       # noqa: E402
 
 OUTDIR = os.path.join(PROJ, 'dashboard', 'data')   # 看板在项目根(与 main/l1 同级)
 STEP = 5                 # 降采样步长(点): 10Hz → 2Hz 帧
 AE_EMPTY = -99999        # aeLog 空值标记
 LEVEL_NAMES = ['正常', '注意', '预警', '临危']
 
-# --- 看板纳入的试件（2026-09-20 扩展）---
-# 016-020 = 正式主样本；022-027 = 同台架的其他试件（**展示口径**，不进方法口径）。
-# 022/027 工况与主样本不同（循环+静力、循环次数有上限），但同为断裂型失效，故可展示：
-#   022 = 记录末尾断裂型（D_end 1.00、峰块 @96.4%、预警 94.2% 命中）；
-#   027 = 唯一可辨事件 @22.7% 与预警 23.0% 同期命中。
-# ⚠️ 015（数据列异常）与 **021（5% 就早报，唯一突出事件在 33.2%）列为问题组，不纳入**。
 DASH_GROUPS = ['016', '017', '018', '019', '020',
                '022', '023', '024', '025', '026', '027']
 
@@ -242,7 +237,7 @@ def main():
             f.write(json.dumps(pkg, ensure_ascii=False, separators=(',', ':')))
             f.write(';\n')
         size = os.path.getsize(path) / 1024.0
-        print(f'  写出 {path}  ({size:.0f} KB)')
+        print(f'  写出 {repo_rel(path)}  ({size:.0f} KB)')
         print(f'  帧数={pkg["nfr"]} 时长={pkg["dur"]}s D_end={pkg["meta"]["D_end"]} '
               f't25={pkg["meta"]["t25"]} t55={pkg["meta"]["t55"]} t85={pkg["meta"]["t85"]} '
               f'AE事件={pkg["meta"]["aeEvents"]} 光纤通道={pkg["meta"]["nFo"]}')
@@ -254,7 +249,7 @@ def main():
         f.write('window.SHM_INDEX=')
         f.write(json.dumps(index, ensure_ascii=False, separators=(',', ':')))
         f.write(';\n')
-    print(f'\n写出清单 {ipath}')
+    print(f'\n写出清单 {repo_rel(ipath)}')
 
 
 if __name__ == '__main__':

@@ -1,0 +1,14 @@
+﻿gid,P1,P2,P3,include,n_ae,n_str,t_kind,cycles,reason
+015,False,True,True,False,54128,0,nan,无上限,时间列/采样不可识别
+016,True,True,True,True,31442,50118,秒,无上限,
+017,True,True,True,True,46566,46001,秒,无上限,
+018,True,True,True,True,35223,35214,计数器(每点+1),无上限,
+019,True,True,True,True,39999,39987,计数器(每点+1),无上限,
+020,True,True,True,True,58904,58893,计数器(每点+1),无上限,
+021,True,True,False,False,24114,167044,计数器(每点+1),300,有上限试验(循环+静力)，非疲劳失效类
+022,True,True,False,False,33034,55195,秒,300,有上限试验(循环+静力)，非疲劳失效类
+023,True,True,True,True,39374,233012,秒,无上限,
+024,True,True,True,True,34228,124117,秒,无上限,
+025,True,True,True,True,49352,212562,秒,无上限,
+026,True,True,True,True,27535,183053,计数器(每点+1),无上限,
+027,True,True,False,False,32873,211069,计数器(每点+1),1000,有上限试验(循环+静力)，非疲劳失效类

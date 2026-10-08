@@ -56,6 +56,7 @@ ROOT = HERE                    # 输出根；--root 可在 main() 里改写
 PROJ = os.path.dirname(HERE)
 sys.path.insert(0, PROJ)       # shm
 sys.path.insert(0, HERE)       # ae_io / l1_meta 等同级模块
+from shm.paths import repo_rel  # noqa: E402  产物里只写相对路径，见该函数
 
 # 原来 step0.py 的全局设置（保留：同一批数据在 pandas 下有大量 NaN 语义警告）
 warnings.filterwarnings('ignore')
@@ -850,8 +851,8 @@ def main():
     print('=' * 60)
     print(f'分组      : {a.batch}  ({SECTION_TITLE[a.batch]})')
     print(f'试件      : {" ".join(groups)}')
-    print(f'输出根    : {ROOT}')
-    print(f'输入根    : {HERE}')
+    print(f'输出根    : {repo_rel(ROOT)}')
+    print(f'输入根    : {repo_rel(HERE)}')
     if a.dry_run:
         print('模式      : dry-run（不写文件）')
     print()

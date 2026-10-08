@@ -23,16 +23,21 @@ phmdc/T[1-9]/
 *.csv
 *.txt
 
-# ── 结果与产物（可重跑生成）───────────────────────────────────────────
-results/
-main/results/
-main/figures/
-l1/results/
-l1/figures/
-phmdc/results/
-agent/eval/results/
+# ── 结果与产物 ──────────────────────────────────────────────────────
+!**/results/**/*.csv
+!**/results/**/*.txt
+!**/results/**/*.xlsx
+!phmdc/*.csv
+!phmdc/*.xlsx
+!l1/*.csv
+!l1/*.xlsx
+**/*.npz
+**/*.npy
+**/*.pkl
+**/results/_logs/
+main/cache/
 agent/log/
-dashboard/data/
+*.log
 
 # ── 缓存（可重建）─────────────────────────────────────────────────────
 main/cache/

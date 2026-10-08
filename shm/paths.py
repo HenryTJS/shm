@@ -15,6 +15,7 @@
     paths.items()                          # paths.json 的 items
     paths.link_paths(paths.items()[0])     # 展开通配后，仓库内的目录列表
     paths.status()                         # 逐条状态（仓库侧 / 数据侧）
+    paths.repo_rel(ROOT)                   # 写进产物用：相对仓库根、不含机器绝对路径
 
 命令行自检::
 
@@ -54,6 +55,27 @@ def data_root(path=None):
     if len(root) == 2 and root[1] == ':':
         root += os.sep
     return root
+
+
+def repo_rel(path, base=None):
+    """把路径渲染成【相对仓库根】的形式，供写进产物（报告 / CSV / 日志）使用。
+
+    目的：产物里**不出现机器相关的绝对路径**（如 ``D:\\lixiang\\...``），
+    换机器 / 换盘后仍可读，也才适合随仓库提交。
+
+    - 一律用正斜杠 ``/``，跨平台一致；
+    - 路径在仓库内 -> 返回相对路径，如 ``main/results/loso_cv.csv``；
+    - 路径在仓库外，或与仓库不同盘符 -> 原样返回绝对路径（无法相对化）。
+    """
+    p = os.path.abspath(path)
+    root = os.path.abspath(base) if base else PROJ
+    try:
+        rel = os.path.relpath(p, root)
+    except ValueError:              # Windows：跨盘符无法相对化（如仓库在 D:、数据在 E:）
+        return p.replace(os.sep, '/')
+    if rel == '.' or rel.startswith('..'):
+        return p.replace(os.sep, '/')
+    return rel.replace(os.sep, '/')
 
 
 def items(path=None):

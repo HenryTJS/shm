@@ -2798,6 +2798,69 @@ agent 回归 **24 通过 / 0 失败** + envfile 22/0；`agent/cli.py --demo` exi
 > PhysGuard 用例），是一条独立的待办。
 
 
+#### 42）产物去机器路径 + `.gitignore` 放行交付级产物（2026-10-08）
+
+**问题**：产物要随仓库提交，但里面有**机器绝对路径**。仓库从 `d:\lixiang` 搬到 `d:\shm` 后，
+`phmdc/results/step0_report.txt` 里仍是搬迁前的 `数据根目录: D:\lixiang\phmdc` ——
+换机器 / 换盘就看不懂，也泄露本机目录结构。
+
+**扫描**（唯一可信口径：直接读盘，**不用 grep** —— `results/` 被 `.gitignore` 跳过，grep 会漏）：
+`main\results`、`l1\results`、`phmdc\results`、`dashboard\data`、`main\figures`、`l1\figures`
+下的全部 `*.csv / *.txt / *.js / *.json / *.jsonl`（181 个，排除 `_logs/`）里，
+含绝对路径（`lixiang` / 反斜杠盘符 / 正斜杠盘符）的**只有 1 个** = `phmdc/results/step0_report.txt`。
+`_logs/` 下另有若干（如 `_ab_var_new.txt` 含 `D:\lixiang\...`），但它们是运行日志、继续忽略，不清洗。
+
+**改法（在写入端一处收口）**：`shm/paths.py` 新增 `repo_rel(path)` ——
+相对**仓库根**、统一正斜杠；仓库外的路径（如外接盘 `E:\l1`）无法相对化则原样返回。
+
+| 位置 | 原文 | 改为 |
+| ---- | ---- | ---- |
+| `phmdc/step0.py` | `say('数据根目录: %s' % ROOT)` | `say('数据根目录: %s' % repo_rel(ROOT))` |
+| `main/verify.py` | 3 处 `saved {os.path.abspath(...)}` | `saved {repo_rel(...)}` |
+| `l1/step0.py` | `输出根 / 输入根: {ROOT}` / `{HERE}` | `{repo_rel(ROOT)}` / `{repo_rel(HERE)}` |
+
+**已有产物就地清洗**：`phmdc/results/step0_report.txt` 的 `数据根目录: D:\lixiang\phmdc` → `phmdc`。
+
+**`.gitignore` 放行产物**（2026-10-08）：删掉对 `results/`、`main/results/`、`main/figures/`、
+`l1/results/`、`l1/figures/`、`phmdc/results/`、`dashboard/data/` 的整段忽略。放行后，
+`results/` 与 `figures/` 下的**交付/结果文件**（`*.csv` / `*.txt` / `*.xlsx` / `*.png` / `*.js`）、
+`dashboard/data/`、`agent/eval/results/`，以及分散的产物文件
+（`phmdc/index.csv`、`phmdc/labels.csv`、`l1/AE特征概览.csv`、`l1/L1数据记录.xlsx`）都会入库。
+
+⚠️ **`.npz` / `.npy` / `.pkl` 仍忽略**（用户 2026-10-08 指正：它们是**中间缓存、不是产物**）
+—— `l1/results/` 里 169 个 `.npz`、`main/cache/` 里 430 个 `.npy` 都能从 CSV 产物重跑重建，不入库。
+
+```
+!**/results/**/*.csv  !**/results/**/*.txt  !**/results/**/*.xlsx   # 放行各 results/ 的产物
+!phmdc/*.csv  !phmdc/*.xlsx   !l1/*.csv  !l1/*.xlsx                  # 放行分散产物（仅顶层，不碰 junction）
+**/*.npz  **/*.npy  **/*.pkl   # 中间缓存仍忽略
+**/results/_logs/      # 运行日志仍忽略
+main/cache/            # 中间缓存仍忽略（430 个 .npy）
+agent/log/  *.log      # 运行日志仍忽略
+```
+
+⚠️ 为什么要 `!` 反向放行：`.gitignore` 上半段「原始数据兜底」里有 `*.csv` / `*.txt` / `*.xlsx`
+（挡 `main/001/*.csv` 这类原始数据），它**同样会挡掉** `results/*.csv`。
+`.gitignore` 里**后写的规则优先**，故把放行规则放在兜底规则之后；而 git 的
+「已排除目录下不可重新包含」语义保证了 `_logs/*.txt` 与 junction 目录下的原始数据**不会**被误放行。
+
+⚠️ **为什么 `_logs/` 不提交**：`l1/results/_logs/*.txt` 是运行日志，17 个文件共 **62 行**含机器路径
+（`D:\lixiang\...` 与数据根 `E:\l1`）。它们**不是产物**（是日志），继续忽略；
+真要提交需先把路径清洗成相对形式。
+
+**校验**（都过）：
+
+1. **`.gitignore` 政策**：用 `pathspec`（git 语义，含祖先目录排除）跑 **28 条**用例 ——
+   产物 13 条应放行、缓存（含 `.npz` / `.npy`）/ 日志 / 原始数据 / 版权 / 敏感 15 条应忽略，**异常 0**。
+2. **复扫产物**：交付产物里含绝对路径的 **0 个**；机器路径**仅**存在于被忽略的 `_logs/`。
+3. **`repo_rel` 运行时**：`main/results/loso_cv.csv` 原样；`d:\shm\phmdc` → `phmdc`；
+   `E:\l1`（跨盘，无法相对化）→ `E:/l1`。
+
+**待办（未做）**：`QUICKSTART.md` 当前是一份**较早的修订** —— §6 仍写 `dashboard-v2 / dashboard-v3`
+与 `l1/check_dashboard_pkg.py`（二者已在 §38 移除），§5 仍写「产物都在 `.gitignore` 里」、「看板 39 个」。
+它与 §38 之后的仓库状态不符，其 §5 的产物 / 忽略说明**尚未同步**，需要时单独修一次。
+
+
 
 
 
