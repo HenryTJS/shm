@@ -60,7 +60,7 @@ Agent 能力来自 LLM，但**结论可靠性不来自 LLM**，因此这两个�
 │  [router] 关键词+正则 → 单工具 → 模板渲染               │
 └──────────────────────────────────────────────────────┤
                                                       ↓
-                 [tools]     10 个工具，只读已有产物（带证据链）
+                 [tools]     9 个工具，只读已有产物（带证据链）
                  [physguard] 16 条物理约束（逐条校验并记录）
 ```
 
@@ -83,15 +83,15 @@ Agent 能力来自 LLM，但**结论可靠性不来自 LLM**，因此这两个�
 | `stiffness`             | 刚度退化到哪一步（独立物理参照）                   | `main/results/grade_stiff_traj.csv`                           |
 | `data_quality`          | 这组数据可信吗                                     | `main/results/candidate_check.csv`                            |
 | `compare`               | 多试件横向对比                                     | 上述组合                                                        |
-| `mechanism`             | 什么机制在损伤（RA–AF）                           | `l1/results/_l1_raf_*.npz`                                    |
 | `localization`          | 损伤在哪个位置                                     | `l1/results/_l1_loc_*.npz`                                    |
 | `anomaly`               | 有无异常、何时偏离基线                             | `l1/results/_l1_anom_*.npz`                                   |
 | `doc_search`            | 方法原理、为什么这么做                             | `README.md` + `docs/details.md`                             |
 | **`maintenance`** | **检修建议：处置级别 / 检修范围 / 复检手段** | 上述工具的组合推导                                              |
 
-**10 个工具全部注册给 LLM**：`react.py` 的 `TOOL_SCHEMAS` 定义了每个工具的 JSON Schema
+**9 个工具全部注册给 LLM**：`react.py` 的 `TOOL_SCHEMAS` 定义了每个工具的 JSON Schema
 （描述里包含关键使用条件，如「X 可信 / Y 不可信」「这是独立物理参照」）。
-（原第 11 个工具 `l1_migration` 随 L1 在线口径于 2026-10-07 删除，见 `docs/details.md` §38。）
+（原第 11 个工具 `l1_migration` 随 L1 在线口径于 2026-10-07 删除，见 `docs/details.md` §38；
+原 `mechanism`（RA–AF）于 2026-10-08 删除，见 §43。）
 
 **`maintenance` 为什么要放在工具层**：「什么损伤程度对应什么处置」属于**工程规范知识**，
 必须可控、可复现、可追溯 —— 所以定级逻辑写成**显式规则**，而不是交给 LLM 发挥。
@@ -109,7 +109,7 @@ LLM 只负责把它讲成人话。每条建议都带 `basis`（推理所依据�
 
 > ⚠️ `maintenance` 对 **`l1` 全部组**（恒幅+FBG+DFOS / 恒幅+DFOS）统一拒答 —— 定级口径只在主样本 016-020 上标定过。
 > L1 的在线 D(t) 口径已于 2026-10-07 整体下线（见 `docs/details.md` §38）；L1 只提供离线复评与
-> 机制 / 定位 / 异常三项扩展分析。
+> 定位 / 异常两项扩展分析。
 > 「拿不到在线 D(t)」与「不出处置建议」是两件事，勿混为一谈。
 
 ## 物理约束规则（PhysGuard）
@@ -309,7 +309,7 @@ agent/
 ├── cli.py          # 离线降级：命令行入口
 ├── core.py         # 离线降级：关键词路由 + 模板语言层
 ├── envfile.py      # .env 加载器（零依赖，自研）
-├── tools.py        # 10 个工具（只读产物，两个引擎共用）
+├── tools.py        # 9 个工具（只读产物，两个引擎共用）
 ├── physguard.py    # 16 条物理约束规则 + 审计日志（两个引擎共用）
 ├── test_physguard.py  # 规则回归测试（24 用例，零依赖）
 ├── test_envfile.py    # .env 回归测试（22 用例，零依赖）

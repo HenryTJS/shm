@@ -15,7 +15,7 @@
 能量类：ener_sum（ABS-ENERGY, aJ）ener_per_hit / sig_sum sig_per_hit（SIG STRENGTH, pV·s）
 时间类：dur_p50 dur_mean（µs）
 机制类：ra_p50（= RISE/AMP）/ af_p50（= COUN/DURATION×1000, kHz）
-        —— 与 `l1/ae_raf.py` 的老组口径一致（老组 AMP 是 µV 要转 dB，本格式 AMP 直接是 dB）
+        —— AMP 口径雷注意：老组 .pridb 的 AMP 是 µV 要转 dB，本格式 AMP 直接是 dB
 
 用法
 ----

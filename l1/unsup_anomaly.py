@@ -22,7 +22,6 @@ RUL 失败的根因是「缺少跨组可比的退化指标」（n_f 跨 17 倍�
     ae_energy   AE 能量中位 [aJ]
     ae_amp      AE 幅值中位 [dB]
     dfos_local  DFOS 空间重分布量（§12.5 中唯一有效的 DFOS 特征）
-    raf_shear   RA–AF 剪切型占比（§13）
 
 寿命坐标
 --------
@@ -49,11 +48,11 @@ FIG = os.path.join(HERE, 'figures')
 GROUPS = ['L1-49', 'L1-50', 'L1-51', 'L1-52', 'L1-54',
           'L1-55', 'L1-56', 'L1-59', 'L1-60']
 
-FEATS = ['ae_rate', 'ae_energy', 'ae_amp', 'dfos_local', 'raf_shear']
+FEATS = ['ae_rate', 'ae_energy', 'ae_amp', 'dfos_local']
 N_BIN = 100          # 寿命网格格数
 BASE_FRAC = 0.15     # 基线 = 前 15% 寿命
 AE_BIN_S = 60.0      # AE 预聚合窗口 [s]
-PCA_KEEP = 3         # 保留的主成分数（特征 5 维）
+PCA_KEEP = 3         # 保留的主成分数（特征 4 维）
 SMOOTH_W = 5         # 移动中位宽度（抑制 AE 的 bursty 单格波动）
 
 # ⚠️ 基线内部稳定性：基线段内 D_M 的「99 分位 / 中位」。
@@ -133,19 +132,6 @@ def _dfos_series(gid, n_f, n_bin=N_BIN):
     return lo, rm, covered
 
 
-def _raf_series(gid, n_bin=N_BIN):
-    fp = os.path.join(RES, f'_l1_raf_{gid}.npz')
-    if not os.path.exists(fp):
-        return None
-    z = np.load(fp)
-    sf = z['shear_frac'].astype(float)
-    if sf.size != n_bin:
-        grid = np.linspace(0, 1, n_bin + 1)[:-1] + 0.5 / n_bin
-        src = np.linspace(0, 1, sf.size)
-        sf = np.interp(grid, src, sf)
-    return sf
-
-
 def _fill(x):
     """线性插值补 NaN（端点用最近值），再兜底 0。"""
     x = np.asarray(x, float)
@@ -183,7 +169,6 @@ def build_matrix(gid, meta=None):
 
     ae = _ae_series(gid, eff_h)
     dfos = _dfos_series(gid, n_f)
-    sf = _raf_series(gid)
 
     grid = np.linspace(0, 1, N_BIN + 1)[:-1] + 0.5 / N_BIN
     cols = {}
@@ -196,8 +181,6 @@ def build_matrix(gid, meta=None):
     if dfos is not None:
         lo, _, cov['dfos'] = dfos
         cols['dfos_local'] = _fill(np.log10(np.clip(lo, 1e-6, None)))
-    if sf is not None:
-        cols['raf_shear'] = _fill(sf)
 
     if not cols:
         return None, None, None

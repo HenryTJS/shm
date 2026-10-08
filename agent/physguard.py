@@ -264,7 +264,7 @@ def _p12_unreliable_time(intent, kw, res, v):
         v.warn('P12', '对比中包含时间标定不可靠的组（%s）→ 跨组结论需排除'
                % '/'.join(sorted(set(kw['gids']) & set(UNRELIABLE_TIME))))
         return
-    if gid in UNRELIABLE_TIME and intent in ('mechanism', 'anomaly'):
+    if gid in UNRELIABLE_TIME and intent == 'anomaly':
         v.warn('P12', '%s 时间标定不可靠 → 其趋势结论不纳入统计' % gid)
         return
     v.checked.append('P12')

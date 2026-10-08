@@ -40,8 +40,6 @@ INTENTS = [
     ('compare', ['对比', '比较', '谁先', '哪个先', '谁更', '排序'], False, '多试件横向对比'),
     ('maintenance', ['维修', '检修', '维护', '处置', '怎么处理', '如何处理', '怎么办',
                      '要不要修', '下一步', '处理建议'], True, '检修建议与处置级别'),
-    ('mechanism', ['机制', '剪切', '拉伸', 'RA', 'AF', '脱粘', '开裂', '什么模式',
-                   '机理'], True, 'RA–AF 损伤机制'),
     ('localization', ['定位', '位置', '在哪', '哪个位置', '坐标'], True, 'AE 事件定位'),
     ('anomaly', ['异常', '偏离', '异常检测', '离群'], True, '无监督异常检测'),
     ('doc_search', ['为什么', '原理', '方法', '怎么做', '解释', '什么是', '依据'], False, '文档检索'),
@@ -133,13 +131,6 @@ def render_template(intent, kw, res, verdict):
             '  %-6s 预警 %s%%  提前 %s%%  刚度末值 %s' %
             (r['gid'], r.get('t_warn_pct', '-'), r.get('lead_pct', '-'), r.get('stiff_end', '-'))
             for r in rs)
-
-    if intent == 'mechanism':
-        seg = d['shear_frac_by_quintile']
-        return ('%s剪切型占比随寿命 5 分段：%s，变化 %+.3f。\n'
-                '（RA 中位：%s）— 机制由拉伸型向剪切型演化的趋势判断。'
-                % (tag, ' → '.join('%.3f' % x for x in seg), d['delta'],
-                   ' → '.join('%.2f' % x for x in d['ra_median'])))
 
     if intent == 'localization':
         return ('%s可信定位 %d/%d 个，rms 中位 %.2f µs，质心 (%.0f, %.0f) mm。'

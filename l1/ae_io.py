@@ -8,7 +8,7 @@
 
 - `l1/step0.py --batch c1` 旧行为：`concat` → `drop_duplicates(subset='time')` → `sort_values('time')`
   （注释写「可能时间有重叠」⇒ 作者以为有重复，但实测两段**零重合**，去重无效）
-- `l1/step0.py --batch c2` / `ae_locate.py` / `ae_raf.py` / `ae_shape_features.py`：
+- `l1/step0.py --batch c2` / `ae_locate.py` / `ae_shape_features.py`：
   `sorted(glob(...))` + 按 `Time` 排序（同样交错）
 
 ## 实测两组有多段
@@ -52,7 +52,7 @@ L1-59 命中判据 B（`L159.pridb` 0.2 h / 42.6 h = 0.5%）⇒ 按 `Time` 合�
 `Time[s]×1e-7`、`RiseT[µs]×0.1`、`Dur[µs]×0.1`、`Amp[µV]` 原始（**是 µV 不是 dB**，
 dB = 20·log₁₀µV）、`Eny[eu]` 原始、`Counts` 无量纲、`RMS[µV]×0.0065536`。
 **本模块默认只把 `Time` 换成秒**（缝合必须在秒域做），其余列**保持 `.pridb` 原值**
-以免改变下游脚本（`ae_raf` 的 RA/AF 阈值语义等）的既有行为。
+以免改变下游脚本（RA/AF、幅值阈值等语义）的既有行为。
 """
 import glob
 import os

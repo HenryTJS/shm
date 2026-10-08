@@ -121,13 +121,6 @@ TOOL_SCHEMAS = [
                      'description': '试件编号列表，如 ["016","017"]'}},
             'required': ['gids']}}},
     {'type': 'function', 'function': {
-        'name': 'mechanism',
-        'description': '查询数据集 C 的 RA–AF 损伤机制：剪切型占比随寿命的演化'
-                       '（占比上升表示由基体开裂/纤维断裂主导转向分层/脱粘主导）',
-        'parameters': {'type': 'object', 'properties': {
-            'gid': {'type': 'string', 'description': '试件编号，如 L1-49'}},
-            'required': ['gid']}}},
-    {'type': 'function', 'function': {
         'name': 'localization',
         'description': '查询数据集 C 的 AE 事件定位：可信事件数、残差、定位质心。'
                        '注意 X 方向可信、Y 方向不可信',

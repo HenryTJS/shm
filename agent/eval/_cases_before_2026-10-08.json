@@ -941,8 +941,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-49",
+  "category": "机制与定位",
+  "gid": "L1-49",
+  "question": "L1-49 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-49-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-49",
   "question": "L1-49 的损伤位置在哪里？",
   "trap": false,
@@ -969,8 +991,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-50",
+  "category": "机制与定位",
+  "gid": "L1-50",
+  "question": "L1-50 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-50-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-50",
   "question": "L1-50 的损伤位置在哪里？",
   "trap": false,
@@ -997,8 +1041,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-51",
+  "category": "机制与定位",
+  "gid": "L1-51",
+  "question": "L1-51 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-51-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-51",
   "question": "L1-51 的损伤位置在哪里？",
   "trap": false,
@@ -1025,8 +1091,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-52",
+  "category": "机制与定位",
+  "gid": "L1-52",
+  "question": "L1-52 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-52-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-52",
   "question": "L1-52 的损伤位置在哪里？",
   "trap": false,
@@ -1053,8 +1141,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-54",
+  "category": "机制与定位",
+  "gid": "L1-54",
+  "question": "L1-54 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-54-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-54",
   "question": "L1-54 的损伤位置在哪里？",
   "trap": false,
@@ -1081,8 +1191,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-55",
+  "category": "机制与定位",
+  "gid": "L1-55",
+  "question": "L1-55 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-55-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-55",
   "question": "L1-55 的损伤位置在哪里？",
   "trap": false,
@@ -1109,8 +1241,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-56",
+  "category": "机制与定位",
+  "gid": "L1-56",
+  "question": "L1-56 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-56-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-56",
   "question": "L1-56 的损伤位置在哪里？",
   "trap": false,
@@ -1137,8 +1291,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-59",
+  "category": "机制与定位",
+  "gid": "L1-59",
+  "question": "L1-59 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-59-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-59",
   "question": "L1-59 的损伤位置在哪里？",
   "trap": false,
@@ -1165,8 +1341,30 @@
   "note": ""
  },
  {
+  "id": "M-L1-60",
+  "category": "机制与定位",
+  "gid": "L1-60",
+  "question": "L1-60 的损伤机制是什么？",
+  "trap": false,
+  "expect_num": [],
+  "expect_any": [
+   [
+    "剪切",
+    "分层",
+    "脱粘",
+    "基体",
+    "纤维"
+   ]
+  ],
+  "disclaim": [],
+  "must_call": [
+   "mechanism"
+  ],
+  "note": ""
+ },
+ {
   "id": "M-L1-60-x",
-  "category": "定位",
+  "category": "机制与定位",
   "gid": "L1-60",
   "question": "L1-60 的损伤位置在哪里？",
   "trap": false,
@@ -2103,6 +2301,25 @@
   "note": "异常检测仅覆盖数据集 C，B 组无此产物（应如实说明而非套用）"
  },
  {
+  "id": "T14b",
+  "category": "陷阱题",
+  "gid": "L1-05",
+  "question": "L1-05 的 RA-AF 机制占比是多少？",
+  "trap": true,
+  "expect_num": [],
+  "expect_any": [],
+  "disclaim": [
+   "不存在",
+   "没有",
+   "无法",
+   "不支持",
+   "未",
+   "不适用"
+  ],
+  "must_call": [],
+  "note": "同上"
+ },
+ {
   "id": "T15",
   "category": "陷阱题",
   "gid": "016",
@@ -2301,7 +2518,7 @@
   "id": "T19",
   "category": "陷阱题",
   "gid": "L1-56",
-  "question": "L1-56 尾段的异常检测结论可靠吗？可以直接引用吗？",
+  "question": "L1-56 尾段的机制结论可靠吗？可以直接引用吗？",
   "trap": true,
   "expect_num": [],
   "expect_any": [],
@@ -2315,7 +2532,7 @@
    "采集"
   ],
   "must_call": [
-   "anomaly"
+   "mechanism"
   ],
   "note": "L1-56 时间标定最不可靠 + 基线 AE 活动异常低"
  },
@@ -2380,7 +2597,8 @@
    "沿加筋条"
   ],
   "must_call": [
-   "localization"
+   "localization",
+   "mechanism"
   ],
   "note": "冲击点 ≈(50,80)；X 可信但 Y 不可信 → 不能断言重合"
  },

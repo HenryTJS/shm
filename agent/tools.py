@@ -269,32 +269,6 @@ def anomaly(gid):
 
 
 # ---------------------------------------------------------------- 工具 7
-def mechanism(gid):
-    """查询数据集 C 的 RA–AF 损伤机制识别结果。"""
-    gid = norm_gid(gid)
-    fp = os.path.join(L1_RES, '_l1_raf_%s.npz' % gid)
-    if not os.path.exists(fp):
-        return _res(False, 'mechanism', gid=gid, error='仅数据集 C（9 组）有 RA–AF 结果')
-    z = np.load(fp)
-    sf, life = z['shear_frac'], z['life']
-    n = sf.size
-    k = max(3, n // 5)
-    seg = [round(float(np.nanmean(sf[i * k:(i + 1) * k])), 3) for i in range(5)]
-    d = {'shear_frac_by_quintile': seg,
-         'first20': seg[0], 'last20': seg[-1],
-         'delta': round(seg[-1] - seg[0], 3),
-         'bi_shear': round(float(z['bi_shear']), 3) if np.isfinite(z['bi_shear']) else None,
-         'ra_median': [round(float(np.nanmedian(z['ra_med'][i * k:(i + 1) * k])), 2)
-                       for i in range(5)]}
-    notes = ['判据：score=af_n-ra_n<0 记为剪切型；基线=首个数据块（因果标准化）',
-             'RA–AF 分界线为经验值 → 只看趋势，不看绝对值']
-    if str(gid) in ('L1-51', 'L1-56'):
-        notes.append('该组时间标定不可靠（§3.3）→ 趋势结论不纳入统计')
-    return _res(True, 'mechanism', d, gid=gid, evidence=['l1/results/_l1_raf_%s.npz' % gid],
-                notes=notes)
-
-
-# ---------------------------------------------------------------- 工具 8
 def localization(gid):
     """查询数据集 C 的 AE 事件定位精度（X 可信 / Y 不可信）。"""
     gid = norm_gid(gid)
@@ -552,7 +526,6 @@ TOOLS = {
     'data_quality': data_quality,
     'compare': compare,
     'anomaly': anomaly,
-    'mechanism': mechanism,
     'localization': localization,
     'doc_search': doc_search,
     'maintenance': maintenance,
