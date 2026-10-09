@@ -198,12 +198,15 @@ python main/verify.py candidates --groups "021,022"
 **④ 别用 `| Out-Null` 或 `Select-Object -First N` 截断长命令。** 管道提前关闭会让命令报
 失败退出码（`exit=-1`），但你其实没看到真错误。
 
-**⑤ 移动过的脚本要设 `PYTHONPATH`。** 例如 `l1/attic/` 下的归档脚本：
+**⑤ 从别处拷来的脚本要设 `PYTHONPATH`。** 例如把 `l1/probe_dta.py` 拷到临时目录后直接跑：
 
 ```bat
 set PYTHONPATH=%CD%\l1
-python l1\attic\p2p_load_check.py
+python %TEMP%\probe_dta.py
 ```
+
+> ⚠️ 旧版此处举的例子是 `l1/attic/` 下的归档脚本 —— **该目录不存在**（从未进仓，见
+> `docs/待办与未决问题.md` §1b）。
 
 **⑥ 图片里的中文。** 已在代码里设 `Microsoft YaHei / SimHei`。
 

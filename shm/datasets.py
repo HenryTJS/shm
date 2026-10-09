@@ -122,8 +122,9 @@ CAMPAIGN_ALIAS = {
     'C4': 'L1 谱载+FBG',
 }
 ALIAS_OF = {v: k for k, v in CAMPAIGN_ALIAS.items()}
-# 数据方未提供的组（写在文档里，供自检时解释「27 个而不是 29 个」）
-MISSING_GROUPS = {'L1-22': '变幅表里列出但未提供', 'L1-23': '一批表里列出但未提供'}
+# 数据方未提供的组。**2026-10-09 起为空** —— L1-22 / L1-23 已由数据方补齐并接入（29 组齐）。
+# 保留本表是为了让自检脚本在「又有组缺失」时能解释原因。
+MISSING_GROUPS = {}
 
 _CAMPAIGN_OF = {g: c for c, d in L1_CAMPAIGNS.items() for g in d['members']}
 
