@@ -7,7 +7,7 @@
 
 | --batch | 分组              | 试件                   | 模态与口径                                                                 | 产物 |
 | ------- | ----------------- | ---------------------- | -------------------------------------------------------------------------- | ---- |
-| `c1`    | L1 恒幅+FBG+DFOS | L1-03/04/05/09         | LUNA **逐行**落盘 + FBG（`Sensors.*.txt`）+ AE（`vallenae` 列名，hit 级）  | `{gid}分布式应变.csv` / `{gid}光纤.csv` / `{gid}声发射.csv` |
+| `c1`    | L1 恒幅+FBG+DFOS | L1-03/04/05/09/23      | LUNA **逐行**落盘 + FBG（`Sensors.*.txt`）+ AE（`vallenae` 列名，hit 级）  | `{gid}分布式应变.csv` / `{gid}光纤.csv` / `{gid}声发射.csv` |
 | `c2`    | L1 恒幅+DFOS | L1-49 至 L1-60（9 组） | LUNA 按**测量段**聚合（段内逐位置中位/峰值/幅值）+ AE 按 **1 s bin** 聚合 | 上述三个 + `{gid}分布式应变_peak.csv` / `_amp.csv` / `{gid}dfos_anchor.csv` |
 
 L1 恒幅+DFOS 组**没有 FBG**，且原始体量比 L1 恒幅+FBG+DFOS 组大两个数量级，所以必须段级聚合
@@ -68,7 +68,7 @@ C1_GROUPS = campaign_members('C1')      # L1 恒幅+FBG+DFOS
 C2_GROUPS = campaign_members('C2')      # L1 恒幅+DFOS
 
 # ==================================================================
-# L1 恒幅+FBG+DFOS（L1 恒幅+FBG+DFOS，L1-03/04/05/09）：LUNA 逐行 + FBG + AE（vallenae 列名）
+# L1 恒幅+FBG+DFOS（L1 恒幅+FBG+DFOS，L1-03/04/05/09/23）：LUNA 逐行 + FBG + AE（vallenae 列名）
 # ==================================================================
 # 1st TU Delft Campaign 试件 (Paper 1: Broer et al. 2022)
 
@@ -411,6 +411,15 @@ def save_ae_to_csv(df_ae, output_path):
     return True
 
 
+def _v_to_db(df):
+    """把 `amplitude` / `threshold` 从 V 换成 dB（20·log10(V/1µV)）。就地改并返回。"""
+    V_ref = 1e-6
+    for c in ('amplitude', 'threshold'):
+        if c in df.columns:
+            df[c] = 20 * np.log10(df[c] / V_ref)
+    return df
+
+
 def process_ae_c1(specimen_name, folder_path):
     """处理单个试件的所有 AE 文件，合并为一个 CSV。
 
@@ -421,6 +430,12 @@ def process_ae_c1(specimen_name, folder_path):
     且后期高活跃段被错放到 cycle 110k–161k（与论文"前 240k cycles 几乎无 AE"矛盾）。
     现交由 `ae_io.plan()` 判定「按 Time 合并」还是「按会话顺序缝合」，见
     `ae_io` 模块 docstring 与 docs/details.md §17.11。
+
+    ⚠️ **单段走流式**（2026-10-09）：L1-23 有 3261 万条 hit，整体路径的
+    `PriDatabase.read_hits()` 要先物化成约 13 GB，在 15.4 GB 机器上直接
+    `_ArrayMemoryError`。单段不存在跨段排序/去重需求 ⇒ 交给
+    `ae_io.write_hits_vallenae_csv()` 按块落盘，内存恒定、产物逐字节等价
+    （已验证：L1-03 两条路径的 CSV 完全一致）。
     """
     ae_dir = os.path.join(folder_path, 'AE')
     if not os.path.exists(ae_dir):
@@ -433,6 +448,24 @@ def process_ae_c1(specimen_name, folder_path):
         _sys.path.insert(0, _h)
     import ae_io
 
+    output_path = os.path.join(folder_path, f'{specimen_name}声发射.csv')
+
+    # 单段 ⇒ 流式落盘
+    try:
+        _p = ae_io.plan(specimen_name, 'auto', verbose=False)
+    except Exception:                                            # noqa: BLE001
+        _p = None
+    if _p is not None and len(_p.get('parts', [])) == 1:
+        n, cols, pl = ae_io.write_hits_vallenae_csv(
+            specimen_name, output_path, transform=_v_to_db)
+        if n == 0:
+            print(f'  [跳过] 无有效的 AE 数据')
+            return
+        print(f'  [保存] {output_path}')
+        print(f'    形状: ({n}, {len(cols)}), '
+              f'大小: {os.path.getsize(output_path) / 1e6:.2f} MB')
+        return
+
     df_all, pl = ae_io.read_hits_vallenae(specimen_name)
     if df_all is None or len(df_all) == 0:
         print(f'  [跳过] 无有效的 AE 数据')
@@ -442,14 +475,9 @@ def process_ae_c1(specimen_name, folder_path):
           f'通道: {sorted(df_all["channel"].unique())}')
 
     # 振幅转换: V → dB (20 * log10(V / 1µV))
-    V_ref = 1e-6
-    if 'amplitude' in df_all.columns:
-        df_all['amplitude'] = 20 * np.log10(df_all['amplitude'] / V_ref)
-    if 'threshold' in df_all.columns:
-        df_all['threshold'] = 20 * np.log10(df_all['threshold'] / V_ref)
+    df_all = _v_to_db(df_all)
 
     # 输出: {specimen}声发射.csv (放在试件根目录)
-    output_path = os.path.join(folder_path, f'{specimen_name}声发射.csv')
     save_ae_to_csv(df_all, output_path)
 
 
@@ -822,7 +850,7 @@ def main():
     ap = argparse.ArgumentParser(
         description='Step0: L1 原始数据 → CSV（三批统一入口）')
     ap.add_argument('--batch', default='c1', choices=['c1', 'c2'],
-                    help='c1 = L1 恒幅+FBG+DFOS（L1-03/04/05/09）/ '
+                    help='c1 = L1 恒幅+FBG+DFOS（L1-03/04/05/09/23）/ '
                          'c2 = L1 恒幅+DFOS（L1-49 至 L1-60，无 FBG）')
     ap.add_argument('--groups', default=None,
                     help='逗号分隔试件号；省略=该批全部')

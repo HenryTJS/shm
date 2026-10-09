@@ -38,7 +38,9 @@ os.makedirs(FIG, exist_ok=True)
 
 sys.path.insert(0, ROOT)                            # 使 l1_meta 可导入
 from l1_meta import load_meta                       # noqa: E402
-GROUPS = ['L1-03', 'L1-04', 'L1-05', 'L1-09']
+from shm.datasets import campaign_members           # noqa: E402
+# 组名单**唯一来源 = shm/datasets**（原来在这里硬编码 4 组，新试件会被静默漏掉）
+GROUPS = campaign_members('C1')
 META = {g: load_meta(g) for g in GROUPS}
 GAP_S = 300.0        # FBG 测量块间隔阈值
 CYCS_PER_BLK = 5000

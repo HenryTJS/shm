@@ -33,7 +33,10 @@ os.makedirs(FIG, exist_ok=True)
 # 元信息自适应: n_f 与 DFOS 左右脚空间段由各组 L1-xx.pdf 自动解析(适配不同光纤布设);
 # refs(论文损伤检测点)属标签, 仅 03/04/05 有, 静态维护在 l1_meta。
 from l1_meta import load_meta                       # noqa: E402
-GROUPS = ['L1-03', 'L1-04', 'L1-05', 'L1-09']
+sys.path.insert(0, os.path.dirname(ROOT))           # 使 shm 可导入
+from shm.datasets import campaign_members           # noqa: E402
+# 组名单**唯一来源 = shm/datasets**（原来在这里硬编码 4 组 ⇒ 新试件会被静默漏掉）
+GROUPS = campaign_members('C1')
 META = {g: load_meta(g) for g in GROUPS}
 CYCLES_BIN = 500   # 论文 y/HI 的 cycle 步长
 # L1-05 起点修正开关: 对 HI_OF 负值截断(见 level4 注释)。设为 False 即按论文原式(min/max)

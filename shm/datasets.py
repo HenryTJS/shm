@@ -12,7 +12,7 @@ AE 时钟要不要平移」散落在至少 6 个地方：
     l1/ae_hi.py            N_F（又一份 14 组硬编码）
     l1/ae_frames.py        CLOCK_SHIFT（天数）
     l1/l1_meta.py          n_f 靠逐组 PDF 解析（盘不在时静默返回 None）
-    l1/results/l1_specimen_meta.csv   已解析好的 27 组元信息（长表）
+    l1/results/l1_specimen_meta.csv   已解析好的 29 组元信息（长表）
 
 ⇒ 后果：同一事实有多份拷贝，改一处忘一处（本仓已多次踩到 docstring 过期），
   而且盘不在时某些入口**静默**退化。
@@ -67,7 +67,7 @@ DATASETS = {
         official=['016', '017', '018', '019', '020'],   # = shm.config.DEFAULT_GROUPS
     ),
     'l1': dict(
-        label='l1  ReMAP / TU-Delft L1（27 组；按模态分 4 组，见 L1_CAMPAIGNS）',
+        label='l1  ReMAP / TU-Delft L1（29 组；按模态分 4 组，见 L1_CAMPAIGNS）',
         target='l1',
         pattern=r'^L1-\d{2}$',
         official=None,                        # 见 L1_CAMPAIGNS
@@ -87,7 +87,11 @@ DATASETS = {
 # 组成员与 l1/survey_groups.py 的 C1/C2/C3_VA/C4_SP 一致；src 标注该事实的原始出处。
 L1_CAMPAIGNS = {
     'L1 恒幅+FBG+DFOS': dict(
-        members=['L1-03', 'L1-04', 'L1-05', 'L1-09'], ae='pridb',
+        # 2026-10-09：L1-23 的数据由数据方补齐（pridb + FBG + LUNA/DFOS + 组内 PDF），
+        # 签名与 C1 完全一致 ⇒ 归入本组。⚠️ 但它**不是单级恒幅**：PDF 的载荷表是
+        # -5/-50 kN 至 100,000 循环后**提到 -6/-60 kN**，共 438,000 循环，且中途因
+        # 试验机/PZT 故障停机多次（见 l1/results/l1_conditions.csv 的 anomaly 列）。
+        members=['L1-03', 'L1-04', 'L1-05', 'L1-09', 'L1-23'], ae='pridb',
         # PZT：**全盘递归搜过 E:\l1，一个 PZT 目录都没有**（2026-10-06 实测）。
         # 旧文档里「新组无 DFOS / PZT」的写法会让人以为老组有 PZT，已更正。
         fbg=True, dfos=True, pzt=False, clock_shift_days=0, src='survey_groups'),
@@ -96,7 +100,10 @@ L1_CAMPAIGNS = {
                  'L1-56', 'L1-59', 'L1-60'], ae='pridb',
         fbg=False, dfos=True, pzt=False, clock_shift_days=0, src='survey_groups'),
     'L1 变幅VA+FBG': dict(
-        members=['L1-06', 'L1-13', 'L1-14', 'L1-24'], ae='dta',
+        # 2026-10-09：L1-22 的数据由数据方补齐（.DTA + FBG，无 DFOS），签名与 C3 一致。
+        # 载荷谱 6 级共 345,000 循环；带**预置脱粘**（Damage locations variable.pdf：
+        # Lower edge of disbond，只给了 Y=45 mm，无 X）—— 同 C4 的 L1-41 / L1-44。
+        members=['L1-06', 'L1-13', 'L1-14', 'L1-24', 'L1-22'], ae='dta',
         fbg=True, dfos=False, pzt=False, clock_shift_days=0, src='survey_groups',
         fbg_rate_hz=5.0),
     'L1 谱载+FBG': dict(
@@ -295,7 +302,7 @@ def meta(gid):
 
 
 def meta_all():
-    """一次把全部 27 组读成 dict（避免每组的 CSV 重读；CSV 小，但扫盘不便宜）。"""
+    """一次把全部 29 组读成 dict（避免每组的 CSV 重读；CSV 小，但扫盘不便宜）。"""
     return {g: meta(g) for g in groups('l1')}
 
 
@@ -312,6 +319,8 @@ N_F_FALLBACK = {
     'L1-25': 1580000, 'L1-27': 529000, 'L1-29': 1300000, 'L1-30': 10150,
     'L1-31': 966000, 'L1-34': 1400, 'L1-35': 452000, 'L1-36': 4500,
     'L1-41': 1820000, 'L1-44': 1160000,
+    # 2026-10-09 补入：数据此前未提供，但元信息表本来就覆盖它们
+    'L1-22': 345000, 'L1-23': 438000,
 }
 
 _NF_CACHE = None

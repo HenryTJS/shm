@@ -26,3 +26,5 @@ L1-35,452000,,5,-50.5,-78.0,1.8716,12.3,,impact_center,-,,,,,skin·impact_center
 L1-36,4500,,1,-45.9,-78.0,1.6667,10.0,,impact_center,-,,,,,skin·impact_center
 L1-41,1820000,,2,-45.9,-78.0,1.857,,,disbond_lower_edge,-,,,,,skin·disbond_lower_edge·脱粘 20x20
 L1-44,1160000,,2,-55.2,-78.0,1.8912,,,disbond_lower_edge,-,,,,,skin·disbond_lower_edge·脱粘 25x20
+L1-22,345000,,6,-6.0,-60.0,0.9991,,,disbond_lower_edge,-,,,,,无标注·disbond_lower_edge·脱粘 25
+L1-23,438000,,6,-6.0,-60.0,2.0,,,disbond_location,-,,,,,无标注·disbond_location

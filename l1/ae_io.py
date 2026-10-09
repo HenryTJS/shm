@@ -58,6 +58,7 @@ import glob
 import os
 import re
 import sqlite3
+from itertools import islice
 
 import numpy as np
 
@@ -239,3 +240,118 @@ def read_hits_vallenae(gid, multifile='auto', root=None, verbose=True):
     else:
         out = out.sort_values('time', kind='stable').reset_index(drop=True)
     return out, p
+
+
+# ---------------------------------------------------------------- 流式落盘
+# `vallenae` 的 `read_hits()` = `iter_to_dataframe(iread_hits())`，即**先把全部 hit
+# 物化成 Python 元组**再建 DataFrame。L1-23 有 3261 万条 hit，光这一步就要约 13 GB，
+# 在 15.4 GB 的机器上直接 `_ArrayMemoryError`（实测 2026-10-09）——而 `iread_hits()`
+# 本身是真流式（SQLite 游标）。所以按块建表、按块追加落盘，内存恒定。
+#
+# 必须与旧路径对齐的两处，否则 CSV 不再逐字节一致：
+#   ① `dropna(axis='columns', how='all')` 在**全量**上删「全 NaN 列」；
+#   ② `_convert_to_nullable_types()` 把 int32/int64 换成**可空**整数类型 ——
+#      不复刻的话，「部分为空的整数列」会被 pandas 升成 float 并以 `123.0` 落盘，
+#      而可空整数写 `123`。
+_NULLABLE = {'int32': 'Int32', 'int64': 'Int64'}
+# `PriDatabase.read_hits()` 实际是 `iter_to_dataframe(..., index_column='set_id')`
+# ⇒ **`set_id` 被设为索引**，而落盘用 `to_csv(index=False)` 不写索引，
+#   所以旧路径的 CSV 里**根本没有 set_id 列**。流式必须同样排除它，
+#   否则会多一列（A/B 实测 2026-10-09：12 列 vs 13 列）。
+_INDEX_COL = 'set_id'
+HIT_CHUNK = 200_000          # 每块 hit 数（约 0.2 GB 峰值，15 GB 机器上很安全）
+
+
+def _to_nullable(df):
+    """复刻 `vallenae/io/_dataframe.py::_convert_to_nullable_types`。"""
+    for c in df.columns:
+        dst = _NULLABLE.get(str(df[c].dtype))
+        if dst:
+            df[c] = df[c].astype(dst)
+    return df
+
+
+def write_hits_vallenae_csv(gid, out_path, chunk=HIT_CHUNK, multifile='auto',
+                            root=None, transform=None, verbose=True):
+    """**流式**把 hit 参数写成 CSV，产出与 `read_hits_vallenae` 等价（内存恒定）。
+
+    ⚠️ **只支持单段**（`plan()['mode'] == 'single'`）：多段要跨段排序/去重，
+    必须看到全量，调用方应对多段回退到 `read_hits_vallenae`。
+
+    `transform(df)` 若给出，则在**每块**写盘前调用（`step0` 用它做 V→dB 换算）。
+
+    全 NaN 列按**第一块**判定，并要求「第一块的全 NaN 列在后续块里永不出现数据」
+    —— 列是否被记录由采集配置决定、不随数据段变化；一旦违反就抛错，
+    而不是写出列错位的 CSV。先写 `*.part`，全部成功后才改名，避免半成品。
+
+    返回 (行数, 列名列表, plan)。
+    """
+    import pandas as pd
+    import vallenae as vae
+    p = plan(gid, multifile, root, verbose=False)
+    if len(p['parts']) != 1:
+        raise ValueError('流式落盘只支持单段，本组有 %d 段 ⇒ 请用 read_hits_vallenae'
+                         % len(p['parts']))
+    s, off = p['parts'][0], p['offsets'][0]
+    db = vae.io.PriDatabase(s['path'])
+    cols, drop_first, n, expected = None, None, 0, None
+    tmp = out_path + '.part'
+    tmin, tmax, chans = None, None, set()
+    try:
+        hits = db.iread_hits()
+        expected = len(hits)                    # SizedIterable：真实总数拿得到
+        # ⚠️ **必须在这里 iter() 一次**：`iread_hits()` 返回的是**可重迭代**对象
+        # （`QueryIterable`），直接把它交给 `islice` 会让**每一块都从头发起重查 SQL**
+        # ⇒ 死循环、文件无限增长。2026-10-09 实测踩到：L1-03 的 `.part` 涨到 12.7 GB
+        # （旧产物只有 741 MB）才被发现。
+        it = iter(hits)
+        with open(tmp, 'w', newline='', encoding='utf-8-sig') as fh:
+            while True:
+                batch = list(islice(it, chunk))
+                if not batch:
+                    break
+                df = pd.DataFrame(batch)
+                nan_now = set(df.columns[df.isna().all()])
+                if cols is None:
+                    drop_first = nan_now
+                    cols = [c for c in df.columns
+                            if c not in drop_first and c != _INDEX_COL]
+                elif nan_now - drop_first:
+                    raise RuntimeError(
+                        '%s: 第 %d 块出现新的全 NaN 列 %s —— 全 NaN 列集合在流上不稳定，'
+                        '不能按块判定；请改用 read_hits_vallenae'
+                        % (gid, n // chunk + 1, sorted(nan_now - drop_first)))
+                df = df[cols]
+                if off and 'time' in df.columns:
+                    df['time'] = df['time'] + off
+                if transform is not None:
+                    df = transform(df)
+                df = _to_nullable(df)
+                df.to_csv(fh, index=False, header=(n == 0))
+                if 'time' in df.columns and len(df):
+                    lo, hi = float(df['time'].min()), float(df['time'].max())
+                    tmin = lo if tmin is None else min(tmin, lo)
+                    tmax = hi if tmax is None else max(tmax, hi)
+                if 'channel' in df.columns:
+                    chans |= set(np.asarray(df['channel'].dropna().unique()).tolist())
+                n += len(df)
+                if expected is not None and n > expected:
+                    raise RuntimeError(
+                        '%s: 已写 %d 行但总数只有 %d ⇒ 迭代器被重复消费，立即中止'
+                        % (gid, n, expected))
+    finally:
+        db.close()
+    if n == 0:
+        if os.path.exists(tmp):
+            os.remove(tmp)
+        return 0, [], p
+    if expected is not None and n != expected:
+        os.remove(tmp)
+        raise RuntimeError('%s: 流式落盘 %d 行 != 期望 %d 行 ⇒ 已丢弃半成品'
+                           % (gid, n, expected))
+    os.replace(tmp, out_path)
+    if verbose:
+        print('    mode=%s  hits=%s  time=%.1f~%.1f s  通道: %s  （流式，块=%d）'
+              % (p['mode'], format(n, ','), tmin or 0.0, tmax or 0.0,
+                 sorted(chans), chunk))
+    return n, cols, p

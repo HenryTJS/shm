@@ -3,7 +3,7 @@
 
 数据集:
   main  : 内部疲劳机主样本 016-020 (服役期渐进损伤)
-  l1    : 公开集 ReMAP/TU-Delft L1 —— **共 27 组**，按**模态/格式/加载谱**分四组：
+  l1    : 公开集 ReMAP/TU-Delft L1 —— **共 29 组**，按**模态/格式/加载谱**分四组：
           L1 恒幅+FBG+DFOS（短别名 C1）/ L1 恒幅+DFOS（C2）/ L1 变幅VA+FBG（C3）/ L1 谱载+FBG（C4）
   phmdc : PHM 2020 DC 轴承 (T1 至 T8 退化外推)
 
@@ -34,7 +34,7 @@ PY = sys.executable
 # 每类数据集的简介（--list 用）
 DATASETS = {
     'main': '内部疲劳机主样本 016-020（服役期渐进损伤）',
-    'l1': 'ReMAP/TU-Delft L1 公开集（27 组；四组 = 恒幅+FBG+DFOS / 恒幅+DFOS / 变幅VA+FBG / 谱载+FBG）',
+    'l1': 'ReMAP/TU-Delft L1 公开集（29 组；四组 = 恒幅+FBG+DFOS / 恒幅+DFOS / 变幅VA+FBG / 谱载+FBG）',
     'phmdc': 'PHM 2020 DC 轴承（T1 至 T8，退化外推）',
 }
 
@@ -70,7 +70,7 @@ TASKS = {
         'dashboard': [['main/export_dashboard.py']],          # → dashboard/data/
     },
     'l1': {
-        # ---- L1 恒幅+FBG+DFOS（L1-03/04/05/09，有 FBG）----
+        # ---- L1 恒幅+FBG+DFOS（L1-03/04/05/09/23，有 FBG）----
         'prepare':  [['l1/step0.py']],                       # 原始 .pridb/.txt → CSV
         'paper':    [['l1/reproduce_broer_l1.py', '--mode', 'all']],  # 论文 Level1 + Level4
         'paper-l23': [['l1/reproduce_broer_l23.py', '--mode', 'all']],  # 论文 Level2 + Level3

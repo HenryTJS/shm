@@ -460,6 +460,29 @@ def ae_seg_note(segs, i):
 
 
 # --------------------------------------------------------------- 主流程
+_CONST_LOAD_ROW = re.compile(r'[\d,]+\s+(-?[\d.]+)\s*kN\s+(-?[\d.]+)\s*kN')
+
+
+def const_amp_levels(root, g):
+    """组内 PDF 的 Applied loads 表 → [(min_kN, max_kN), ...]（去重保序）。
+
+    ⚠️ 恒幅两组的载荷**并非**组内统一：L1-23 是 -5/-50 跑到 100k 循环后
+    **提到 -6/-60**（见其组内 PDF）。旧实现无条件写 '-6.5/-65（组内统一）'，
+    对 L1-23 是错值（2026-10-09 实测发现：它的组内 PDF 里全是 -5/-50 与 -6/-60，
+    根本没有 -6.5/-65）。
+    """
+    fp = os.path.join(root, g, '%s.pdf' % g)
+    if not os.path.exists(fp):
+        return []
+    txt = re.sub(r'\s+', ' ', pdf_text(fp) or '')
+    out = []
+    for m in _CONST_LOAD_ROW.finditer(txt):
+        pair = (float(m.group(1)), float(m.group(2)))
+        if pair not in out:
+            out.append(pair)
+    return out
+
+
 def main(do_print_only=False):
     if hasattr(sys.stdout, 'reconfigure'):
         sys.stdout.reconfigure(encoding='utf-8')
@@ -534,11 +557,23 @@ def main(do_print_only=False):
                                      for x in c['级别'])
             rec['n_f(总循环)'] = int(c['总循环'])
             rec['n_f来源'] = 'table of specimen cycles to failure.pdf（含 Total 行）'
-        # 恒幅两组：PDF 给的是「组内统一」的单一载荷，无分级
+        # 恒幅两组：载荷与冲击**逐试件**取，不能再无条件写「组内统一」
+        # （2026-10-09：L1-23 是两级 -5/-50 → -6/-60，且 Impact_Locations.pdf
+        #   标的是**脱粘**而非冲击 ⇒ 旧的无条件硬编码会写出两个错值）
         if not rec['载荷级别(kN)'] and camp in _CONST_AMP:
-            rec['冲击能量'] = '10 J（组内统一）'
-            rec['载荷级别(kN)'] = '-6.5/-65（组内统一）'
-            rec['各级循环'] = '等幅，无分级'
+            lv = const_amp_levels(root, g)
+            if len(lv) > 1:
+                rec['载荷级别(kN)'] = ' → '.join('%g/%g' % x for x in lv)
+                rec['各级循环'] = '多级（见组内 PDF 的 Applied loads 表）'
+            elif lv:
+                rec['载荷级别(kN)'] = '%g/%g（组内统一）' % lv[0]
+                rec['各级循环'] = '等幅，无分级'
+            else:
+                rec['载荷级别(kN)'] = '-6.5/-65（组内统一）'
+                rec['各级循环'] = '等幅，无分级'
+            _k = (imp1.get(g) or (None, None, ''))[2]
+            rec['冲击能量'] = ('无冲击（PDF 标为脱粘）' if '脱粘' in str(_k)
+                            else '10 J（组内统一）')
         if g in imp1:
             x, y, kind = imp1[g]
             rec['冲击/损伤位置(蒙皮侧)'] = '%g, %g (%s)' % (x, y, kind)
@@ -674,8 +709,8 @@ def main(do_print_only=False):
         dict(项目='传感器编号方向', 现状='L1-24 的 AE 传感器标注为 L5R1…L1R5（与其余组的 L5R5…L1R1 相反）',
              影响='若沿用「L#/R# 对应左右」的通道语义会左右错位',
              建议='涉及 L1-24 的空间分析单独确认方向'),
-        dict(项目='路径归属', 现状='27 组全在 E:\\l1（数据本体只在外接盘，不入 D 盘仓库；2026-10-07 起不再用迁移脚本）',
-             影响='仓库内相对路径 l1/L1-xx/ 对全部 27 组都有效（以前只有 13 组）',
+        dict(项目='路径归属', 现状='29 组全在 E:\\l1（数据本体只在外接盘，不入 D 盘仓库；2026-10-07 起不再用迁移脚本）',
+             影响='仓库内相对路径 l1/L1-xx/ 对全部 29 组都有效（以前只有 13 组）',
              建议='换盘只改 paths.json 的 data_root 再跑 -Apply；'
                   '数据侧新增的组在 paths.json 里补一条 item 即可被枚举到'),
         dict(项目='分析窗长', 现状='剖面分析按 140 行切一个窗 ⇒ 变幅批（5 Hz）= 28.0 s；谱载批（10 Hz）= 14.0 s',

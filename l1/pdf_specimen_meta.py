@@ -26,12 +26,14 @@ REPO = os.path.dirname(HERE)
 RES = os.path.join(HERE, 'results')
 os.makedirs(RES, exist_ok=True)
 
-# 27 个已交付的组；根目录汇总 PDF 还额外覆盖 L1-22 / L1-23（数据未提供）
+# 27 个已交付的组；根目录汇总 PDF 本来就额外覆盖 L1-22 / L1-23
+# （2026-10-09：这两个试件的数据已由数据方补齐，故一并纳入 ⇒ docs/details.md §45）
 GROUPS = ['L1-03', 'L1-04', 'L1-05', 'L1-09', 'L1-49', 'L1-50', 'L1-51',
           'L1-52', 'L1-54', 'L1-55', 'L1-56', 'L1-59', 'L1-60',
           'L1-06', 'L1-13', 'L1-14', 'L1-24',
           'L1-25', 'L1-27', 'L1-29', 'L1-30', 'L1-31', 'L1-34', 'L1-35',
-          'L1-36', 'L1-41', 'L1-44']
+          'L1-36', 'L1-41', 'L1-44',
+          'L1-22', 'L1-23']
 
 ROOT_LOC_FILES = ['Damage locations variable.pdf', 'Damage locations spectrum.pdf',
                   'Damage locations.pdf']

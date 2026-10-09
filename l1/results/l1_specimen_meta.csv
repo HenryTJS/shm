@@ -438,3 +438,39 @@ L1-44,loc_page,10,,Damage locations spectrum.pdf,10
 L1-44,rootcyc_level_1,-55.2 to -78 kN x460,,table of specimen cycles to failure.pdf,
 L1-44,rootcyc_level_2,-45.9 to -59.7 kN x1160000,,table of specimen cycles to failure.pdf,
 L1-44,rootcyc_total,1160000,cycles,table of specimen cycles to failure.pdf,
+L1-22,loc_kind,disbond_lower_edge,,Damage locations variable.pdf,4
+L1-22,loc_x_mm,,mm,Damage locations variable.pdf,4
+L1-22,loc_y_mm,45.0,mm,Damage locations variable.pdf,4
+L1-22,loc_y_hi_mm,,mm,Damage locations variable.pdf,4
+L1-22,loc_side,,,Damage locations variable.pdf,4
+L1-22,loc_page,4,,Damage locations variable.pdf,4
+L1-22,rootcyc_level_1,-3.5 to -35 kN x10000,,tables of cycles variable.pdf,
+L1-22,rootcyc_level_2,-3.9 to -39 kN x10000,,tables of cycles variable.pdf,
+L1-22,rootcyc_level_3,-4.5 to -45 kN x10000,,tables of cycles variable.pdf,
+L1-22,rootcyc_level_4,-5 to -50 kN x170000,,tables of cycles variable.pdf,
+L1-22,rootcyc_level_5,-5.5 to -55 kN x85000,,tables of cycles variable.pdf,
+L1-22,rootcyc_level_6,-6 to -60 kN x60000,,tables of cycles variable.pdf,
+L1-22,rootcyc_total,,cycles,tables of cycles variable.pdf,
+L1-23,source,l1\L1-23\L1-23.pdf,,l1\L1-23\L1-23.pdf,
+L1-23,skin_width_mm,165.0,,l1\L1-23\L1-23.pdf,
+L1-23,skin_length_mm,240.0,,l1\L1-23\L1-23.pdf,
+L1-23,vel_longitudinal_ms,6215.5,,l1\L1-23\L1-23.pdf,
+L1-23,vel_caveat,"performed after specimen failure, but considering sensor failure, these measurements might not be useful",,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_1_x,145.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_1_y,190.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_2_x,145.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_2_y,20.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_3_x,20.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_3_y,50.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_4_x,20.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,ae_sensor_4_y,220.0,mm,l1\L1-23\L1-23.pdf,
+L1-23,load_level_1,-5~-50 kN x30000,,l1\L1-23\L1-23.pdf,
+L1-23,load_level_2,-5~-50 kN x50000,,l1\L1-23\L1-23.pdf,
+L1-23,load_level_3,-5~-50 kN x70000,,l1\L1-23\L1-23.pdf,
+L1-23,load_level_4,-5~-50 kN x100000,,l1\L1-23\L1-23.pdf,
+L1-23,load_level_5,-6~-60 kN x245000,,l1\L1-23\L1-23.pdf,
+L1-23,load_level_6,-6~-60 kN x438000,,l1\L1-23\L1-23.pdf,
+L1-23,imp_x_mm,30.0,mm,Impact_Locations.pdf,5
+L1-23,imp_y_mm,45.0,mm,Impact_Locations.pdf,5
+L1-23,imp_kind,disbond_location,,Impact_Locations.pdf,5
+L1-23,imp_page,5,,Impact_Locations.pdf,5

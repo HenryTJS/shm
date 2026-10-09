@@ -21,11 +21,12 @@ os.makedirs(RES, exist_ok=True)
 os.makedirs(FIG, exist_ok=True)
 
 sys.path.insert(0, ROOT)                            # 使 l1_meta 可导入
+sys.path.insert(0, os.path.dirname(ROOT))           # 使 shm 可导入
 from l1_meta import load_meta                       # noqa: E402
-# 第一批（有 FBG）: L1-03/04/05/09；第二批（无 FBG, AE+DFOS）: L1-49..L1-56
-GROUPS_V1 = ['L1-03', 'L1-04', 'L1-05', 'L1-09']
-GROUPS_V2 = ['L1-49', 'L1-50', 'L1-51', 'L1-52', 'L1-54', 'L1-55', 'L1-56',
-             'L1-59', 'L1-60']
+from shm.datasets import campaign_members           # noqa: E402
+# 组名单**唯一来源 = shm/datasets**（原来在这里硬编码 13 组，新试件会被静默漏掉）
+GROUPS_V1 = campaign_members('C1')                  # 恒幅+FBG+DFOS
+GROUPS_V2 = campaign_members('C2')                  # 恒幅+DFOS
 GROUPS = GROUPS_V1 + GROUPS_V2
 META = {g: load_meta(g) for g in GROUPS}
 
