@@ -1,30 +1,30 @@
-﻿gid,kind,x_mm,y_mm,y_hi_mm,side,source,page,raw_desc,nx_cm,nx_side,ny_cm,ny_side,prose_x_mm,prose_y_mm,flip_x_mm,flip_y_mm,meas_cx_mm,meas_cy_mm,n_good
-L1-03,impact_location,50.0,80.0,,,Impact_Locations.pdf,1,stiffener foot (right) 5cm from right edge 8cm from bottom,5.0,right,8.0,bottom,50.0,163.0,115.0,163.0,72.38078843174385,100.35875365811671,5809
-L1-04,impact_location,25.0,80.0,,,Impact_Locations.pdf,2,on skin near right side as seen from stiffener. 2.5 cm from right edge x 8 cm from bottom,2.5,right,8.0,bottom,25.0,163.0,140.0,163.0,71.86473429951691,110.82859903381643,5175
-L1-05,impact_location,80.0,50.0,,,Impact_Locations.pdf,3,on stiffener (left stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,85.0,193.0,61.939251112856766,131.37313432835822,3819
-L1-09,impact_location,100.0,82.5,,,Impact_Locations.pdf,4,on stiffener (centre). 8.25 from edge x 10 cm from top right,,,10.0,top,,100.0,65.0,160.5,92.40515254237287,106.79647457627118,7375
-L1-49,impact_center,115.0,160.0,,stiffener,Damage locations.pdf,1,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,5.0,right,8.0,top,50.0,80.0,50.0,83.0,52.363040855025,86.4085502499569,5801
-L1-50,impact_center,115.0,160.0,,stiffener,Damage locations.pdf,2,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,5.0,right,8.0,top,50.0,80.0,50.0,83.0,81.10679121433981,120.0320626104519,7922
-L1-51,impact_center,115.0,160.0,,stiffener,Damage locations.pdf,3,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,5.0,right,8.0,top,50.0,80.0,50.0,83.0,49.054877151684565,100.33279387965278,6797
-L1-52,impact_center,115.0,160.0,,stiffener,Damage locations.pdf,4,on stiffener (right stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,50.09310510318349,52.4466485362342,6251
-L1-54,impact_center,115.0,160.0,,stiffener,Damage locations.pdf,5,on stiffener (right stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,73.29605866177819,57.24839596700275,7637
-L1-55,impact_center,50.0,80.0,,stiffener,Damage locations.pdf,6,on 5000 cycles stiffener (left fatigue stiffener). 5 cm from left edge x 8 cm from bottom,5.0,left,8.0,bottom,115.0,163.0,115.0,163.0,84.7226483649576,97.40169559951555,2477
-L1-56,impact_center,115.0,160.0,,stiffener,Damage locations.pdf,7,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,78.84779220779221,207.54181818181817,7700
-L1-59,impact_center,115.0,160.0,,stiffener,Damage locations.pdf,8,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,64.74078259641192,79.22926967085746,7079
-L1-60,impact_center,50.0,80.0,,stiffener,Damage locations.pdf,9,on 5000 cycles stiffener (left fatigue stiffener). 5 cm from left edge x 8 cm from bottom,5.0,left,8.0,bottom,115.0,163.0,115.0,163.0,74.6794926606812,109.15291435086219,7017
-L1-06,impact_center,60.0,75.0,,,Damage locations variable.pdf,1,,,,,,,,105.0,168.0,,,
-L1-13,impact_center,115.0,80.0,,,Damage locations variable.pdf,3,,,,,,,,50.0,163.0,,,
-L1-14,impact_center,105.0,60.0,,,Damage locations variable.pdf,2,,,,,,,,60.0,183.0,,,
-L1-24,impact_center,115.0,165.0,,,Damage locations variable.pdf,5,,,,,,,,50.0,78.0,,,
-L1-25,impact_center,110.0,60.0,,skin,Damage locations spectrum.pdf,1,,,,,,,,55.0,183.0,,,
-L1-27,impact_center,105.0,60.0,,skin,Damage locations spectrum.pdf,2,,,,,,,,60.0,183.0,,,
-L1-29,impact_center,105.0,60.0,,skin,Damage locations spectrum.pdf,3,,,,,,,,60.0,183.0,,,
-L1-30,impact_center,105.0,60.0,,skin,Damage locations spectrum.pdf,4,,,,,,,,60.0,183.0,,,
-L1-31,impact_center,60.0,65.0,,skin,Damage locations spectrum.pdf,5,,,,,,,,105.0,178.0,,,
-L1-34,impact_center,60.0,180.0,,skin,Damage locations spectrum.pdf,6,,,,,,,,105.0,63.0,,,
-L1-35,impact_center,60.0,70.0,,skin,Damage locations spectrum.pdf,7,,,,,,,,105.0,173.0,,,
-L1-36,impact_center,105.0,60.0,,skin,Damage locations spectrum.pdf,8,,,,,,,,60.0,183.0,,,
-L1-41,disbond_lower_edge,82.5,160.0,180.0,skin,Damage locations spectrum.pdf,9,,,,,,,,82.5,83.0,,,
-L1-44,disbond_lower_edge,60.0,60.0,85.0,skin,Damage locations spectrum.pdf,10,,,,,,,,105.0,183.0,,,
-L1-22,disbond_lower_edge,,45.0,,,Damage locations variable.pdf,4,,,,,,,,,198.0,,,
-L1-23,disbond_location,30.0,45.0,,,Impact_Locations.pdf,5,,,,,,,,135.0,198.0,,,
+﻿gid,kind,x_mm,y_mm,x_hi_mm,y_hi_mm,side,source,page,pos_note,raw_desc,nx_cm,nx_side,ny_cm,ny_side,prose_x_mm,prose_y_mm,flip_x_mm,flip_y_mm,meas_cx_mm,meas_cy_mm,n_good
+L1-03,impact_location,50.0,80.0,,,,Impact_Locations.pdf,1,,stiffener foot (right) 5cm from right edge 8cm from bottom,5.0,right,8.0,bottom,50.0,163.0,115.0,163.0,72.38078843174385,100.35875365811671,5809
+L1-04,impact_location,25.0,80.0,,,,Impact_Locations.pdf,2,,on skin near right side as seen from stiffener. 2.5 cm from right edge x 8 cm from bottom,2.5,right,8.0,bottom,25.0,163.0,140.0,163.0,71.86473429951691,110.82859903381643,5175
+L1-05,impact_location,50.0,80.0,,,,Impact_Locations.pdf,3,原文两个裸数字是「80 50」，组内 PDF 写「on stiffener (left stiffener). 5 cm from left edge x 8 cm from top」⇒ 横向 50、纵向 80。**修正前装反了**（横向被填成 80）。,on stiffener (left stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,115.0,163.0,61.939251112856766,131.37313432835822,3819
+L1-09,impact_location,82.5,100.0,,,,Impact_Locations.pdf,4,原文两个裸数字是「100 82.5」，组内 PDF 写「on stiffener (centre). 8.25 from edge x 10 cm from top right」⇒ 横向 82.5、纵向 100。**修正前装反了**（横向被填成 100）。,on stiffener (centre). 8.25 from edge x 10 cm from top right,,,10.0,top,,100.0,82.5,143.0,92.40515254237287,106.79647457627118,7375
+L1-49,impact_center,115.0,160.0,,,stiffener,Damage locations.pdf,1,,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,5.0,right,8.0,top,50.0,80.0,50.0,83.0,52.428195818204586,86.27219231250783,7987
+L1-50,impact_center,115.0,160.0,,,stiffener,Damage locations.pdf,2,,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,5.0,right,8.0,top,50.0,80.0,50.0,83.0,81.07585391215996,120.16886941474372,251958
+L1-51,impact_center,115.0,160.0,,,stiffener,Damage locations.pdf,3,,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from right edge x 8 cm from top,5.0,right,8.0,top,50.0,80.0,50.0,83.0,49.14077212806026,100.73885750156937,12744
+L1-52,impact_center,115.0,160.0,,,stiffener,Damage locations.pdf,4,,on stiffener (right stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,49.87581803671189,53.72351447435246,68915
+L1-54,impact_center,115.0,160.0,,,stiffener,Damage locations.pdf,5,,on stiffener (right stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,73.36979340637589,56.8727693468688,1535817
+L1-55,impact_center,50.0,80.0,,,stiffener,Damage locations.pdf,6,,on 5000 cycles stiffener (left fatigue stiffener). 5 cm from left edge x 8 cm from bottom,5.0,left,8.0,bottom,115.0,163.0,115.0,163.0,84.5037353832828,95.19277825898658,36944
+L1-56,impact_center,115.0,160.0,,,stiffener,Damage locations.pdf,7,,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,78.95123478926104,207.63096017914205,2509740
+L1-59,impact_center,115.0,160.0,,,stiffener,Damage locations.pdf,8,,on 5000 cycles stiffener (right fatigue stiffener). 5 cm from left edge x 8 cm from top,5.0,left,8.0,top,115.0,80.0,50.0,83.0,65.1017175007403,79.21316997334912,108064
+L1-60,impact_center,50.0,80.0,,,stiffener,Damage locations.pdf,9,,on 5000 cycles stiffener (left fatigue stiffener). 5 cm from left edge x 8 cm from bottom,5.0,left,8.0,bottom,115.0,163.0,115.0,163.0,74.48959754021853,109.69745127107011,910650
+L1-06,impact_center,60.0,75.0,,,,Damage locations variable.pdf,1,,,,,,,,,105.0,168.0,,,
+L1-13,impact_center,115.0,80.0,,,,Damage locations variable.pdf,3,,,,,,,,,50.0,163.0,,,
+L1-14,impact_center,105.0,60.0,,,,Damage locations variable.pdf,2,,,,,,,,,60.0,183.0,,,
+L1-24,impact_center,115.0,165.0,,,,Damage locations variable.pdf,5,,,,,,,,,50.0,78.0,,,
+L1-25,impact_center,110.0,60.0,,,skin,Damage locations spectrum.pdf,1,,,,,,,,,55.0,183.0,,,
+L1-27,impact_center,105.0,60.0,,,skin,Damage locations spectrum.pdf,2,,,,,,,,,60.0,183.0,,,
+L1-29,impact_center,105.0,60.0,,,skin,Damage locations spectrum.pdf,3,,,,,,,,,60.0,183.0,,,
+L1-30,impact_center,105.0,60.0,,,skin,Damage locations spectrum.pdf,4,,,,,,,,,60.0,183.0,,,
+L1-31,impact_center,60.0,65.0,,,skin,Damage locations spectrum.pdf,5,,,,,,,,,105.0,178.0,,,
+L1-34,impact_center,60.0,180.0,,,skin,Damage locations spectrum.pdf,6,,,,,,,,,105.0,63.0,,,
+L1-35,impact_center,60.0,70.0,,,skin,Damage locations spectrum.pdf,7,,,,,,,,,105.0,173.0,,,
+L1-36,impact_center,105.0,60.0,,,skin,Damage locations spectrum.pdf,8,,,,,,,,,60.0,183.0,,,
+L1-41,disbond_lower_edge,82.5,170.0,,,skin,Damage locations spectrum.pdf,9,脱粘下缘原文是**区间** y = 160 至 180 mm；用户 2026-10-10 裁定取中心点 ⇒ y = 170。,,,,,,,,82.5,73.0,,,
+L1-44,disbond_lower_edge,60.0,72.5,,,skin,Damage locations spectrum.pdf,10,脱粘下缘原文是**区间** y = 60 至 85 mm；用户 2026-10-10 裁定取中心点 ⇒ y = 72.5。,,,,,,,,105.0,170.5,,,
+L1-22,disbond_area,82.5,45.0,122.5,85.0,,Damage locations variable.pdf,4,脱粘区按 **40 x 40 mm** 记录：左边界锚定中轴线 82.5 mm、下缘锚定文字层标注 `Lower edge of disbond Y(mm) 45`，故 x 82.5 至 122.5、y 45 至 85。（矢量图实测为 x 82.42 至 118.95、y 50.16 至 90.06，即 36.5 x 39.9；该图不是等比例，故以用户裁定的整数值入库。）,,,,,,,,82.5,198.0,,,
+L1-23,disbond_area,45.0,45.0,75.0,75.0,,Impact_Locations.pdf,5,原文两个裸数字是「30 45」，**不是坐标**：2026-10-09 人工读图确认 30 是正方形脱粘区的**边长**、45 是其右下角顶点距右侧与下侧的距离。这里按「矩形范围」写成 x 45..75、y 45..75（距右 / 距下），与 L1-22 的表达方式一致。,,,,,,,,120.0,198.0,,,

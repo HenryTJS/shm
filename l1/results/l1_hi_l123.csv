@@ -1,0 +1,3 @@
+﻿gid,variant,n_f,cov,t50_pct,t85_pct
+L1-23,cum_hits,438000,0.991,68.4,89.2
+L1-23,cum_energy,438000,0.991,37.9,76.2

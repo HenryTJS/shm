@@ -90,6 +90,18 @@ TASKS = {
         'fbg-variants': [['l1/fbg_tools.py', 'variants']],             # 10 口径横向对比
         'meta':     [['l1/pdf_specimen_meta.py', '--write'],
                      ['l1/survey_groups.py']],                         # 元信息表 / 记录表
+        # ---- 跨机构可比性（论文线 2：横轴 = 寿命分数，纵轴 = SNHI）----
+        'crosslab-ae':    [['l1/hi_crosslab.py']],                     # AE 跨批次一致性（8 组）
+        'crosslab-ae23':  [['l1/hi_l123.py']],                         # 补第 29 组 L1-23（重）
+        'crosslab-pzt':   [['l1/pzt_crosslab.py']],                    # 导波 PZT 跨批次（17 组，重）
+        'pzt-fail':       [['l1/pzt_sensor_fail.py']],                 # 失效路径剔除（需先跑 crosslab-pzt）
+        'pzt-causal':     [['l1/pzt_causal.py']],                      # 导波因果（在线）版本核查（重）
+        'pzt-locadiff':   [['l1/pzt_locadiff_probe.py']],              # 尾波空间定位可行性探针（已证伪）
+        'snhi-shape':     [['l1/snhi_shape.py']],                      # SNHI 形状不变性前提诊断（重）
+        'snhi-rul':       [['l1/snhi_rul.py']],                        # 形状配准作 RUL 预测器（已证伪）
+        'level-vs-shape': [['l1/level_vs_shape.py']],                  # 绝对阈值 vs SNHI 对照实验
+        'figs':           [['l1/fig_two_systems.py'],
+                           ['l1/fig_protocol.py']],                     # 论文图：两套系统 / 协议流程
     },
     'phmdc': {
         'step0': [['phmdc/step0.py']],                                # → labels.csv / index.csv
@@ -139,6 +151,16 @@ DESC = {
         'fbg-qa':   ('FBG 覆盖体检', 'fbg_tools.py coverage（不读数据内容，快）'),
         'fbg-variants': ('FBG 口径对比', 'fbg_tools.py variants（10 口径 + 单组诊断）'),
         'meta':     ('试件元信息/记录表', 'pdf_specimen_meta.py --write + survey_groups.py'),
+        'crosslab-ae':    ('跨机构 AE 一致性', 'hi_crosslab.py：28 组放同一寿命分数轴 → 批间/组内'),
+        'crosslab-ae23':  ('补第 29 组 L1-23 (重)', 'hi_l123.py：流式读 4.1 GB 事件级 CSV'),
+        'crosslab-pzt':   ('跨机构 PZT 一致性 (重)', 'pzt_crosslab.py：17 组 × 56 路径 TOF 漂移'),
+        'pzt-fail':       ('传感器失效路径剔除', 'pzt_sensor_fail.py：需先跑 crosslab-pzt；含生产口径自检'),
+        'pzt-causal':     ('导波因果版本核查 (重)', 'pzt_causal.py：在线（因果）版本是否可行'),
+        'pzt-locadiff':   ('尾波空间定位探针', 'pzt_locadiff_probe.py：与椭圆敏感核对比（已证伪）'),
+        'snhi-shape':     ('SNHI 形状不变性诊断', 'snhi_shape.py：算法前提检验'),
+        'snhi-rul':       ('形状配准作 RUL（已证伪）', 'snhi_rul.py：同批留一 92.8% vs 零信息 23.6%'),
+        'level-vs-shape': ('绝对阈值 vs SNHI 对照', 'level_vs_shape.py：15 组，两方法产出同一量'),
+        'figs':           ('论文图（论文线 2）', 'fig_two_systems.py + fig_protocol.py → l1/figures/'),
     },
     'phmdc': {
         'step0': ('标签/索引', 'step0.py → labels.csv / index.csv（幂等，约 20 s）'),

@@ -9,7 +9,7 @@
 | 数据集 | 是什么                                                  | 命令里叫  |
 | ------ | ------------------------------------------------------- | --------- |
 | 主样本 | 内部疲劳机，5 Hz 正弦载荷疲劳，016–020 + 023–026      | `main`  |
-| L1     | ReMAP / TU-Delft 公开集（同一数据集分 4 组模态），27 组 | `l1`    |
+| L1     | ReMAP / TU-Delft 公开集（同一数据集分 4 组模态），29 组 | `l1`    |
 | phmdc  | PHM 2019 铝搭接件，外部方法验证平台                     | `phmdc` |
 
 **所有入口只有一个**：仓库根的 `run.py`。
@@ -89,7 +89,7 @@ python main/pipeline.py            rem prepare / evaluate / robust
 python main/verify.py              rem baselines / loso-cv / labels / ae-cols / grade / fusion / candidates
 ```
 
-### 公开集 `l1`（27 组，按模态分 4 组）
+### 公开集 `l1`（29 组，按模态分 4 组）
 
 ```bat
 python run.py --dataset l1 --task prepare          rem 原始 .pridb → CSV（耗时长、占空间）
@@ -101,6 +101,20 @@ python run.py --dataset l1 --task fiber-hi         rem FBG 块级 HI（离线）
 python run.py --dataset l1 --task dfos             rem 分布式应变逐块（离线）
 python run.py --dataset l1 --task meta             rem 试件元信息 + L1数据记录.xlsx
 ```
+
+**跨机构可比性（论文线 2）—— 横轴寿命分数 + 纵轴 SNHI：**
+
+```bat
+python run.py --dataset l1 --task crosslab-ae      rem AE 跨批次一致性（8 组）→ l1/results/l1_hi_crosslab.csv
+python run.py --dataset l1 --task crosslab-ae23    rem 补第 29 组 L1-23（重，流式读 4.1 GB）
+python run.py --dataset l1 --task crosslab-pzt     rem 导波 PZT 跨批次（17 组，重）
+python run.py --dataset l1 --task pzt-fail         rem 传感器失效路径剔除（需先跑 crosslab-pzt）
+python run.py --dataset l1 --task level-vs-shape   rem 绝对阈值 vs SNHI 对照实验（15 组）
+python run.py --dataset l1 --task figs             rem 论文图：两套系统 / 协议流程（→ l1/figures/）
+```
+
+> ⚠️ `crosslab-ae` 默认产出 **28 组**，第 29 组（L1-23）由 `crosslab-ae23` 单独补上，两者合并才是 29 组。
+> `pzt-causal` / `snhi-shape` / `snhi-rul` 是**核查与证伪**类脚本，日常不用跑，结论见 README §2.4。
 
 > ⚠️ **L1 只保留离线口径** —— 它不支持跨试件统一阈值的**在线预警**（四条独立路径一致失败），
 > 因此在线的 D(t) 与 L1 看板包已于 2026-10-07 整体移除。依据见 `docs/details.md`〈l1 恒幅+DFOS 组 —— 不能做什么〉。
@@ -127,6 +141,7 @@ python run.py --dataset phmdc --task step4 step5   rem 置换检验 / 不确定�
 | ----------------- | -------------------------------------------------------- |
 | 主样本结果表 / 图 | `main/results/*.csv`、`main/figures/*.png`           |
 | L1 结果表 / 缓存  | `l1/results/*.csv`、`l1/results/*.npz`、`l1/*.csv` |
+| L1 论文图         | `l1/figures/fig_*.png` / `.pdf`（300 dpi，双份）  |
 | phmdc 结果与报告  | `phmdc/results/*`                                      |
 | 看板数据包        | `dashboard/data/*.js`（39 个）                         |
 | 中间缓存          | `main/cache/`、`l1/results/_*_cache/`                |

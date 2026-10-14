@@ -22,7 +22,8 @@
   · **FBG 是 Micron Optics sm130 的 `Sensors.<时间戳>.txt`**（ENLIGHT 导出），
     10 个应变通道（R1-R5 / L1-L5）+ 10 个波长通道；**采样率 = 1000 / Data Interleave**，
     变幅组 5 Hz、谱载组 10 Hz —— **两组不一致**
-  · 新增组**只有 AE + FBG**，没有 LUNA(DFOS) 与 PZT 数据
+  · 新增组**没有 LUNA(DFOS)**（老组才有）；但**有 PZT 导波数据**—— 目录名两种：
+    C3 是 `PZT/`，C1/C4 是 `PZT-<N>/`。⚠️ 判据别只写 `'PZT' in subs`，那会漏掉带编号的那种
 
 用法：
     python l1/survey_groups.py            # 扫描并写出 l1/L1数据记录.xlsx
@@ -194,6 +195,18 @@ def scan_assets(gdir):
     for sub in sorted(os.listdir(gdir)):
         p = os.path.join(gdir, sub)
         if not os.path.isdir(p):
+            continue
+        # PZT 是**深目录**（每个 State_* 下 6 频 × 8 作动器 × 10 重复 = 480 个 .mat，
+        # 一组上万到几十万个文件）。逐文件递归 glob 在真实数据上要跑数分钟，
+        # 而本表只需要「有没有 / 几个会话 / 多少状态」⇒ 只数状态数，不逐文件统计（2026-10-14）。
+        if sub == 'PZT' or sub.startswith('PZT-'):
+            try:
+                n_state = sum(1 for d in os.listdir(p) if d.startswith('State_'))
+            except OSError:
+                n_state = 0
+            rows.append({'模态目录': sub, '文件数': '(未逐文件统计)', '体积MB': '',
+                         '格式': '每个 State_* 下 <频率>/Actionneur<N>/measured_data_rep_*.mat'
+                                 '（6 频 × 8 发 × 10 重复 = 480 个）；本会话状态数 %d' % n_state})
             continue
         fs = [f for f in glob.glob(os.path.join(p, '**', '*'), recursive=True) if os.path.isfile(f)]
         if not fs:
@@ -520,6 +533,18 @@ def main(do_print_only=False):
         camp = CAMPAIGN.get(g, '?')
         rate, nfbg, span = fbg_rate(gd)
         subs = sorted(d for d in os.listdir(gd) if os.path.isdir(os.path.join(gd, d)))
+        # PZT 目录名有两种：C3 是 `PZT/`，C1/C4 是 `PZT-<N>/`。
+        # 旧判据 `'PZT' in subs` 只能命中前者 ⇒ C1/C4 全被误填「无」（2026-10-14 更正）。
+        # 计数用**磁盘上的 State_* 目录总数**，不是 PZT 目录个数：
+        # C1 的 `PZT-1` 只有 1 个状态（REF 基线）、`PZT-2` 有 32 个，只数目录会得到误导性的「有(2)」。
+        _n_pzt = 0
+        for _d in subs:
+            if _d == 'PZT' or _d.startswith('PZT-'):
+                try:
+                    _n_pzt += sum(1 for _x in os.listdir(os.path.join(gd, _d))
+                                  if _x.startswith('State_'))
+                except OSError:
+                    pass
         segs = ae_segments(root, g)
         fbgp = fbg_profile(gd)
         shift = CLOCK_SHIFT_DAYS.get(camp)
@@ -533,8 +558,8 @@ def main(do_print_only=False):
                'FBG': '有' if 'FBG' in subs else '无', 'FBG采样率Hz': rate, 'FBG文件数': nfbg,
                'FBG节奏': fbgp.get('style', ''),
                '时钟平移(天)': ('%+d' % shift) if (shift is not None and segs) else '',
-               'DFOS(LUNA)': '有' if 'LUNA' in subs else '无',
-               'PZT': '有' if 'PZT' in subs else '无',
+               'DFOS(LUNA)': '有' if any(d == 'LUNA' or d.startswith('LUNA-') for d in subs) else '无',
+               'PZT': ('有(%d)' % _n_pzt) if _n_pzt else '无',
                '冲击能量': '', '载荷级别(kN)': '', '各级循环': '', 'n_f(总循环)': '', 'n_f来源': '',
                '冲击/损伤位置(蒙皮侧)': '', '备注': ''}
 
@@ -635,21 +660,23 @@ def main(do_print_only=False):
     sheet2 = pd.DataFrame([
         dict(数据分组='L1 恒幅+FBG+DFOS', 别名='C1', 成员=' '.join(C1_CA1), 来源PDF='Impact_Locations.pdf（+ 各组 L1-xx.pdf 给 n_f）',
              加载方式='10 J 冲击成 BVID → 等幅压-压疲劳', 载荷='−6.5 / −65 kN', 频率='2 Hz',
-             模态='AE(.pridb) + FBG + LUNA(DFOS)', 特点='论文 Broer 2021 Level1–4 复现对象；唯一同时有 AE+FBG+DFOS 的一组'),
+             模态='AE(.pridb) + FBG + LUNA(DFOS) + PZT(导波, PZT-<N>)',
+             特点='论文 Broer 2021 Level1–4 复现对象；四类传感齐全（AE+FBG+DFOS+PZT）'),
         dict(数据分组='L1 恒幅+DFOS', 别名='C2', 成员=' '.join(C2_CA2), 来源PDF='Damage locations.pdf（+ 各组 L1-xx.pdf 给 n_f）',
              加载方式='10 J 冲击 → 等幅压-压疲劳', 载荷='−6.5 / −65 kN', 频率='2 Hz',
-             模态='AE(.pridb) + LUNA(DFOS)；无 FBG', 特点='已判定「不支持跨试件统一阈值的在线预警」：组间 AE 事件率相差 3 倍以上，自适应阈值反而比固定阈值差'),
+             模态='AE(.pridb) + LUNA(DFOS)；无 FBG、无 PZT',
+             特点='已判定「不支持跨试件统一阈值的在线预警」：组间 AE 事件率相差 3 倍以上，自适应阈值反而比固定阈值差；C2 九组均无 PZT'),
         dict(数据分组='L1 变幅VA+FBG', 别名='C3', 成员=' '.join(C3_VA), 来源PDF='tables of cycles variable.pdf + Damage locations variable.pdf',
              加载方式='阶梯变幅：逐级加大载荷，每级跑固定循环数；冲击位置在加筋条脚',
              载荷='−4.0/−40 → −4.5/−45 → −5.0/−50 → −5.5/−55 → −6.0/−60 kN（逐级）',
              频率='PDF 未给；实测反解 1.075 至 1.148 Hz（4 组，口径 holdgap）',
-             模态='AE(.DTA, Mistras AEwin) + FBG(sm130, 5 Hz)',
+             模态='AE(.DTA, Mistras AEwin) + FBG(sm130, 5 Hz) + PZT(导波, 目录名 `PZT/`)',
              特点='4 组共用同一套载荷级别 → 与恒幅两组的「单一载荷」形成对照；本组无 DFOS'),
         dict(数据分组='L1 谱载+FBG', 别名='C4', 成员=' '.join(C4_SP), 来源PDF='table of specimen cycles to failure.pdf + Damage locations spectrum.pdf',
              加载方式='多级块谱，每试件级别各自递增；L1-29 / L1-30 含 pristine（未冲击）段',
              载荷='按试件不同：−45.9 ~ −82.0 kN 之间多级组合',
              频率='PDF 未给；实测反解 1.821 至 2.119 Hz（7 个长测试组，口径 holdgap）',
-             模态='AE(.DTA, Mistras AEwin) + FBG(sm130, 10 Hz)',
+             模态='AE(.DTA, Mistras AEwin) + FBG(sm130, 10 Hz) + PZT(导波, 目录名 `PZT-<N>/`)',
              特点='冲击能量含 10/12.3/15 J 三档；L1-41(D20x20)、L1-44(D25x20) 为预置脱粘而非冲击；'
                   'n_f 跨 4 个数量级（1,400 ~ 1,580,000）'),
     ])
@@ -673,9 +700,19 @@ def main(do_print_only=False):
         dict(项目='FBG 记录粒度', 现状='变幅组 1–2 个约 17 MB 的连续记录；谱载组上千个约 45 KB 的小文件',
              影响='没有统一的「5000 cycle 一块」锚（老组靠 FBG 块锚做时间对齐）',
              建议='连续记录用时间戳切块；小文件按文件序号当块'),
-        dict(项目='缺失模态', 现状='新组只有 AE + FBG，无 LUNA(DFOS)、无 PZT 数据',
-             影响='老组那些依赖 DFOS 的证据（`e_strain`、DFOS 块级 HI、空间热图）在新组不可用',
-             建议='新组按「AE 单源 + FBG 辅助」设计分析口径'),
+        dict(项目='模态分布（2026-10-14 更正）',
+             现状='DFOS(LUNA) 只在 C1/C2；**PZT 导波在 C1 / C3 / C4 共 20 组**（C2 九组没有）；'
+                  'PZT 目录名两种：C3 为 `PZT/`，C1/C4 为 `PZT-<N>/`',
+             影响='本表旧版把 PZT 列全填「无」，是因为判据写成单引号包着的 PZT 成员测试，只能命中不带编号的那种',
+             建议='依赖 DFOS 的口径对 C3/C4 不可用；依赖 PZT 的口径对 C2 不可用；'
+                  'PZT 可用口径与产物见 `README.md` §2.4 与 `docs/仓库地图.md` §3.4'),
+        dict(项目='「PZT」列的计数含义',
+             现状='`有(N)` 的 N = 磁盘上的 `State_*` 目录总数（不是 PZT 目录个数）。'
+                  'C1/C4 的状态分布在 `PZT-<N>/` 下（如 L1-03 的 `PZT-1` 只有 1 个状态、\n'
+                  '`PZT-2` 有 32 个），C3 全部在单个 `PZT/` 下',
+             影响='只数目录个数会被读成「只有 2 次采集」，实际是 33 个测量状态',
+             建议='进入跨机构口径前还会按 `MIN_STATES` 与数据完整性再过滤'
+                  '（L1-03 磁盘 33 个 → 口径内 30 个，见 `l1/results/pzt_crosslab_summary.csv`）'),
         dict(项目='载荷频率', 现状='PDF 均未写频率（老组为 2 Hz）。现已从 AE+FBG 时序反解：变幅批 1.075 至 1.148 Hz；谱载批 1.821 至 2.119 Hz',
              影响='① 影响块定义与预警提前量口径；② 两组相差近一倍，不能合并处理',
              建议='向数据方书面确认（尤其变幅批的 1.1 Hz）；分组间差异是设备还是加载程序尚未知'),
