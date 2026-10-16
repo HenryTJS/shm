@@ -1,201 +1,144 @@
-"""两套独立传感系统给出同一结构结论：批间效应远小于试件间离散。
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Fig. 2 —— the same conclusion from two physically independent systems.
 
-(a) AE（声发射）：cum_hits 的 t85 —— 累积 AE 命中数达 85% 时的寿命百分数
-(b) PZT（导波）：波速漂移的 Theil-Sen 斜率 —— µs / 100% 寿命
-(c) 把两套不同量纲的指标化到同一尺度：批间极差 与 组内极差 的比较（组内归一为 1）
+(a) acoustic emission: t85 of the cumulative hit curve, per campaign
+(b) guided waves: Theil-Sen slope of the time-of-flight drift, per campaign
+(c) share of the total variance carried by the grouping (eta^2), with its
+    permutation median drawn as a small horizontal tick on each bar
 
-为什么两套系统可并置：它们物理上无关（声发射 vs 主动导波）、仪器不同、
-采集间隔不同（5000 vs 5200 cycles）、机构也不同。
-若两者都给出「批间 ≪ 组内」，则「绝对阈值不可迁移、可迁移的是方向」这一判断
-就不是单一系统的偶然。
+为什么 (c) 不再是「批间 / 组内离差比」
+------------------------------------
+旧版用 4.85/14.75 = 0.33 与 0.0122/0.0425 = 0.29 作为主证据。置换检验显示该比值
+**天然小于 1**（打乱批次标签 20000 次，零分布中位 0.44，99.5% 的抽样 < 1），
+不具判别力。改用 eta^2 = SS_between / (SS_between + SS_within)，它在标签打乱下的
+零分布是良定义的，且两套系统都给出约 0 的机构方差占比。
 
-只读 l1/results 下已存在的 CSV，只写 l1/figures/fig_two_systems.png。
+读：l1/results/{l1_hi_crosslab, pzt_crosslab_summary, crosslab_variance}.csv
+写：l1/figures/fig_two_systems.png / .pdf
 """
-import csv
 import os
 import sys
 
 import numpy as np
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-
-sys.stdout.reconfigure(encoding='utf-8')
+import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+import paper_style as PS                                  # noqa: E402
+
+import matplotlib.pyplot as plt                           # noqa: E402
+
 RES = os.path.join(HERE, 'results')
 FIG = os.path.join(HERE, 'figures')
 
-plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
-plt.rcParams['axes.unicode_minus'] = False
-plt.rcParams['font.size'] = 8
+PS.apply()
 
 BATCHES = ['C1', 'C2', 'C3', 'C4']
-COL = {'C1': '#1f77b4', 'C2': '#7fa9d4', 'C3': '#d1701a', 'C4': '#c0392b'}
-LABEL = {'C1': 'C1  (Lab A)', 'C2': 'C2  (Lab A)',
-         'C3': 'C3  (Lab B)', 'C4': 'C4  (Lab B)'}
-AE_VARIANT = 'cum_hits'
-NPERM = 20000
+C_CAMP, C_UNI = '#b4b4b4', '#2f4b7c'          # 批次（灰）对机构（蓝）
+QUANT = ['AE cum_hits t50_pct', 'AE cum_hits t85_pct', 'PZT tof_slope_ts']
+XTICK = ['AE $t_{50}$', 'AE $t_{85}$', 'PZT slope']
 
 
-def read_ae():
-    """AE 侧逐试件 t85（寿命%）。"""
-    out = {}
-    with open(os.path.join(RES, 'l1_hi_crosslab.csv'), encoding='utf-8-sig') as fh:
-        for r in csv.DictReader(fh):
-            if r['variant'] != AE_VARIANT:
-                continue
-            v = float(r['t85_pct'])
-            if np.isfinite(v):
-                out[r['gid']] = (r['batch'], v)
-    return out
+def load():
+    ae = pd.read_csv(os.path.join(RES, 'l1_hi_crosslab.csv'))
+    ae = ae[(ae['variant'] == 'cum_hits')].dropna(subset=['t85_pct'])
+    pz = pd.read_csv(os.path.join(RES, 'pzt_crosslab_summary.csv'))
+    pz = pz.dropna(subset=['tof_slope_ts'])
+    var = pd.read_csv(os.path.join(RES, 'crosslab_variance.csv'))
+    return ae, pz, var
 
 
-def read_pzt():
-    """PZT 侧逐试件 Theil-Sen 斜率（µs / 100% 寿命）。"""
-    out = {}
-    with open(os.path.join(RES, 'pzt_crosslab_summary.csv'), encoding='utf-8') as fh:
-        for r in csv.DictReader(fh):
-            if r['tof_slope_ts'] == '':
-                continue
-            out[r['gid']] = (r['batch'], float(r['tof_slope_ts']))
-    return out
-
-
-def spreads(d):
-    """-> 批中位表, 批间极差, 逐批组内极差。"""
-    med, rng = {}, {}
-    for b in BATCHES:
-        v = np.array([x[1] for x in d.values() if x[0] == b], float)
-        if len(v):
-            med[b] = float(np.median(v))
-            rng[b] = (float(v.min()), float(v.max()), len(v))
-    both = list(med.values())
-    between = max(both) - min(both) if len(both) > 1 else np.nan
-    within = float(np.median([r[1] - r[0] for r in rng.values()]))
-    return med, between, within, rng
-
-
-def perm_p(d, rng_seed=20261011, nperm=NPERM):
-    """批间中位极差的随机化检验（与 hi_crosslab.rand_test 同口径）。
-
-    统计量 = 各批中位数的极差。计数方向为 `spread_perm <= spread_obs`，
-    即 **p 越小 = 观测到的批间极差比随机重排更小 = 越不像存在批效应**。
-    （反向计数得到的是它的补数，两者容易搞混，引用时必须写明方向。）
-    """
-    vals = np.array([x[1] for x in d.values()], float)
-    labs = np.array([x[0] for x in d.values()])
-    obs = spreads(d)[1]
-    sizes = {b: int((labs == b).sum()) for b in np.unique(labs)}
-    if len(sizes) < 2:
-        return obs, np.nan
-    rng = np.random.default_rng(rng_seed)
-    cnt = 0
-    for _ in range(nperm):
-        p = rng.permutation(labs)
-        m = [np.median(vals[p == b]) for b in sizes if (p == b).any()]
-        if max(m) - min(m) <= obs + 1e-12:
-            cnt += 1
-    return obs, (cnt + 1) / (nperm + 1)
-
-
-def strip(ax, d, batches, ylab, title, pval=None):
-    med, between, within, rng = spreads(d)
-    for i, b in enumerate(batches):
-        v = np.array([x[1] for x in d.values() if x[0] == b], float)
-        if not len(v):
+def strip(ax, groups, ylab, title):
+    """逐组散点 + 组内范围细线 + 中位横线。groups = [(标签, 值数组, 颜色), ...]"""
+    rng = np.random.default_rng(7)
+    for i, (name, v, col) in enumerate(groups):
+        if v.size == 0:
             continue
-        jit = (np.random.default_rng(7).random(len(v)) - 0.5) * 0.30
-        ax.scatter(np.full(len(v), i) + jit, v, s=16, color=COL[b],
-                   edgecolor='white', linewidth=0.4, zorder=3)
-        ax.hlines(med[b], i - 0.30, i + 0.30, color='k', lw=2.0, zorder=4)
-        ax.vlines(i, rng[b][0], rng[b][1], color=COL[b], lw=0.8, alpha=0.35, zorder=2)
-    ax.set_xticks(range(len(batches)))
-    ax.set_xticklabels(['%s\n%s' % (b, LABEL[b].split('(')[1].rstrip(')'))
-                        for b in batches], fontsize=6.5)
-    ax.set_ylabel(ylab, fontsize=7.5)
-    ax.set_title(title, fontsize=8.5)
-    ax.grid(alpha=0.25, axis='y')
-    ax.set_xlim(-0.6, len(batches) - 0.4)
-    txt = '批间极差 %s\n组内极差中位 %s' % (fmt(between), fmt(within))
-    if pval is not None and np.isfinite(pval):
-        txt += '\np(重排≤观测) = %.3f' % pval
-    ax.text(0.02, 0.97, txt, transform=ax.transAxes, va='top', fontsize=6.5,
-            bbox=dict(fc='white', ec='0.8', lw=0.4, alpha=0.9))
-    return med, between, within
+        jit = (rng.random(v.size) - 0.5) * 0.26
+        ax.plot(np.full(v.size, float(i)) + jit, v, marker='o', ls='none',
+                ms=2.4, color=col, alpha=0.92)
+        ax.vlines(float(i), float(v.min()), float(v.max()),
+                  color=col, lw=0.5, alpha=0.30)
+        ax.hlines(float(np.median(v)), i - 0.24, i + 0.24,
+                  color='0.12', lw=1.0, zorder=5)
+    ax.set_xticks(range(len(groups)))
+    ax.set_xticklabels(['%s\nLab %s' % (k, PS.LAB.get(k, '?')) for k, _v, _c in groups],
+                       fontsize=6, linespacing=1.45)
+    ax.set_ylabel(ylab, fontsize=6.6, labelpad=2)
+    ax.set_title(title, fontsize=7, loc='left', pad=4)
+    ax.set_xlim(-0.55, len(groups) - 0.45)
+    ax.grid(alpha=0.22, axis='y', lw=0.5)
+    PS.thin(ax)
 
 
-def fmt(v):
-    """三位有效数字，避免 0.0122 被四舍五入成 0.01 而失去意义。"""
-    return '%.3g' % v
+def variance_panel(ax, var):
+    """(c) 分组能解释多少方差（eta^2）；每根条上画一条短的置换中位。
+
+    两个分组维度不是同一件事，图上必须写清楚：
+      campaign   = 试验活动，C1 / C2 / C3 / C4（共 4 组）
+      university = 大学，Lab A = C1+C2，Lab B = C3+C4（共 2 组）
+    横线 = 打乱标签 20000 次后 eta^2 的中位，即「分组毫无意义时能有多大」。
+    """
+    w = 0.34
+    for gi, q in enumerate(QUANT):
+        for scheme, dx, col in (('batch', -w / 2, C_CAMP),
+                                ('university', +w / 2, C_UNI)):
+            r = var[(var['quantity'] == q) & (var['scheme'] == scheme)]
+            if r.empty:
+                continue
+            eta = float(r['eta2'].iloc[0])
+            mu = float(r['null_median'].iloc[0])
+            p_le = float(r['p_le'].iloc[0])
+            xc = gi + dx
+            ax.bar(xc, eta, w, color=col, edgecolor='none', zorder=2)
+            ax.hlines(mu, xc - w / 2, xc + w / 2, color='0.15', lw=0.9, zorder=4)
+            ax.text(xc, max(eta, mu) + 0.016, '%.3f' % eta, ha='center',
+                    fontsize=5.6, color='0.25')
+            if scheme == 'university':
+                ax.text(xc, -0.055, 'p=%.3f' % p_le, ha='center', fontsize=5.4,
+                        color=C_UNI)
+    ax.set_xticks(range(len(QUANT)))
+    ax.set_xticklabels(XTICK, fontsize=6.2)
+    ax.set_xlim(-0.55, len(QUANT) - 0.45)
+    ax.set_ylim(0, 0.45)
+    ax.set_ylabel(r'variance explained,  $\eta^2$', fontsize=6.6, labelpad=2)
+    ax.set_title('(c)  variance share', fontsize=7, loc='left', pad=4)
+    ax.grid(alpha=0.22, axis='y', lw=0.5)
+    PS.thin(ax)
+    # 图例：两种分组维度写全（含组数），并把横线的含义也并进图例
+    ax.bar(np.nan, np.nan, color=C_CAMP, label='by campaign (4)')
+    ax.bar(np.nan, np.nan, color=C_UNI, label='by university (2)')
+    ax.plot([], [], color='0.15', lw=0.9, label='permutation median')
+    ax.legend(loc='upper left', bbox_to_anchor=(0.0, 1.0), fontsize=6,
+              handlelength=1.1, handletextpad=0.5, borderaxespad=0.25)
 
 
 def main():
     os.makedirs(FIG, exist_ok=True)
-    ae = read_ae()
-    pz = read_pzt()
-    print('AE 试件 %d 个：%s' % (len(ae), {b: sum(1 for x in ae.values() if x[0] == b)
-                                          for b in BATCHES}))
-    print('PZT 试件 %d 个：%s' % (len(pz), {b: sum(1 for x in pz.values() if x[0] == b)
-                                           for b in BATCHES}))
+    ae, pz, var = load()
+    print('AE %d specimens   PZT %d specimens   variance rows %d'
+          % (len(ae), len(pz), len(var)))
 
-    fig, axes = plt.subplots(1, 3, figsize=(7.4, 2.85))
+    fig, axes = plt.subplots(1, 3, figsize=(7.0, 2.25))
+    fig.subplots_adjust(left=0.075, right=0.985, top=0.865, bottom=0.175,
+                        wspace=0.42)
 
-    ae_pv = perm_p(ae)[1]
-    pz_pv = perm_p(pz)[1]
-    strip(axes[0], ae, ['C1', 'C2', 'C3', 'C4'],
-          't85：寿命位置 [%]',
-          '(a) 声发射 AE：累积 hits 达 85% 时的寿命', ae_pv)
-    strip(axes[1], pz, ['C1', 'C3', 'C4'],
-          '波速漂移率 [µs / 100% 寿命]',
-          '(b) 导波 PZT：TOF 漂移的稳健斜率', pz_pv)
-    axes[1].set_ylim(0, max(x[1] for x in pz.values()) * 1.18)
+    strip(axes[0],
+          [(b, ae.loc[ae['batch'] == b, 't85_pct'].to_numpy(float), PS.BATCH[b])
+           for b in BATCHES],
+          r'$t_{85}$   (% of life)', '(a)  acoustic emission')
 
-    # (c) 无量纲对比：批间极差 vs 组内极差中位（后者归一为 1）
-    ae_between, ae_within = spreads(ae)[1], spreads(ae)[2]
-    pz_between, pz_within = spreads(pz)[1], spreads(pz)[2]
-    x = np.arange(2)
-    w = 0.36
-    axes[2].bar(x - w / 2, [ae_between / ae_within, pz_between / pz_within],
-                w, color='#c0392b', label='批间极差')
-    axes[2].bar(x + w / 2, [1.0, 1.0], w, color='#4c78a8', label='组内极差（中位，归一）')
-    for i, (bb, ww) in enumerate([(ae_between, ae_within), (pz_between, pz_within)]):
-        axes[2].text(i - w / 2, bb / ww + 0.04, '%.2f×' % (bb / ww),
-                     ha='center', fontsize=7.5, color='#c0392b', fontweight='bold')
-        axes[2].text(i + w / 2, 1.04, '1.00×', ha='center', fontsize=7.5, color='#4c78a8')
-        axes[2].text(i - w / 2, 0.06, '%s' % fmt(bb), ha='center', fontsize=6, color='w')
-    axes[2].set_xticks(x)
-    axes[2].set_xticklabels(['AE\nn=%d' % len(ae), 'PZT\nn=%d' % len(pz)], fontsize=7)
-    axes[2].set_ylabel('相对组内极差', fontsize=7.5)
-    axes[2].set_title('(c) 两套系统的离散分解（无量纲）', fontsize=8.5)
-    axes[2].legend(fontsize=6.5, frameon=False, loc='upper center', ncol=1)
-    axes[2].axhline(1.0, color='0.6', ls=':', lw=0.8)
-    axes[2].grid(alpha=0.25, axis='y')
-    axes[2].set_ylim(0, 1.30)
-    axes[2].set_xlabel('（红色数字为批间极差原始值，单位同各自纵轴）', fontsize=6)
+    strip(axes[1],
+          [(b, pz.loc[pz['batch'] == b, 'tof_slope_ts'].to_numpy(float), PS.BATCH[b])
+           for b in ['C1', 'C3', 'C4']],
+          'slope   ($\\mu$s / 100% of life)', '(b)  guided waves')
 
-    fig.tight_layout(pad=0.6)
-    fp = os.path.join(FIG, 'fig_two_systems.png')
-    fig.savefig(fp, dpi=300)
-    fig.savefig(fp.replace('.png', '.pdf'))
-    plt.close(fig)
+    variance_panel(axes[2], var)
 
-    # 置换检验
-    ob, pv = perm_p(ae)
-    print('\nAE  批间极差 %.2f pp，组内极差中位 %.2f pp，比值 %.2f×' % (ae_between, ae_within, ae_between / ae_within))
-    print('    p(随机重排的批间极差 <= 观测值) = %.3f   越小 = 批间越相似、越不像有批效应' % pv)
-    ob2, pv2 = perm_p(pz)
-    print('PZT 批间极差 %.4f，组内极差中位 %.4f，比值 %.2f×' % (pz_between, pz_within, pz_between / pz_within))
-    print('    p(随机重排的批间极差 <= 观测值) = %.3f' % pv2)
-    print('\n已写', fp, '与同名 .pdf')
-    print('\n逐批中位：')
-    for b in BATCHES:
-        a = [x[1] for x in ae.values() if x[0] == b]
-        p = [x[1] for x in pz.values() if x[0] == b]
-        print('  %-3s AE n=%2d 中位 %6.1f%%   |   PZT n=%2d 中位 %+.4f'
-              % (b, len(a), np.median(a) if a else np.nan,
-                 len(p), np.median(p) if p else np.nan))
+    PS.save(fig, os.path.join(FIG, 'fig_two_systems.png'))
 
 
 if __name__ == '__main__':
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
     main()

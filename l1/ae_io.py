@@ -90,10 +90,26 @@ def pridb_parts(gid, root=None):
     return sorted(fs, key=lambda f: _part_no(f, gid))
 
 
-def part_stats(gid, root=None, cols=None):
-    """逐段的 (name, n_hits, t0_s, t1_s)。"""
+HIT_BYTES = 90.0        # .pridb 每命中约 90 字节（18 列行存，实测 L1-49/50/51）
+
+
+def part_stats(gid, root=None, cols=None, quick=True):
+    """逐段的 (name, n_hits, t0_s, t1_s)。
+
+    `quick=True`（默认）时，**单段组**用文件体积估算命中数并整段跳过 SQL：
+    `COUNT(*)` 与 `MIN/MAX(Time)` 都要全表扫描，在 2 GB 级 `.pridb` 上实测
+    可达 **200 s 以上**，而单段组的 `mode` 必然是 `single`，这些值不参与任何
+    判定（详见 `ae_cache` 模块 docstring）。此时返回的段带 `approx=True`。
+    多段组仍走精确 SQL。
+    """
+    fps = pridb_parts(gid, root)
+    if quick and len(fps) <= 1:
+        return [dict(path=fp, name=os.path.basename(fp),
+                     n=int(os.path.getsize(fp) / HIT_BYTES),
+                     t0=0.0, t1=0.0, part=_part_no(fp, gid), approx=True)
+                for fp in fps]
     out = []
-    for fp in pridb_parts(gid, root):
+    for fp in fps:
         con = sqlite3.connect(fp)
         n = con.execute(f'SELECT COUNT(*) FROM ae_data WHERE SetType={SETTYPE_HIT}'
                         ).fetchone()[0]
@@ -104,17 +120,18 @@ def part_stats(gid, root=None, cols=None):
         out.append(dict(path=fp, name=os.path.basename(fp), n=int(n),
                         t0=float(mi or 0) / TIME_BASE,
                         t1=float(ma or 0) / TIME_BASE,
-                        part=_part_no(fp, gid)))
+                        part=_part_no(fp, gid), approx=False))
     return out
 
 
-def plan(gid, multifile='auto', root=None, verbose=True):
+def plan(gid, multifile='auto', root=None, verbose=True, quick=True):
     """决定多段处理方式。返回 dict(mode, parts, offsets, reason)。
 
     mode: 'single'（只有一段）| 'time'（按 Time 合并）| 'stitch'（按会话顺序缝合）
     offsets: 每段要加的时间平移量 [s]（'stitch' 时非零）
+    quick: 传给 `part_stats`，单段组时跳过全表扫描（默认开）。
     """
-    st = part_stats(gid, root)
+    st = part_stats(gid, root, quick=quick)
     if len(st) == 1:
         return dict(mode='single', parts=st, offsets=[0.0], reason='仅一段')
     if multifile == 'largest':
@@ -157,24 +174,31 @@ def plan(gid, multifile='auto', root=None, verbose=True):
 
 
 def describe(gid, multifile='auto', root=None):
-    """人类可读的多段诊断（供各脚本打印）。"""
+    """人类可读的多段诊断（供各脚本打印）。估算段用 '≈' 标注命中数。"""
     p = plan(gid, multifile, root, verbose=False)
     lines = [f'[AE-IO] {gid}: {len(p["parts"])} 段 → mode={p["mode"]}；'
              f'{p["reason"]}']
     if len(p['parts']) > 1 or p['mode'] == 'single':
         for s, o in zip(p['parts'], p['offsets']):
-            lines.append(f'    {s["name"]}: {s["n"]:>9,} 命中  '
+            mark = '≈' if s.get('approx') else ' '
+            lines.append(f'    {s["name"]}: {mark}{s["n"]:>9,} 命中  '
                          f't {s["t0"]:.0f}→{s["t1"]:.0f} s  '
                          f'平移 {o:.0f} s  ⇒ 绝对 {s["t0"]+o:.0f}→{s["t1"]+o:.0f} s')
     return '\n'.join(lines)
 
 
-def read_hits(gid, cols=DEFAULT_COLS, multifile='auto', chunk=500_000,
-              root=None, verbose=True):
+CACHE_COLS = ('Time', 'Chan', 'Amp')
+
+
+def _read_hits_sqlite(gid, cols=DEFAULT_COLS, multifile='auto', chunk=500_000,
+                      root=None, verbose=True):
     """读逐 hit 表（SetType=2）→ ndarray，**第 0 列 = 缝合后的 Time [s]**，
     其余列 = `.pridb` **原值**（不做单位换算，见模块 docstring）。
 
     cols 必须包含 'Time'；返回列顺序与 cols 一致（Time 换成秒）。
+
+    这是**未加速**实现：每次都要全表扫描（`plan` 的 COUNT/MIN/MAX）+ 逐行
+    转数组。常规调用请用 `read_hits`，它会优先走 `ae_cache` 的二进制缓存。
     """
     cols = tuple(cols)
     if 'Time' not in cols:
@@ -185,11 +209,18 @@ def read_hits(gid, cols=DEFAULT_COLS, multifile='auto', chunk=500_000,
     files = [s['path'] for s in p['parts']]
     offs = p['offsets']
     sel = ', '.join(cols)
+    # 非 `stitch` 模式下函数末尾会按 Time 再 `argsort` 一次，SQL 层的 ORDER BY
+    # 属于重复劳动，却要 SQLite 为整表建临时 B-tree（实测 L1-49：230 s → 十几秒）。
+    # `stitch` 模式因跨会话拼接后不再重排，必须保留段内排序。
+    order = ' ORDER BY Time' if p['mode'] == 'stitch' else ''
     parts = []
     for fp, off in zip(files, offs):
         con = sqlite3.connect(fp)
+        # 临时表放内存、加大页缓存：避免默认 temp_store=FILE 把排序溢出到慢盘。
+        con.execute('PRAGMA temp_store=MEMORY')
+        con.execute('PRAGMA cache_size=-131072')
         cur = con.execute(f'SELECT {sel} FROM ae_data '
-                          f'WHERE SetType={SETTYPE_HIT} ORDER BY Time')
+                          f'WHERE SetType={SETTYPE_HIT}{order}')
         while True:
             rows = cur.fetchmany(chunk)
             if not rows:
@@ -204,6 +235,28 @@ def read_hits(gid, cols=DEFAULT_COLS, multifile='auto', chunk=500_000,
     ti = cols.index('Time')
     a[:, ti] = a[:, ti] / TIME_BASE
     return a, p
+
+
+def read_hits(gid, cols=DEFAULT_COLS, multifile='auto', chunk=500_000,
+              root=None, verbose=True):
+    """**带二进制缓存**的逐 hit 读取 —— 常规入口。
+
+    当 `cols` 恰为 `CACHE_COLS` 且未指定 `multifile`/`root` 时，优先读
+    `l1/cache/{gid}.npy`（mmap，毫秒级）；未命中则回落 `_read_hits_sqlite`
+    并顺带建缓存。缓存文件见 `ae_cache` 模块 docstring。
+
+    设 `AE_NO_CACHE=1` 可强制绕过缓存。
+    """
+    if tuple(cols) == CACHE_COLS and multifile == 'auto' and root is None:
+        import ae_cache
+        hit = ae_cache.load(gid)
+        if hit is not None:
+            if verbose:
+                print('[AE-CACHE] %s: %s 命中（npy/mmamp）'
+                      % (gid, format(hit[0].shape[0], ',')))
+            return hit
+    return _read_hits_sqlite(gid, cols=cols, multifile=multifile,
+                             chunk=chunk, root=root, verbose=verbose)
 
 
 def read_hits_vallenae(gid, multifile='auto', root=None, verbose=True):

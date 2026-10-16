@@ -46,6 +46,11 @@ agent/log/
 
 # ── 缓存（可重建）─────────────────────────────────────────────────────
 main/cache/
+# l1/cache/：9 组逐 hit 二进制缓存（2026-10-15 起，约 3 GB）。
+# 由 `python run.py --dataset l1 --task ae-cache` 重建；`.npy` 已由上方 `**/*.npy` 忽略，
+# 这里显式连元数据 `.json` 一起屏掉（单独保留 json 无意义）。
+!l1/cache/
+l1/cache/
 **/__pycache__/
 *.py[cod]
 .pytest_cache/

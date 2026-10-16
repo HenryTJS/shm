@@ -100,8 +100,21 @@ TASKS = {
         'snhi-shape':     [['l1/snhi_shape.py']],                      # SNHI 形状不变性前提诊断（重）
         'snhi-rul':       [['l1/snhi_rul.py']],                        # 形状配准作 RUL 预测器（已证伪）
         'level-vs-shape': [['l1/level_vs_shape.py']],                  # 绝对阈值 vs SNHI 对照实验
-        'figs':           [['l1/fig_two_systems.py'],
-                           ['l1/fig_protocol.py']],                     # 论文图：两套系统 / 协议流程
+        'four-modal':     [['l1/four_modal.py']],                      # C1 五组的四模态并行对照（重）
+        # ---- AE 事件定位（通道时间偏置标定）----
+        'ae-cache':       [['l1/ae_cache.py', '--build']],             # 逐 hit 二进制缓存（一次性，之后毫秒级）
+        'loc-bias-probe': [['l1/loc_bias_probe.py']],                  # 逐通道残差探针（发现偏置在哪里）
+        'loc-vel-calib':  [['l1/loc_vel_calib.py']],                   # 声速标定（结论：拿错了自由度）
+        'loc-debias':     [['l1/loc_debias.py']],                      # 通道延迟 δ 标定（全 9 组）
+        'loc-drift':      [['l1/loc_debias_drift.py']],                # δ 是否随寿命漂移（含空间分层对照）
+        'figs':           [['l1/fig_protocol.py'],
+                           ['l1/fig_instrumentation.py'],
+                           ['l1/fig_four_routes.py'],
+                           ['l1/fig_two_systems.py'],
+                           ['l1/four_modal.py']],                       # 论文图 1 至 5
+        'fig-routes':     [['l1/fig_four_routes.py']],                 # 只重画论文 Fig. 2（四条独立路线）
+        'fig-instr':      [['l1/fig_instrumentation.py']],             # 试件与仪器图（非数据图）
+        'tables-45':      [['l1/make_tables_45.py']],                  # 论文表 3/4 的 markdown（含 η² 与 p）
     },
     'phmdc': {
         'step0': [['phmdc/step0.py']],                                # → labels.csv / index.csv
@@ -160,7 +173,16 @@ DESC = {
         'snhi-shape':     ('SNHI 形状不变性诊断', 'snhi_shape.py：算法前提检验'),
         'snhi-rul':       ('形状配准作 RUL（已证伪）', 'snhi_rul.py：同批留一 92.8% vs 零信息 23.6%'),
         'level-vs-shape': ('绝对阈值 vs SNHI 对照', 'level_vs_shape.py：15 组，两方法产出同一量'),
-        'figs':           ('论文图（论文线 2）', 'fig_two_systems.py + fig_protocol.py → l1/figures/'),
+        'four-modal':     ('四模态并行对照', 'four_modal.py：C1 五组 AE/FBG/DFOS/PZT 同轴对比'),
+        'ae-cache':       ('AE 二进制缓存 (一次性)', 'ae_cache.py --build：9.5 GB 库 → npy，之后读取毫秒级'),
+        'loc-bias-probe': ('定位通道残差探针', 'loc_bias_probe.py：残差与通道强相关 → 偏置主导'),
+        'loc-vel-calib':  ('定位声速标定 (已证伪)', 'loc_vel_calib.py：三组最优全部落在搜索边界'),
+        'loc-debias':     ('定位通道去偏', 'loc_debias.py：显式建 δ_k，9 组残差 12.07→1.19 等'),
+        'loc-drift':      ('δ 随寿命漂移检验', 'loc_debias_drift.py：分窗标定 + 随机基线 + 空间分层'),
+        'figs':           ('论文图 1–5', 'fig_protocol + fig_instrumentation + fig_four_routes + fig_two_systems + four_modal → l1/figures/'),
+        'fig-routes':     ('论文图 Fig. 2', 'fig_four_routes.py → l1/figures/fig_four_routes.png/.pdf'),
+        'fig-instr':      ('试件与仪器图', 'fig_instrumentation.py → l1/figures/fig_instrumentation.png/.pdf'),
+        'tables-45':      ('论文表 3/4', 'make_tables_45.py → 含 η² 与置换 p 的 markdown 草稿'),
     },
     'phmdc': {
         'step0': ('标签/索引', 'step0.py → labels.csv / index.csv（幂等，约 20 s）'),

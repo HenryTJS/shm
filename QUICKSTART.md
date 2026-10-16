@@ -113,6 +113,19 @@ python run.py --dataset l1 --task level-vs-shape   rem 绝对阈值 vs SNHI 对�
 python run.py --dataset l1 --task figs             rem 论文图：两套系统 / 协议流程（→ l1/figures/）
 ```
 
+**AE 事件定位（通道时间偏置标定，2026-10-15）：**
+
+```bat
+python run.py --dataset l1 --task ae-cache         rem 首次必跑：建逐 hit 二进制缓存（一次性）
+python run.py --dataset l1 --task loc-bias-probe   rem 逐通道走时残差探针（快）
+python run.py --dataset l1 --task loc-debias       rem 通道延迟 δ 标定（9 组；缓存就位后约 10 秒）
+python run.py --dataset l1 --task loc-drift        rem δ 随寿命漂移检验（含空间分层对照）
+```
+
+> **先跑 `ae-cache`**：它把 9 组 `.pridb`（合计 **9.54 GB**、**1.42 亿**命中）固化成二进制缓存，
+> 之后所有定位脚本的读取从数百秒降到 **0.02 秒**。缓存可随时删除重建，已被 `.gitignore` 忽略。
+> `loc-vel-calib`（声速标定）是**已证伪**的路线，无需重跑，结论见 README §2.4。
+
 > ⚠️ `crosslab-ae` 默认产出 **28 组**，第 29 组（L1-23）由 `crosslab-ae23` 单独补上，两者合并才是 29 组。
 > `pzt-causal` / `snhi-shape` / `snhi-rul` 是**核查与证伪**类脚本，日常不用跑，结论见 README §2.4。
 

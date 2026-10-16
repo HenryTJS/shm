@@ -1,10 +1,23 @@
-"""SNHI 协议流程图（论文用图）。
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""论文 Fig. 1 —— 跨机构对齐协议（英文 · 期刊版式）。
 
-左侧：协议的四步流程
-右侧：上块 = 现实约束（为什么要它）；下块 = 验证结果（它是否管用）
+为什么重做
+----------
+上一版是「五个圆角矩形 + 彩色边框 + 灰底 + 中文」的幻灯片式堆叠：把公式、数字、
+结论全塞进文字框，构图对称，看不出协议本身在做什么。这一版反过来 ——
+**让坐标轴和曲线承担表达，文字只做标注**，三段横向：
 
-风格与 l1/figures 下其他图一致（Microsoft YaHei、unicode_minus=False）。
-只写 l1/figures/fig_protocol.png / .pdf，不读任何数据文件。
+    (A) raw records   三个批次的记录各落在自己的墙钟上（间隔不同、无共同原点）
+    (B) the two axes  横轴换寿命分数、纵轴自归一化；归一化后三条曲线重合
+    (C) comparable    四个试验活动的 t85 落在同一轴上（**真实数据**）
+
+风格约束：白底、细线、衬线字（Times）、无圆角、无阴影、无渐变、低饱和配色。
+
+数据：[C] 段读 l1/results/l1_hi_crosslab.csv（variant=cum_hits, 29 试件）；
+[A][B] 是示意（[B] 的曲线用两个参数不同的 Weibull CDF 归一化得到，仅示意形状）。
+
+输出：l1/figures/fig_protocol.png / .pdf
 """
 import os
 import sys
@@ -12,116 +25,111 @@ import sys
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.patches import FancyArrowPatch, FancyBboxPatch
+import numpy as np
+import pandas as pd
 
 sys.stdout.reconfigure(encoding='utf-8')
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 FIG = os.path.join(HERE, 'figures')
+RES = os.path.join(HERE, 'results')
 
-plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
-plt.rcParams['axes.unicode_minus'] = False
-plt.rcParams['font.size'] = 7.5
+# ---- 版式与配色统一走 paper_style（三张论文图共用）-----------------------
+sys.path.insert(0, HERE)
+import paper_style as PS                                  # noqa: E402
 
-C_IN = '#4c78a8'
-C_STEP = '#5b8c5a'
-C_OUT = '#c0392b'
-C_BG = '#f4f6f8'
-
-# (标题, 正文, 边框色)
-LEFT = [
-    ('输入', '多机构 SHM 数据：波形 / 事件流，状态目录，n_f，\n'
-             '以及数据集自带的采集设计文档\n'
-             '障碍：时间戳不可靠 —— 错年份、原点不同、跨批无法对齐', C_IN),
-    ('步骤 1　寿命轴重建', 'Δ ← 采集设计文档记载的测量间隔（5000 或 5200 cycles）\n'
-                          'cycle(k) = k × Δ　→　life = cycle / n_f\n'
-                          '自校验：与独立的绝对时钟轴互校（秩相关 ≥ 0.993）', C_STEP),
-    ('步骤 2　无标度指标构造', 'C(t) ← 按寿命分箱后的累积量\n'
-                              'Ĉ(t) = C(t) / C(T)　（自归一化）\n'
-                              'HI_SNHI = 使 Ĉ(t) = x 的 t，取 x = 50% / 85%', C_STEP),
-    ('步骤 3　可迁移性评价', 'R = 批间极差（各批中位数）/ 组内极差中位数\n'
-                            '同一数据上并行跑绝对阈值法作为对照\n'
-                            'R 越小，该指标越可跨机构迁移', C_STEP),
-    ('输出', 'SNHI 值 · 可迁移性比 R · 跨批与跨模态的一致性报告', C_OUT),
-]
-
-RIGHT = [
-    ('为什么需要它：绝对阈值不可迁移',
-     '· 单阈值达阈时刻跨组离散：中位 46.2 pp，最大 65.8 pp\n'
-     '· 光纤失效值跨组跨度：6.57 至 7.34 倍（CV 0.37 至 0.41）\n'
-     '· 因果归一后失效值 CV 仍为 0.967 至 1.622\n'
-     '· 失效时声发射计数在同一批内跨 50.3 倍（918 至 46221）\n'
-     '因此统一绝对阈值在算术上不可能', '#a02020'),
-    ('它管用吗：留一批对照（15 个试件）',
-     '绝对阈值法：6/15 试件从不报警，\n'
-     '　　　　　　组内极差中位 60.7 pp\n'
-     'SNHI：　　0/15 漏报，\n'
-     '　　　　　　组内极差中位 18.5 pp（小 3.3 倍）\n'
-     '批间极差 2.4 pp', '#1a6b3c'),
-]
+PS.apply()
+BCOL = PS.BATCH
 
 
-def box(ax, x, y, w, h, title, body, ec, fc='white', ts=8.0, bs=6.6):
-    ax.add_patch(FancyBboxPatch((x, y), w, h,
-                                boxstyle='round,pad=0.006,rounding_size=0.012',
-                                linewidth=1.1, edgecolor=ec, facecolor=fc, zorder=2))
-    ax.text(x + 0.012, y + h - 0.020, title, fontsize=ts, color=ec,
-            fontweight='bold', va='top', ha='left', zorder=3)
-    ax.text(x + 0.012, y + h - 0.052, body, fontsize=bs, va='top', ha='left',
-            zorder=3, linespacing=1.45)
+def panel_a(ax):
+    """(A) 原始记录：三个批次各在自己的墙钟上，间隔与原点都不同。"""
+    rng = np.random.default_rng(7)
+    rows = [('C1', 2.0, 34, BCOL['C1']), ('C2', 1.0, 26, BCOL['C2']),
+            ('C3', 0.0, 42, BCOL['C3'])]
+    for name, y, n, col in rows:
+        x = np.sort(rng.uniform(0.0, 1.0, n))
+        ax.vlines(x, y - 0.17, y + 0.17, color=col, lw=0.7)
+        ax.text(1.05, y, name, fontsize=6.3, color=col, va='center', ha='left')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(-0.62, 2.62)
+    ax.set_yticks([])
+    ax.set_xticks([0, 0.5, 1])
+    ax.set_xticklabels(['0', '', '1'])
+    ax.set_xlabel('wall-clock  (batches not concurrent)', fontsize=6.2, labelpad=2)
+    ax.set_title('(A)  raw records', fontsize=7, loc='left', pad=4)
+    for s in ('top', 'right', 'left'):
+        ax.spines[s].set_visible(False)
 
 
-def arrow(ax, x, y0, y1):
-    ax.add_patch(FancyArrowPatch((x, y0), (x, y1), arrowstyle='-|>',
-                                 mutation_scale=9, linewidth=1.0,
-                                 color='0.35', zorder=1))
+def panel_b(ax):
+    """(B) 两个轴：横轴换寿命分数、纵轴自归一化，之后曲线重合。"""
+    x = np.linspace(0.0, 1.0, 600)
+    curves = [(0.66, 2.3, BCOL['C1']), (0.55, 1.8, BCOL['C2']),
+              (0.74, 2.7, BCOL['C3'])]
+    for tau, beta, col in curves:
+        y = 1.0 - np.exp(-(x / tau) ** beta)
+        y = y / y[-1]                       # 归一化到终值 1
+        ax.plot(x, y, color=col, lw=1.05)
+        j = int(np.argmin(np.abs(y - 0.5)))
+        ax.plot(x[j], y[j], marker='o', ms=2.4, color=col, zorder=4)
+    for yv, lab in ((0.50, r'$t_{50}$'), (0.85, r'$t_{85}$')):
+        ax.axhline(yv, color='0.55', lw=0.6, ls=(0, (4, 2.2)), zorder=1)
+        ax.text(0.012, yv + 0.022, lab, fontsize=6.3, color='0.32', va='bottom')
+    ax.set_xlim(0, 1)
+    ax.set_ylim(0, 1.04)
+    ax.set_xticks([0, 0.5, 1])
+    ax.set_yticks([0, 0.5, 1])
+    ax.set_xlabel('lifetime fraction\nstate index $\\times$ documented interval $/\\,n_f$',
+                  fontsize=6.2, labelpad=3, linespacing=1.35)
+    ax.set_ylabel('self-normalised cumulative\n$C(t)\\,/\\,C(T)$',
+                  fontsize=6.0, labelpad=3.0, linespacing=1.45)
+    ax.set_title('(B)  the two axes', fontsize=7, loc='left', pad=4)
+    for s in ('top', 'right'):
+        ax.spines[s].set_visible(False)
+
+
+def panel_c(ax):
+    """(C) 可比：四个活动的 t85 落在同一轴上（真实数据）。"""
+    df = pd.read_csv(os.path.join(RES, 'l1_hi_crosslab.csv'))
+    d = df[df['variant'] == 'cum_hits'].dropna(subset=['t85_pct'])
+    order = ['C1', 'C2', 'C3', 'C4']
+    for i, b in enumerate(order):
+        v = d.loc[d['batch'] == b, 't85_pct'].to_numpy(dtype=float)
+        if v.size == 0:
+            continue
+        y = float(len(order) - 1 - i)
+        ax.plot(v, np.full(v.shape, y), marker='o', ls='none',
+                ms=2.5, color=BCOL[b], alpha=0.9)
+        med = float(np.median(v))
+        ax.vlines(med, y - 0.30, y + 0.30, color='0.15', lw=0.9, zorder=5)
+        ax.text(-3.0, y, b, fontsize=6.3, color=BCOL[b], ha='right', va='center')
+    ax.text(52.0, 3.62, 'batch medians within 4.85 pp', fontsize=5.8,
+            color='0.35', ha='center', va='top')
+    ax.set_xlim(0, 104)
+    ax.set_ylim(-0.75, 3.75)
+    ax.set_yticks([])
+    ax.set_xticks([0, 50, 100])
+    ax.set_xlabel(r'$t_{85}$  (% of life)', fontsize=6.2, labelpad=2)
+    ax.set_title('(C)  comparable', fontsize=7, loc='left', pad=4)
+    for s in ('top', 'right', 'left'):
+        ax.spines[s].set_visible(False)
 
 
 def main():
     os.makedirs(FIG, exist_ok=True)
-    fig, ax = plt.subplots(figsize=(7.2, 4.9))
-    ax.set_xlim(0, 1)
-    ax.set_ylim(0, 1)
-    ax.axis('off')
-    ax.add_patch(FancyBboxPatch((0.002, 0.002), 0.996, 0.996,
-                                boxstyle='square,pad=0', linewidth=0, facecolor=C_BG))
+    fig = plt.figure(figsize=(7.0, 2.35))
 
-    LX, LW = 0.028, 0.545            # 左栏
-    RX, RW = 0.600, 0.372            # 右栏
-    gap = 0.028
-    hs = [0.158, 0.158, 0.158, 0.158, 0.100]      # 各框高度（自上而下）
-    total = sum(hs) + gap * (len(hs) - 1)
-    top = 0.966
+    # 三段的顶边与底边对齐（0.805 / 0.225），使三个标题在同一水线上
+    ax_a = fig.add_axes([0.045, 0.225, 0.170, 0.580])
+    ax_b = fig.add_axes([0.328, 0.225, 0.320, 0.580])
+    ax_c = fig.add_axes([0.762, 0.225, 0.198, 0.580])
 
-    # 自上而下依次放置，否则 输入/输出 会颠倒
-    ys = []
-    yy = top
-    for (t, b, c), h in zip(LEFT, hs):
-        y0 = yy - h
-        box(ax, LX, y0, LW, h, t, b, c)
-        ys.append((y0, h))
-        yy = y0 - gap
-    for i in range(len(ys) - 1):
-        y_from = ys[i][0]                                        # 上框底部
-        y_to = ys[i + 1][0] + ys[i + 1][1] + 0.002               # 下框顶部
-        arrow(ax, LX + LW / 2, y_from, y_to)
+    panel_a(ax_a)
+    panel_b(ax_b)
+    panel_c(ax_c)
 
-    # 右栏：两块从同一顶端往下排
-    rh = (top - (top - total) - gap) / 2
-    yy = top
-    for (t, b, c) in RIGHT:
-        box(ax, RX, yy - rh, RW, rh, t, b, c, fc='white', ts=7.4, bs=6.2)
-        yy -= rh + gap
-
-    ax.text(0.5, 0.014, 'SNHI 协议：形状归一化健康指标（Shape-Normalized Health Indicator）',
-            ha='center', va='bottom', fontsize=8.5, fontweight='bold', color='0.2')
-
-    fig.tight_layout(pad=0.25)
-    fp = os.path.join(FIG, 'fig_protocol.png')
-    fig.savefig(fp, dpi=300)
-    fig.savefig(fp.replace('.png', '.pdf'))
-    plt.close(fig)
-    print('已写', fp, '与同名 .pdf')
+    PS.save(fig, os.path.join(FIG, 'fig_protocol.png'))
 
 
 if __name__ == '__main__':
