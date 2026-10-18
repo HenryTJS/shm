@@ -1,0 +1,27 @@
+family,rule,n_abstain,bt_pp,wi_pp,ratio,med_onset_pct,early_lt10
+A0 leave-one-campaign-out,theta = median(failure HI) of the other campaign,6,4.6179,60.6710,0.0761,1.0369,0.7778
+A1 scaled leave-one-out,alpha = 0.02,1,0.1167,12.6895,0.0092,0.3271,0.8571
+A1 scaled leave-one-out,alpha = 0.05,1,0.1167,19.5869,0.0060,0.3271,0.8571
+A1 scaled leave-one-out,alpha = 0.10,1,0.5616,19.6903,0.0285,0.5620,0.8571
+A1 scaled leave-one-out,alpha = 0.20,1,0.6249,53.6635,0.0116,0.7601,0.7857
+A1 scaled leave-one-out,alpha = 0.35,1,7.4646,59.2695,0.1259,2.7011,0.6429
+A1 scaled leave-one-out,alpha = 0.50,4,2.1867,68.0504,0.0321,0.5760,0.7273
+A1 scaled leave-one-out,alpha = 0.75,5,0.5726,49.1898,0.0116,0.6475,0.8000
+A1 scaled leave-one-out,alpha = 1.50,7,94.7043,76.8674,1.2320,10.1838,0.5000
+A1 scaled leave-one-out,alpha = 2.00,9,80.6587,40.0520,2.0139,39.2816,0.5000
+A1 scaled leave-one-out,alpha = 3.00,10,,83.8810,,69.9257,0.2000
+A2 pooled per-bin quantile,q = 0.500,1,0.6882,49.4458,0.0139,0.5561,0.7857
+A2 pooled per-bin quantile,q = 0.750,4,2.4230,68.4763,0.0354,0.7190,0.7273
+A2 pooled per-bin quantile,q = 0.900,6,52.1033,76.9282,0.6773,78.9095,0.1111
+A2 pooled per-bin quantile,q = 0.950,10,77.6933,35.1178,2.2124,85.4535,0.0000
+A2 pooled per-bin quantile,q = 0.990,14,,0.0000,,81.7026,0.0000
+A2 pooled per-bin quantile,q = 0.999,15,,,,,
+A3 early-life quantile,q = 0.950,6,86.3395,62.0850,1.3907,61.1111,0.3333
+A3 early-life quantile,q = 0.990,10,83.1614,22.9778,3.6192,50.0553,0.2000
+A3 early-life quantile,q = 0.999,12,,70.5348,,17.3922,0.0000
+A4 self-referenced,k = 2 x own first-10% median,2,35.0506,55.2882,0.6340,0.2765,0.6923
+A4 self-referenced,k = 3 x own first-10% median,3,44.8727,56.7733,0.7904,0.2564,0.7500
+A4 self-referenced,k = 5 x own first-10% median,5,4.6289,12.3909,0.3736,0.1662,0.9000
+A4 self-referenced,k = 10 x own first-10% median,5,44.8820,38.9366,1.1527,0.1662,0.7000
+A4 self-referenced,k = 20 x own first-10% median,5,60.8000,31.7141,1.9171,0.1662,0.7000
+A4 self-referenced,k = 50 x own first-10% median,6,80.3876,8.3265,9.6545,0.0962,0.7778

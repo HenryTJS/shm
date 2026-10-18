@@ -175,11 +175,12 @@ python run.py --dataset main --task dashboard
 python run.py --dataset l1   --task dashboard
 ```
 
-出包后建议校验一次：
+出包后校验：
 
-```bat
-python l1/check_dashboard_pkg.py --ds l1
-```
+> ⚠️ 旧版此处给的是 `python l1/check_dashboard_pkg.py --ds l1`。该脚本已随 L1 看板于
+> 2026-10-07 删除，**现已无替代的交付包校验器**。`main/export_dashboard.py` 出包后请人工
+> 抽查 `dashboard/data/*.js` 的字段是否齐全、各数组长度是否等于 `nfr`。
+> 背景见 `docs/details.md` 附录 A.2。
 
 细节见 [`dashboard/README.md`](dashboard/README.md)。
 
@@ -234,7 +235,7 @@ python %TEMP%\probe_dta.py
 ```
 
 > ⚠️ 旧版此处举的例子是 `l1/attic/` 下的归档脚本 —— **该目录不存在**（从未进仓，见
-> `docs/待办与未决问题.md` §1b）。
+> `docs/details.md` 附录 A.2）。
 
 **⑥ 图片里的中文。** 已在代码里设 `Microsoft YaHei / SimHei`。
 

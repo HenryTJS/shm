@@ -51,30 +51,25 @@ def fmt_var(vr: dict | None, key: str, nd: int = 3) -> str:
     return fmt(fnum(vr, key), nd)
 
 
-def table4() -> str:
+def table1() -> str:
     rows = [r for r in read("l1_hi_crosslab.csv") if r["variant"] == "cum_hits"]
     var = variance_rows()
     L: list[str] = []
-    L.append("| campaign | laboratory | n | median $t_{50}$ (%) | median $t_{85}$ (%) | range of $t_{85}$ (pp) |")
+    L.append("| campaign | laboratory | n | median $t_{50}$ (%) | median $t_{85}$ (%) "
+             "| range of $t_{85}$ within a campaign (pp) |")
     L.append("| --- | --- | --- | --- | --- | --- |")
-    med85: list[float] = []
-    rng: list[float] = []
     for c in ("C1", "C2", "C3", "C4"):
         sub = [r for r in rows if r["batch"] == c]
         t50 = [fnum(r, "t50_pct") for r in sub]
         t85 = [fnum(r, "t85_pct") for r in sub]
         t50 = [v for v in t50 if v is not None]
         t85 = [v for v in t85 if v is not None]
-        med85.append(float(np.median(t85)))
-        rng.append(spread(t85))
         L.append(
             f"| {c} | {BATCH_LAB[c]} | {len(sub)} | {np.median(t50):.1f} | "
-            f"{np.median(t85):.1f} | {rng[-1]:.2f} |"
+            f"{np.median(t85):.1f} | {spread(t85):.2f} |"
         )
-    L.append(
-        f"| **spread across the four medians** | | | | **{spread(med85):.2f}** | "
-        f"median {np.median(rng):.2f} |"
-    )
+    # 不再加汇总行：4.85（四个中位之间的极差）与 14.75（组内极差的中位数）
+    # 正文 §3.3 已逐字给出，表里再列一遍是纯重复。表只归档正文没有的逐活动明细。
     L.append("")
     L.append("| quantity | grouping | $\\eta^2$ | null median | $p$ (lower tail) |")
     L.append("| --- | --- | --- | --- | --- |")
@@ -96,7 +91,7 @@ def table4() -> str:
     return "\n".join(L)
 
 
-def table5() -> str:
+def table2() -> str:
     rows = read("pzt_crosslab_summary.csv")
     var = variance_rows()
     L: list[str] = []
@@ -127,9 +122,9 @@ def table5() -> str:
 
 def main() -> None:
     print("### Table 1　AE 跨批次（29 组，x = 85 于累积撞击数）\n")
-    print(table4())
+    print(table1())
     print("\n\n### Table 2　PZT 跨批次（17 组）\n")
-    print(table5())
+    print(table2())
 
 
 if __name__ == "__main__":

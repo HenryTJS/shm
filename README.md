@@ -11,7 +11,7 @@
 > | 知道项目做了什么、结论是什么     | **本文**（下面是方法、结论与交付物）                                       |
 > | **数据放在哪、怎么查状态** | **[`QUICKSTART.md`](QUICKSTART.md) §2** + `python shm/paths.py`        |
 > | 查工程细节与实测记录             | [`docs/details.md`](docs/details.md)                                            |
-> | **要写论文（ICSSD 2027）** | [`docs/论文正文.md`](docs/论文正文.md)（英文正文 + 图表路径 + 与论文集的缺口清单）；素材见 [`docs/论文创新点总结.md`](docs/论文创新点总结.md)；内部红线与失败路线见 [`docs/内部_红线与失败路线.md`](docs/内部_红线与失败路线.md) |
+> | **看论文（ICSSD 2025）** | 论文唯一版本是 `docs/` 下与标题同名的 [`.docx`](<docs/A Cross-Institution Alignment Protocol for Fatigue Monitoring A Normalised Lifetime Axis and a Scale-Free Health Indicator.docx>) 与 [`.pdf`](<docs/A Cross-Institution Alignment Protocol for Fatigue Monitoring A Normalised Lifetime Axis and a Scale-Free Health Indicator.pdf>)（8 页）；早期 markdown 正文与素材已废弃删除，写作纪律见 [`docs/仓库地图.md`](docs/仓库地图.md) §10 |
 
 ```bat
 set PY=C:\Users\ASUS\.conda\envs\xjtushm\python.exe
@@ -465,9 +465,13 @@ L1-55 通道 4 的中位残差是 **−23.75 µs**（约 157 mm 等效距离）�
 **已证伪的方向（不要重走）**：声速反演（`loc_vel_calib.py`，三组最优全在搜索边界）、
 导波因果（在线）版本（`pzt_causal.py`，比值 0.54 至 1.03）、
 尾波空间定位（`pzt_locadiff_probe.py`，与椭圆敏感核 ρ 为 −0.33 至 +0.04）、
-SNHI 形状配准作 RUL 预测器（`snhi_rul.py`，同批留一 92.8% 对零信息基线 23.6%）。
+SNHI 形状配准作 RUL 预测器（`snhi_rul.py`，同批留一 92.8% 对零信息基线 23.6%）、
+**分布式应变的空间定位**（`dfos_peak_migration.py`，14 组里位置可解析的 11 组一致率仅 7/11，
+且 8/11 组都是同一只脚的变化更大，与冲击在哪一侧无关 ⇒ 主导脚由装夹不对称决定）。
 
-论文素材见 `docs/论文正文.md` / `docs/论文创新点总结.md`；失败路线的内部记录见 `docs/内部_红线与失败路线.md`。
+写作纪律、已删文件与失败路线的完整记录见 `docs/仓库地图.md` §10；**交付必须声明的限制清单与
+明确不做的方向**见 [`docs/details.md`](docs/details.md) **附录 A**；还没闭合的事见
+[`docs/待办与未决问题.md`](docs/待办与未决问题.md)。
 
 ---
 

@@ -101,6 +101,9 @@ TASKS = {
         'snhi-rul':       [['l1/snhi_rul.py']],                        # 形状配准作 RUL 预测器（已证伪）
         'level-vs-shape': [['l1/level_vs_shape.py']],                  # 绝对阈值 vs SNHI 对照实验
         'four-modal':     [['l1/four_modal.py']],                      # C1 五组的四模态并行对照（重）
+        'crosslab-var':   [['l1/crosslab_variance.py']],               # 方差分解 η² + 置换零（Table 1/2 唯一来源）
+        'thresh-sweep':   [['l1/threshold_sweep.py']],                 # 26 条绝对阈值规则扫描（四族）
+        'dfos-loc':       [['l1/dfos_peak_migration.py']],             # 分布式应变空间定位（已证伪）
         # ---- AE 事件定位（通道时间偏置标定）----
         'ae-cache':       [['l1/ae_cache.py', '--build']],             # 逐 hit 二进制缓存（一次性，之后毫秒级）
         'loc-bias-probe': [['l1/loc_bias_probe.py']],                  # 逐通道残差探针（发现偏置在哪里）
@@ -174,6 +177,9 @@ DESC = {
         'snhi-rul':       ('形状配准作 RUL（已证伪）', 'snhi_rul.py：同批留一 92.8% vs 零信息 23.6%'),
         'level-vs-shape': ('绝对阈值 vs SNHI 对照', 'level_vs_shape.py：15 组，两方法产出同一量'),
         'four-modal':     ('四模态并行对照', 'four_modal.py：C1 五组 AE/FBG/DFOS/PZT 同轴对比'),
+        'crosslab-var':   ('方差分解（Table 1/2）', 'crosslab_variance.py：按 campaign / university 的 η² 与置换零分布'),
+        'thresh-sweep':   ('26 条阈值规则扫描', 'threshold_sweep.py：四族规则，支撑「阈值未被人为挑选」'),
+        'dfos-loc':       ('分布式应变空间定位（已证伪）', 'dfos_peak_migration.py：一致率 7/11，主导脚与真值侧无关'),
         'ae-cache':       ('AE 二进制缓存 (一次性)', 'ae_cache.py --build：9.5 GB 库 → npy，之后读取毫秒级'),
         'loc-bias-probe': ('定位通道残差探针', 'loc_bias_probe.py：残差与通道强相关 → 偏置主导'),
         'loc-vel-calib':  ('定位声速标定 (已证伪)', 'loc_vel_calib.py：三组最优全部落在搜索边界'),
