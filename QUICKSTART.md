@@ -58,7 +58,7 @@ python shm/paths.py --json     rem 机器可读
 ```bat
 python -m shm.datasets --cross-nf                     rem 四类数据定义自洽（应打印「不一致 0 条」）
 python run.py --list                                  rem 任务矩阵（按数据集分组）
-python run.py --dataset main --task degree --dry-run   rem 只打印要执行的命令，不真跑
+python run.py --dataset main --task cdio --dry-run    rem 只打印要执行的命令，不真跑
 ```
 
 三条都 `exit 0` 就说明环境 + 数据 + 入口都通了。
@@ -69,24 +69,15 @@ python run.py --dataset main --task degree --dry-run   rem 只打印要执行的
 
 先看矩阵：`python run.py --list`（**每个任务都能加 `--dry-run` 只打印命令**）。
 
-### 主样本 `main`（016–020 有标签 + 023–026 无标签）
+### 主样本 `main`（方法只剩在线进度预测）
+
+> 2026-10-20 口径收缩：累积 AE 能量与寿命近似线性（`u@90% = 0.90`），是时钟而非损伤计。
+> 原 `prepare / labels / degree / warning / curves / paper / robust / verify` 全部下线，
+> 代码在 `main/attic/` 备查；现只保留一条方法与一个导出入口。
 
 ```bat
-python run.py --dataset main --task prepare       rem ① 多源对齐       → main/aligned/
-python run.py --dataset main --task labels        rem   弱标签 b2/b3    → main/weak_labels/
-python run.py --dataset main --task degree         rem ② D(t) 达阈/单调 → main/results/
-python run.py --dataset main --task warning        rem   预警 onset 分级 → main/results/warning_onset.csv
-python run.py --dataset main --task curves paper   rem   出图 → main/figures/
-python run.py --dataset main --task robust         rem ③ 稳健性（灵敏度/LOSO/消融/统计）
-python run.py --dataset main --task verify         rem 验证层 7 件事一把跑完（最耗时）
-python run.py --dataset main --task dashboard      rem 看板数据 → dashboard/data/
-```
-
-也可直接调两个合并入口（`-h` 看子命令）：
-
-```bat
-python main/pipeline.py            rem prepare / evaluate / robust
-python main/verify.py              rem baselines / loso-cv / labels / ae-cols / grade / fusion / candidates
+python run.py --dataset main --task cdio           rem 在线进度预测（示例流）
+python run.py --dataset main --task dashboard      rem 看板数据 → dashboard/data/（24 组）
 ```
 
 ### 公开集 `l1`（29 组，按模态分 4 组）
@@ -124,10 +115,10 @@ python run.py --dataset l1 --task loc-drift        rem δ 随寿命漂移检验�
 
 > **先跑 `ae-cache`**：它把 9 组 `.pridb`（合计 **9.54 GB**、**1.42 亿**命中）固化成二进制缓存，
 > 之后所有定位脚本的读取从数百秒降到 **0.02 秒**。缓存可随时删除重建，已被 `.gitignore` 忽略。
-> `loc-vel-calib`（声速标定）是**已证伪**的路线，无需重跑，结论见 README §2.4。
+> `loc-vel-calib`（声速标定）是**已证伪**的路线，无需 重跑，结论见 `README.md` §2.2（定位）与 `当前结论与口径.md`。
 
 > ⚠️ `crosslab-ae` 默认产出 **28 组**，第 29 组（L1-23）由 `crosslab-ae23` 单独补上，两者合并才是 29 组。
-> `pzt-causal` / `snhi-shape` / `snhi-rul` 是**核查与证伪**类脚本，日常不用跑，结论见 README §2.4。
+> `pzt-causal` / `snhi-shape` / `snhi-rul` 是**核查与 证伪**类脚本，日常不用跑，结论见 `README.md` §2.2 与 §5。
 
 > ⚠️ **L1 只保留离线口径** —— 它不支持跨试件统一阈值的**在线预警**（四条独立路径一致失败），
 > 因此在线的 D(t) 与 L1 的**在线**看板包已于 2026-10-07 整体移除。依据见 `docs/details.md`〈l1 恒幅+DFOS 组 —— 不能做什么〉。
@@ -152,14 +143,14 @@ python run.py --dataset phmdc --task step4 step5   rem 置换检验 / 不确定�
 
 ## 5. 产物在哪
 
-| 产物              | 位置                                                     |
-| ----------------- | -------------------------------------------------------- |
-| 主样本结果表 / 图 | `main/results/*.csv`、`main/figures/*.png`           |
-| L1 结果表 / 缓存  | `l1/results/*.csv`、`l1/results/*.npz`、`l1/*.csv` |
-| L1 论文图         | `l1/figures/fig_*.png` / `.pdf`（300 dpi，双份）  |
-| phmdc 结果与报告  | `phmdc/results/*`                                      |
-| 看板数据包        | `dashboard/data/*.js`（39 个）                         |
-| 中间缓存          | `main/cache/`、`l1/results/_*_cache/`                |
+| 产物              | 位置                                                                                               |
+| ----------------- | -------------------------------------------------------------------------------------------------- |
+| 主样本结果表 / 图 | `main/cdio_baseline/results/cdio_summary.csv`（24 行）；`main/results/` 是收敛过程中的诊断记录 |
+| L1 结果表 / 缓存  | `l1/results/*.csv`、`l1/results/*.npz`、`l1/*.csv`                                           |
+| L1 论文图         | `l1/figures/fig_*.png` / `.pdf`（300 dpi，双份）                                               |
+| phmdc 结果与报告  | `phmdc/results/*`                                                                                |
+| 看板数据包        | `dashboard/data/*.js`（24 组主样本 + 29 组 L1 = 53 个包 + 5 个清单，不入库）                     |
+| 中间缓存          | `main/cache/`、`l1/results/_*_cache/`                                                          |
 
 绝大多数产物**可以删了重跑**（`results/`、`figures/`、`dashboard/data/` 都在 `.gitignore` 里）。
 
@@ -168,53 +159,29 @@ python run.py --dataset phmdc --task step4 step5   rem 置换检验 / 不确定�
 ## 6. 看板
 
 直接用浏览器打开仓库根的 **`dashboard/index.html`**。
-顶栏可切换试件（当前只有**主样本 11 组**），逐帧回放 D(t)、多源信号与三级预警。
+顶栏先选数据集（`疲劳机主样本` + `ReMAP C1–C4` 共 5 个），再选试件；
+主样本逐帧回放在线进度，L1 为**离线复评**（界面标注「非在线」）。
 
-数据包不在时要先导出：
+数据包不在时要先导出（`dashboard/data/` 已 `.gitignore`，不入库）：
 
 ```bat
-python run.py --dataset main --task dashboard
-python run.py --dataset l1   --task dashboard
+python run.py --dataset main --task dashboard     rem 24 组主样本
+python l1/restore_dashboard_packages.py           rem 29 组 L1（C1–C4）+ 四个清单
 ```
 
-出包后校验：
-
-> ⚠️ 旧版此处给的是 `python l1/check_dashboard_pkg.py --ds l1`。该脚本已随 L1 看板于
-> 2026-10-07 删除，**现已无替代的交付包校验器**。`main/export_dashboard.py` 出包后请人工
-> 抽查 `dashboard/data/*.js` 的字段是否齐全、各数组长度是否等于 `nfr`。
-> 背景见 `docs/details.md` 附录 A.2。
+> 校验方式：出包后用浏览器打开逐集抽查（字段齐全、曲线能播、图例无残留），
+> 或直接读包检查各数组长度是否等于 `nfr`（`shm.pkgcodec` 已处理二进制解码）。
 
 细节见 [`dashboard/README.md`](dashboard/README.md)。
 
 ---
 
-## 7. Agent
-
-**默认走模板渲染 —— 零依赖、不联网、不需要 key**：
-
-```bat
-python agent/cli.py --demo                             rem 跑内置示例（约 0.5 s）
-python agent/cli.py "016 什么时候预警的" --quiet        rem 直接提问
-python agent/cli.py                                   rem 交互模式
-```
-
-要接真·LLM 才需要 key：复制 `.env.example` 为 `.env` 并填入（`.env` 已在 `.gitignore` 里）：
-
-```bat
-copy .env.example .env
-python agent/cli.py --llm qwen2.5:3b                   rem 或 --llm http://...
-```
-
-细节见 [`agent/README.md`](agent/README.md)。
-
----
-
-## 8. 常见坑
+## 7. 常见坑
 
 **① `-h` 不能用来试探所有脚本。** 有些脚本**没有 argparse**，传 `-h` 会**直接开跑**而不是打用法：
 
-- `main/verify.py` 的 `baselines` / `loso-cv` / `labels` / `grade` / `fusion`
 - `phmdc/step0.py`
+- `l1/ae_frames.py`、`l1/ae_cycle.py`（无参数时会走全部默认组，耗时很长）
 
 ⇒ 想确认某个脚本能不能跑，先看它 `import argparse` 没有。
 
@@ -223,7 +190,7 @@ python agent/cli.py --llm qwen2.5:3b                   rem 或 --llm http://...
 **③ PowerShell 会把 `021,022` 当成数字、吃掉前导零。** 传组号一定要加引号：
 
 ```bat
-python main/verify.py candidates --groups "021,022"
+python l1/ae_hi.py --groups "L1-03,L1-04"
 ```
 
 **④ 别用 `| Out-Null` 或 `Select-Object -First N` 截断长命令。** 管道提前关闭会让命令报
@@ -236,19 +203,16 @@ set PYTHONPATH=%CD%\l1
 python %TEMP%\probe_dta.py
 ```
 
-> ⚠️ 旧版此处举的例子是 `l1/attic/` 下的归档脚本 —— **该目录不存在**（从未进仓，见
-> `docs/details.md` 附录 A.2）。
-
 **⑥ 图片里的中文。** 已在代码里设 `Microsoft YaHei / SimHei`。
 
 ---
 
-## 9. 接下来读什么
+## 8. 接下来读什么
 
-| 想知道                             | 看                                                  |
-| ---------------------------------- | --------------------------------------------------- |
-| 每个文件干什么、哪些是入口/库/归档 | [`docs/仓库地图.md`](docs/仓库地图.md)             |
-| 项目做了什么、结论是什么           | [`README.md`](README.md)                           |
-| 工程细节与全部实测记录（很长）     | [`docs/details.md`](docs/details.md)               |
-| 数据在哪、怎么查状态               | 本文 §2 +`paths.json` + `python shm/paths.py`  |
-| 还没解决的问题                     | [`docs/待办与未决问题.md`](docs/待办与未决问题.md) |
+| 想知道                             | 看                                                 |
+| ---------------------------------- | -------------------------------------------------- |
+| 每个文件干什么、哪些是入口/库/归档 | [`仓库地图.md`](仓库地图.md)                      |
+| 项目做了什么、结论是什么           | [`README.md`](README.md)                          |
+| 工程细节与全部实测记录（很长）     | [`docs/details.md`](docs/details.md)              |
+| 数据在哪、怎么查状态               | 本文 §2 +`paths.json` + `python shm/paths.py` |
+| 还没解决的问题                     | [`待办与未决问题.md`](待办与未决问题.md)          |

@@ -39,7 +39,7 @@ C:\Users\ASUS\.conda\envs\xjtushm\python.exe main\cdio_baseline\live_predictor.p
 
 ⇒ **这个量是时钟，不是损伤计。** 基于它的弱标签、偏差、分级全部失去可辨识性。
 
-完整论证见 `docs/当前结论与口径.md`。
+完整论证见 `当前结论与口径.md`。
 
 ## 已知限制
 
