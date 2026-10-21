@@ -130,7 +130,9 @@ python run.py --dataset l1 --task loc-drift        rem δ 随寿命漂移检验�
 > `pzt-causal` / `snhi-shape` / `snhi-rul` 是**核查与证伪**类脚本，日常不用跑，结论见 README §2.4。
 
 > ⚠️ **L1 只保留离线口径** —— 它不支持跨试件统一阈值的**在线预警**（四条独立路径一致失败），
-> 因此在线的 D(t) 与 L1 看板包已于 2026-10-07 整体移除。依据见 `docs/details.md`〈l1 恒幅+DFOS 组 —— 不能做什么〉。
+> 因此在线的 D(t) 与 L1 的**在线**看板包已于 2026-10-07 整体移除。依据见 `docs/details.md`〈l1 恒幅+DFOS 组 —— 不能做什么〉。
+> 2026-10-20 补：L1 的**离线复评**看板已重新接回（主曲线 = `HI_AE/HI_hit`，非因果），
+> 重建命令 `python l1\restore_dashboard_packages.py`，详见 `dashboard/README.md` §3。
 
 ### 外部平台 `phmdc`
 

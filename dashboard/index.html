@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SHM-ONLINE · 疲劳机多源在线损伤监测平台</title>
+<title>SHM-ONLINE · 多源在线监测与离线复评平台</title>
 <link rel="stylesheet" href="assets/dashboard.css">
 </head>
 <body>
@@ -15,7 +15,7 @@
       <div class="brand-mark"><span></span></div>
       <div class="brand-text">
         <b>SHM-ONLINE</b>
-        <i>结构健康监测 · 在线损伤评估系统</i>
+        <i>结构健康监测 · 在线进度评估 / 离线损伤复评</i>
       </div>
     </div>
 
@@ -94,7 +94,7 @@
     <!-- 损伤度仪表 -->
     <section class="panel gauge-panel">
       <div class="phead">
-        <div class="ptitle"><i></i>DAMAGE INDEX<b id="tDmg">损伤度 D(t)</b></div>
+        <div class="ptitle"><i></i>PROGRESS INDEX<b id="tDmg">累计能量进度</b></div>
         <div class="ptag" id="gaugeTag">IDLE</div>
       </div>
       <div class="gauge-wrap">
@@ -126,14 +126,15 @@
     <!-- 主趋势 -->
     <section class="panel trend-panel">
       <div class="phead">
-        <div class="ptitle"><i></i>DAMAGE TREND<b id="tTrend">损伤度 D(t) 趋势 / 分级阈值</b></div>
+        <div class="ptitle"><i></i>PROGRESS TREND<b id="tTrend">累计能量进度趋势 / 分级阈值</b></div>
         <div class="legend">
           <span class="lg lg-d"><i></i><span id="lgD">D(t)</span></span>
+          <span class="lg lg-d" id="lgBand" style="display:none"><i></i>90% 区间</span>
           <span class="lg lg-r"><i></i>证据 risk</span>
           <span class="lg lg-b2" id="lgB2" style="display:none"><i></i>b2 扩展参考</span>
           <span class="lg lg-b3" id="lgB3" style="display:none"><i></i>b3 断裂锚</span>
           <span class="lg lg-c0" id="lgC0" style="display:none"><i></i>c0 基线终点</span>
-          <span class="lg lg-rf" id="lgRef" style="display:none"><i></i>论文检测点</span>
+          <span class="lg lg-rf" id="lgRef" style="display:none"><i></i><span id="lgRefT">论文检测点</span></span>
           <span class="lg lg-rf" id="lgHI" style="display:none"><i></i><span id="lgHIt">论文 HI_F 参考（离线）</span></span>
         </div>
       </div>
@@ -257,13 +258,13 @@
               <td><span class="st ok" id="hFOs">在线</span></td></tr>
           <tr id="hST"><td>应变 STRAIN</td><td>10 Hz</td><td>1</td><td class="n" id="hSTn">0</td>
               <td><span class="st ok">在线</span></td></tr>
-          <tr id="hDI"><td>损伤度引擎</td><td>500 点/块</td><td>—</td><td class="n" id="hDIn">0</td>
+          <tr id="hDI"><td>进度预测引擎</td><td>500 点/块</td><td>—</td><td class="n" id="hDIn">0</td>
               <td><span class="st ok" id="hDIs">在线</span></td></tr>
         </tbody>
       </table>
       <div class="health-foot">
-        <span>算法：多源证据融合 · 在线因果流式　计数口径：已回放的原始采样点</span>
-        <span id="algoInfo">D ∈ [0,1] · 阈值 0.25 / 0.55 / 0.85</span>
+        <span>算法：累计对数谱能量（CElog 时钟）+ 组成指纹 KNN + 库容量贝叶斯 · 在线因果流式　计数口径：已回放的原始采样点</span>
+        <span id="algoInfo">进度 ∈ [0,1] · 阈值 0.25 / 0.55 / 0.85</span>
       </div>
     </div>
   </section>
@@ -277,9 +278,15 @@
 </div>
 
 <script src="data/index.js"></script>
-<script src="data/index_l1.js"></script>
-<script src="data/index_l1v2.js"></script>
-<script src="data/index_l1v3.js"></script>
+
+<!-- 公开集 L1（离线复评，非在线）按试验批次分四组：C1 恒幅+FBG+DFOS / C2 恒幅+DFOS /
+     C3 变幅VA+FBG / C4 谱载+FBG。数据包由 l1/restore_dashboard_packages.py 重建，
+     清单由 l1/build_campaign_index.py 按 shm/datasets.L1_CAMPAIGNS 生成。 -->
+<script src="data/index_c1.js"></script>
+<script src="data/index_c2.js"></script>
+<script src="data/index_c3.js"></script>
+<script src="data/index_c4.js"></script>
+
 <script src="assets/dashboard.js"></script>
 </body>
 </html>

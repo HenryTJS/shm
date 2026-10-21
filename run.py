@@ -42,32 +42,14 @@ L1_DEGREE = None   # 已移除：L1 在线 D(t) 于 2026-10-07 随在线口径�
 
 TASKS = {
     'main': {
-        'prepare': [['main/pipeline.py', 'prepare', 'align']],
-        'labels':  [['main/pipeline.py', 'prepare', 'weaklabels']],
-        'degree':  [['main/pipeline.py', 'evaluate', 'degree']],
-        'warning': [['main/pipeline.py', 'evaluate', 'warning']],
-        'curves':  [['main/pipeline.py', 'evaluate', 'curves']],
-        'paper':   [['main/pipeline.py', 'evaluate', 'paper']],
-        'robust':  [['main/pipeline.py', 'robust', 'sens'],
-                    ['main/pipeline.py', 'robust', 'loso'],
-                    ['main/pipeline.py', 'robust', 'ablation'],
-                    ['main/pipeline.py', 'robust', 'stats']],
-        # ---- 验证层（合并入口 main/verify.py；子命令名 = 数据集名）----
-        'baselines':   [['main/verify.py', 'baselines']],     # vs 经典/朴素/监督 ML 基线
-        'loso-cv':     [['main/verify.py', 'loso-cv']],       # 留一试件交叉验证
-        'label-audit': [['main/verify.py', 'labels']],        # 标签审计 + 剔除规则事前化
-        'ae-cols':     [['main/verify.py', 'ae-cols']],       # AE 多列逐列对照
-        'grade':       [['main/verify.py', 'grade']],         # 级别层异源分级（刚度闸门）
-        'fusion':      [['main/verify.py', 'fusion']],        # 源融合对照（单源/二源/三源）
-        'candidates':  [['main/verify.py', 'candidates']],    # 候选试件体检（需先跑 grade）
-        'verify':  [['main/verify.py', 'baselines'],          # 一键跑完验证层（grade 在 candidates 前）
-                    ['main/verify.py', 'loso-cv'],
-                    ['main/verify.py', 'labels'],
-                    ['main/verify.py', 'ae-cols'],
-                    ['main/verify.py', 'grade'],
-                    ['main/verify.py', 'fusion'],
-                    ['main/verify.py', 'candidates']],
-        'dashboard': [['main/export_dashboard.py']],          # → dashboard/data/
+        # 主样本于 2026-10-20 口径收缩：累积 AE 能量与寿命近似线性（u@90% = 0.90），
+        # 是时钟而非损伤计。原 weaklabels / degree / warning / curves / paper /
+        # robust / verify 全套因依赖不可辨识的 b1/b2 锚点而下线，代码在
+        # main/attic/ 备查，见 docs/当前结论与口径.md。
+        # 现只保留在线预测（CDIO 式累积能量容量反解）。
+        'cdio':    [['main/cdio_baseline/live_predictor.py',
+                     '--input', 'main/cdio_baseline/example_stream.csv',
+                     '--every', '5000']],                     # 在线进度预测（基线）
     },
     'l1': {
         # ---- L1 恒幅+FBG+DFOS（L1-03/04/05/09/23，有 FBG）----

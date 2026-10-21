@@ -92,3 +92,8 @@ Thumbs.db
 Desktop.ini
 .DS_Store
 *.tmp
+
+# ── 看板数据包（由脚本从原始数据生成，与原始数据同等待遇：不上传）───────────
+# 19 MB 左右，可由 `dashboard/README.md` §3 的三条命令完全重建：
+#   main/cdio_baseline/build_dashboard_all.py、l1/restore_dashboard_packages.py、l1/build_campaign_index.py
+dashboard/data/

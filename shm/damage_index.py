@@ -124,6 +124,18 @@ class OnlineDamageIndex:
         self.ae_dead_win = int(p.get('ae_dead_win', 20))
         self.ae_dead_thr = float(p.get('ae_dead_thr', 0.1))
         self.estrain_w_hi = float(p.get('estrain_w_hi', 1.0))
+        # 应变辅证与主源耦合: 应变证据不得超过「近期 AE 证据峰值」的 ae_strain_cap 倍。
+        # **默认关闭(0.0): 实测无效。** AE 在 024 的 30% 处仍有微弱活动, 且一次
+        # 早期爆发会在窗口内长期抬高上限, 结果 024 的过早报警没被修掉, 还把 025
+        # 从 A 推成 D(偏晚)。真正的判别量是“载荷是否在变化”而不是 AE 是否存在,
+        # 见 main/results/early_alarm_023_024.md。
+        self.ae_strain_cap = float(p.get('ae_strain_cap', 0.0))
+        self.ae_gate_w = int(p.get('ae_gate_w', 40))
+        # 应变发散要求「持续」: 连续 estrain_hold 个块的归一化发散 >= 0.5 才采信。
+        # 0 = 关闭(旧口径)。单块尖峰来自载荷偏移与量测跳变，不是发散:
+        # 024 在 28.7% 处只抬了两块就回落，而真发散从 38% 起单调维持。
+        self.estrain_hold = int(p.get('estrain_hold', 0))
+        self._strain_run = 0
         # --- 块长(点) = 证据结算粒度, 固定 EXT_BLOCK_PTS ---
         # 注: 曾引入可调 blk_pts(按寿命比例缩放)以对齐 L1 的 n_f 跨度,
         #     实测无效且使预警更早(块越细, 越界判据的 max 统计量抽样越密)
@@ -253,10 +265,12 @@ class OnlineDamageIndex:
         self._latched = False
         self._d_hist = []
         self._ae_hist = []                 # 自适应用的 e_ae 滚动窗口
+        self._ae_gate_hist = []            # 应变门控用的 e_ae 滚动窗口
         self._estrain_w = self.estrain_w   # 实际生效的应变权重(可变)
         self._block_shape = []             # 本块事件的特征值(e_shape 用)
         self._shape_hist = []              # 逐块的 p_q(特征) 历史
         self._last_e_shape = 0.0
+        self._strain_run = 0                 # 应变发散的连续超阈计数
 
     def _on_event(self, peak):
         peak = max(float(peak), 0.0)
@@ -371,7 +385,12 @@ class OnlineDamageIndex:
             sbase = float(np.percentile(self._strain_stds, 50))
             if sbase > 1e-9:
                 ratio = self._strain_stds[-1] / sbase
-                e_strain = float(min(max((ratio - 1.0) / self.strain_ratio_gain, 0.0), 1.0))
+                raw = float(min(max((ratio - 1.0) / self.strain_ratio_gain, 0.0), 1.0))
+                if self.estrain_hold > 0:
+                    self._strain_run = self._strain_run + 1 if raw >= 0.5 else 0
+                    e_strain = raw if self._strain_run >= self.estrain_hold else 0.0
+                else:
+                    e_strain = raw
                 e_strain *= self._estrain_w
         self._last_e_strain = e_strain
         # --- e_fo (光纤多通道局部化, 辅助源) ---
@@ -405,6 +424,10 @@ class OnlineDamageIndex:
         # --- risk / D(源掩码融合 + 消融模式) ---
         # risk = max(启用源的证据)。声发射为主源; strain/fo 按 sources 声明参与。
         # abl='only_strain'/'no_strain' 保留为消融专用覆盖(不改变既有消融口径)。
+        self._ae_gate_hist.append(self._last_e_ae)
+        if len(self._ae_gate_hist) > self.ae_gate_w:
+            self._ae_gate_hist.pop(0)
+        ae_recent_max = max(self._ae_gate_hist)
         if self.abl == 'only_strain':
             self.risk = e_strain
         elif self.abl == 'no_strain':
@@ -414,7 +437,10 @@ class OnlineDamageIndex:
             if 'ae' in self.sources:
                 evs.append(self._last_e_ae)
             if 'strain' in self.sources:
-                evs.append(e_strain)
+                e_st = e_strain
+                if 'ae' in self.sources and self.ae_strain_cap > 0:
+                    e_st = min(e_st, self.ae_strain_cap * ae_recent_max)
+                evs.append(e_st)
             if 'fo' in self.sources:
                 evs.append(e_fo)
             if not evs:

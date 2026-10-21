@@ -15,11 +15,14 @@
   var WIN = 1200;                     // 子面板滑动窗口(帧)
   var LV_COLORS = ['#00e39a', '#ffc93c', '#ff8a1f', '#ff3b47'];
   var LV_NAMES = ['正常', '注意', '预警', '临危'];
+  /* 分级文案：主指标统一叫「进度/HI」，不写「损伤度 D」——
+     主样本的进度是**累计对数谱能量的回归（时钟）**，阈值只是记录完成度分档；
+     L1 的 HI_AE/HI_hit 是离线复评量。两者都不能当剩余寿命裕度。 */
   var LV_DESC = [
-    ['结构状态正常', '损伤度位于安全区间，各源信号平稳'],
-    ['注意级 · 损伤累积启动', '{T} 越过 0.25，建议提高巡检频次'],
-    ['预警级 · 损伤加速扩展', '{T} 越过 0.55，请安排停机检查'],
-    ['临危级 · 逼近结构失效', '{T} 越过 0.85，立即停机并隔离试件']
+    ['未见异常跳变', '主指标未越过 0.25 档；阈值仅作分档，不代表剩余寿命裕度'],
+    ['注意级 · 进度进入中段', '{T} 越过 0.25，可提高巡检频次'],
+    ['预警级 · 进度快速推进', '{T} 越过 0.55，建议安排停机检查'],
+    ['临危级 · 记录接近完成', '{T} 越过 0.85，请复核试件状态']
   ];
   var FO_COLORS = ['#25d4f0', '#7c9dff', '#b07cff', '#ff9de2', '#5fe08a',
     '#ffd166', '#ef6f6c', '#8bd450', '#f78fb3', '#6ad4dd'];
@@ -47,12 +50,14 @@
     'tDmg', 'tTrend', 'dUnit', 'lgD', 'dMarginLbl', 'thLv1', 'thLv2', 'thLv3',
     'dMaxLbl', 'algoInfo',
     'dfosRow', 'tDF', 'vDF', 'cvDFHeat', 'cvDFProf',
-    'cvTrend', 'cvAE', 'cvFO', 'cvST', 'cvEV', 'lgB2', 'lgB3', 'lgC0', 'lgRef'
+    'cvTrend', 'cvAE', 'cvFO', 'cvST', 'cvEV', 'lgB2', 'lgB3', 'lgC0', 'lgRef', 'lgRefT', 'lgBand'
   ].forEach(function (k) { el[k] = $(k); });
 
   /* 主指标相关文案的**初始默认值** —— 数据包未提供覆盖字段时必须还原，
      否则从一个数据集切到另一个会残留上一个的名称（如 L1 的“离线复评”）。 */
   var DEF_LB = {
+    rig: el.equipRig ? el.equipRig.textContent : '',
+    mode: el.equipMode ? el.equipMode.textContent : '',
     tDmg: el.tDmg ? el.tDmg.textContent : '',
     tTrend: el.tTrend ? el.tTrend.textContent : '',
     dUnit: el.dUnit ? el.dUnit.textContent : '',
@@ -240,6 +245,8 @@
     if (c.gid !== d.gid) {
       c.gid = d.gid;
       c.D = dec(d.D, 1000); c.risk = dec(d.risk, 1000);
+      c.lo = (d.lo && d.lo.length) ? dec(d.lo, 1000) : null;
+      c.hi = (d.hi && d.hi.length) ? dec(d.hi, 1000) : null;
       c.hiF = (d.hiF && d.hiF.length) ? dec(d.hiF, 1000) : null;
       c.eae = dec(d.eae, 1000); c.est = dec(d.est, 1000);
       // 可选：数据包自带的证据通道数组（L1 第三批用，除 eae/est 外多一条 Fano）
@@ -398,6 +405,22 @@
 
     // 仅绘制"当前时刻及之前"的数据 (在线实时语义: 不预显未来曲线)
     if (f > 1) {
+      // 90% 区间带（贝叶斯 p05/p95）：末期点估计不可信，带能覆盖真值
+      if (c.lo && c.hi) {
+        var px2 = Math.max(2, Math.round(b.w)), n2 = f + 1, st2 = n2 / px2, q, j2;
+        ctx.save(); ctx.globalAlpha = 0.15; ctx.fillStyle = C_D;
+        ctx.beginPath();
+        for (q = 0; q <= px2; q++) {
+          j2 = Math.min(n2 - 1, Math.max(0, Math.ceil((q + 1) * st2) - 1));
+          var xh = b.x + b.w * q / px2, yh = yOf(c.hi[j2], 0, 1, b);
+          if (q === 0) ctx.moveTo(xh, yh); else ctx.lineTo(xh, yh);
+        }
+        for (q = px2; q >= 0; q--) {
+          j2 = Math.min(n2 - 1, Math.max(0, Math.ceil((q + 1) * st2) - 1));
+          ctx.lineTo(b.x + b.w * q / px2, yOf(c.lo[j2], 0, 1, b));
+        }
+        ctx.closePath(); ctx.fill(); ctx.restore();
+      }
       plotFill(ctx, b, c.D, 0, f + 1, 0, 1, C_D);
       if (c.hiF) {
         plotLine(ctx, b, c.hiF, 0, f + 1, 0, 1, 'rgba(150,170,190,.95)', { width: 1.3 });
@@ -406,6 +429,8 @@
       plotLine(ctx, b, c.D, 0, f + 1, 0, 1, C_D, { width: 2, glow: 8 });
     }
     // 论文 HI_F 参考曲线：图例 + 与 D 的提前量标注（仅 L1 数据集有此字段）
+    var lgBand = document.getElementById('lgBand');
+    if (lgBand) lgBand.style.display = (c.lo && c.hi) ? '' : 'none';
     var lgHI = document.getElementById('lgHI');
     if (lgHI) {
       lgHI.style.display = c.hiF ? '' : 'none';
@@ -767,7 +792,15 @@
     el.dMax.textContent = mx.toFixed(3);
     var life = f / (d.nfr - 1) * 100;
     el.dLife.textContent = life.toFixed(1) + '%';
-    el.dMargin.textContent = Math.max(0, 1 - D).toFixed(3);
+    if (S.marginMode === 'dev') {
+      // 进度偏差 = 预测进度 − 真实进度（百分点）；旧代码这里写的是 1−D（那是剩余量，不是偏差）
+      var dev = D * 100 - life;
+      el.dMargin.textContent = (dev >= 0 ? '+' : '') + dev.toFixed(1) + ' pt';
+      el.dMargin.style.color = dev < -5 ? '#ff8a1f' : (dev > 5 ? '#25d4f0' : '');
+    } else {
+      el.dMargin.textContent = Math.max(0, 1 - D).toFixed(3);
+      el.dMargin.style.color = '';
+    }
     el.gaugeTag.textContent = S.playing ? 'RUNNING' : (S.frame > 0 ? 'PAUSED' : 'IDLE');
   }
 
@@ -1071,6 +1104,35 @@
   /* ============================================================
    *  五、数据加载 / 交互
    * ============================================================ */
+  /* ---- 数据包解码：数值数组可能是 base64 二进制（由 shm/pkgcodec.py 编码）----
+         格式 {"i16"/"i32"/"f32": "<base64>"}；旧包（纯数组）原样通过。---- */
+  var PACK_SKIP = { warn: 1, meta: 1, labels: 1, chans: 1, spec: 1 };
+  function b64ToArr(o) {
+    var s = o.i16 || o.i32 || o.f32;
+    var bin = atob(s), n = bin.length, u8 = new Uint8Array(n);
+    for (var i = 0; i < n; i++) u8[i] = bin.charCodeAt(i);
+    if (o.i16) return new Int16Array(u8.buffer, 0, n >> 1);
+    if (o.i32) return new Int32Array(u8.buffer, 0, n >> 2);
+    return new Float32Array(u8.buffer, 0, n >> 2);
+  }
+  function hydrate(v) {
+    if (!v || typeof v !== 'object') return v;
+    if (v.i16 || v.i32 || v.f32) return b64ToArr(v);
+    if (Array.isArray(v)) {
+      for (var i = 0; i < v.length; i++) v[i] = hydrate(v[i]);
+      return v;
+    }
+    for (var k in v) v[k] = hydrate(v[k]);
+    return v;
+  }
+  function hydrateAll(d) {
+    for (var k in d) {
+      if (PACK_SKIP[k]) continue;
+      d[k] = hydrate(d[k]);
+    }
+    return d;
+  }
+
   function loadGroup(gid) {
     return new Promise(function (res, rej) {
       if (window.SHM_DATA && window.SHM_DATA[gid]) {
@@ -1092,6 +1154,7 @@
     el.boot.classList.remove('hide');
     el.bootText.textContent = '正在加载试件 ' + gid + ' 数据包 …';
     loadGroup(gid).then(function (d) {
+      hydrateAll(d);
       S.gid = gid; S.warnIdx = 0;
       S.unit = d.unit || 's';
       S.frameDt = d.frameDt || DEF_FRAME_DT;
@@ -1100,8 +1163,8 @@
       el.gidSel.value = gid;
       el.btnRun.disabled = false; el.btnReset.disabled = false; el.seek.disabled = false;
       el.tTotal.textContent = '/ ' + fmtT(d.dur);
-      if (el.equipRig && d.rig) el.equipRig.textContent = d.rig;
-      if (el.equipMode && d.mode) el.equipMode.textContent = d.mode;
+      if (el.equipRig) el.equipRig.textContent = d.rig || DEF_LB.rig;
+      if (el.equipMode) el.equipMode.textContent = d.mode || DEF_LB.mode;
       // 主指标名称可由数据包覆盖（L1 第二批 = 「离线复评 HI_AE」，非“损伤度 D(t)”）；
       // 未提供时必须**还原默认**，否则跨数据集切换会残留上一个的名称。
       var LB = d.labels || {};
@@ -1109,7 +1172,10 @@
       if (el.tTrend) el.tTrend.textContent = d.trendName || DEF_LB.tTrend;
       if (el.dUnit) el.dUnit.textContent = LB.unit || DEF_LB.dUnit;
       if (el.lgD) el.lgD.textContent = LB.legend || DEF_LB.lgD;
+      // 参考竖线的图例名同样跟着数据集走（主样本 = 「预测中止点」，L1 = 论文检测点）
+      if (el.lgRefT) el.lgRefT.textContent = LB.refsName || '论文检测点';
       if (el.dMarginLbl) el.dMarginLbl.textContent = LB.margin || DEF_LB.dMarginLbl;
+      S.marginMode = LB.marginMode || 'rest';        // 'dev' = 预测−真实（百分点）；'rest' = 1−主指标
       // 分级行的阈值标签：各数据集主指标名不同（D(t) / HI_AE / HI_hit），
       // 未提供 thrName 时回落到 D，保持主样本与既有数据集不变。
       var thr = LB.thrName || DEF_LB.thrName || 'D';
@@ -1202,6 +1268,19 @@
     });
   }
 
+  /* 把 [003..014, 016..027] 压缩成 "003–014 / 016–027"（主样本数据集名用） */
+  function rangeLabel(gids) {
+    if (!gids.length) return '';
+    var out = [], s = gids[0], prev = gids[0];
+    for (var i = 1; i <= gids.length; i++) {
+      var c = gids[i];
+      if (c !== undefined && (+c === +prev + 1)) { prev = c; continue; }
+      out.push(s === prev ? s : (s + '–' + prev));
+      s = prev = c;
+    }
+    return out.join(' / ');
+  }
+
   function collectDatasets() {
     var dss = [], k, seen = {};
     var D = window.SHM_DATASETS;
@@ -1211,9 +1290,12 @@
       }
     }
     // 主样本清单向后兼容: export_dashboard.py 写的是 window.SHM_INDEX
+    // 数据集名按清单首尾试件自动推导（现在是 001–027 全量，别写死区间）
     if (window.SHM_INDEX && window.SHM_INDEX.length && !seen.main) {
-      dss.unshift({ id: 'main', name: '疲劳机主样本 016-020 / 022-027', unit: 's', path: 'data/',
-        groups: window.SHM_INDEX });
+      var idx = window.SHM_INDEX;
+      dss.unshift({ id: 'main',
+        name: '疲劳机主样本 ' + rangeLabel(idx.map(function (x) { return x.gid; })),
+        unit: 's', path: 'data/', groups: idx });
     }
     return dss;
   }
@@ -1223,8 +1305,8 @@
     ds.groups.forEach(function (g) {
       var o = document.createElement('option');
       o.value = g.gid;
-      var extra = (g.spec && g.spec.kind) ? ' · ' + g.spec.kind : '';
-      o.textContent = '试件 ' + g.gid + extra;
+      // 下拉项统一只显示「试件 <gid>」：不再拼 `spec.kind`（如「· 谱载」「· —」）。
+      o.textContent = '试件 ' + g.gid;
       el.gidSel.appendChild(o);
     });
   }
