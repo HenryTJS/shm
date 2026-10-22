@@ -1,38 +1,21 @@
-# ── 敏感文件（绝不提交）───────────────────────────────────────────────
-.env
-.env.*
-!.env.example
-*.key
-*.pem
-*credential*
-*secret*
-
-# ── 原始数据（外接盘 junction；勿删本段，见文件头说明）──────────────────
 l1/L1-*/
 main/[0-9][0-9][0-9]/
 main/aligned/
 main/weak_labels/
 phmdc/T[1-9]/
-# 兜底：原始数据类型
 *.pridb
 *.lvm
 *.tdms
 *.xlsx
 *.csv
 *.txt
-
-# ── 结果与产物 ──────────────────────────────────────────────────────
 !**/results/**/*.csv
 !**/results/**/*.txt
 !**/results/**/*.xlsx
-# 子集试跑产物（`ae_hi.py` 的防覆盖护栏会写它，见 docs/details.md §44）：属草稿，不提交
-**/results/*_partial.csv
 !phmdc/*.csv
 !phmdc/*.xlsx
 !l1/*.csv
 !l1/*.xlsx
-# 人工维护的 PDF 元数据表（详见 docs/details.md §47）—— **必须进仓库**：
-# 它们是权威数据源，代码默认读它们，不再解析 PDF。
 !l1/meta/*.csv
 **/*.npz
 **/*.npy
@@ -40,12 +23,7 @@ phmdc/T[1-9]/
 **/results/_logs/
 main/cache/
 *.log
-
-# ── 缓存（可重建）─────────────────────────────────────────────────────
 main/cache/
-# l1/cache/：9 组逐 hit 二进制缓存（2026-10-15 起，约 3 GB）。
-# 由 `python run.py --dataset l1 --task ae-cache` 重建；`.npy` 已由上方 `**/*.npy` 忽略，
-# 这里显式连元数据 `.json` 一起屏掉（单独保留 json 无意义）。
 !l1/cache/
 l1/cache/
 **/__pycache__/
@@ -57,36 +35,11 @@ venv/
 env/
 .mypy_cache/
 .ruff_cache/
-
-# ── PDF 与文献全文（版权 / 体积）──────────────────────────────────────
 *.pdf
-
-# ── docs/ 整个目录不入库（2026-10-21）───────────────────────────
-# 含论文正文 / 投稿模板 / 文献全文 / PDF / 内部记录 / 写作素材 / details.md。
-# 需要跟代码一起走的三个文档已移到仓库根：仓库地图.md、待办与未决问题.md、当前结论与口径.md
 docs/
-# 论文集与数据集论文的全文提取（l1/*fulltext*.txt 等）
 *fulltext*.txt
-
-# ── 大体积归档 / 媒体 ────────────────────────────────────────────────
-*.zip
-*.7z
-*.rar
-*.tar.gz
-*.mp4
-*.avi
-*.mov
-*.mkv
-
-# ── 编辑器 / 系统 ────────────────────────────────────────────────────
 .idea/
 .vscode/
-Thumbs.db
-Desktop.ini
 .DS_Store
 *.tmp
-
-# ── 看板数据包（由脚本从原始数据生成，与原始数据同等待遇：不上传）───────────
-# 19 MB 左右，可由 `dashboard/README.md` §3 的三条命令完全重建：
-#   main/cdio_baseline/build_dashboard_all.py、l1/restore_dashboard_packages.py、l1/build_campaign_index.py
 dashboard/data/
