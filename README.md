@@ -12,7 +12,7 @@
 | 平台 | 是什么 | 规模 | 提供了什么 |
 | --- | --- | --- | --- |
 | **main** | 内部电液伺服疲劳机，5 Hz 压-压疲劳 | 27 组（看板 24 组） | AE 25 列逐 hit 特征 + 应变 + 5 路 FBG，10 Hz 统一时间轴 |
-| **l1** | ReMAP / TU-Delft + UPatras 公开集（冲击后压-压疲劳） | 29 组，按批次分 **C1–C4** | 恒幅+FBG+DFOS（5）、恒幅+DFOS（9）、变幅 VA（5）、谱载（10） |
+| **l1** | ReMAP / TU-Delft + UPatras 公开集（冲击后压-压疲劳） | 29 组，按批次分 **C1–C4** | C1 恒幅+FBG+DFOS（5，AE+FBG+DFOS+PZT）、C2 恒幅+DFOS（9，AE+DFOS）、C3 变幅VA+FBG（5，AE+FBG+PZT）、C4 谱载+FBG（10，AE+FBG+PZT）；导波 PZT 另有 20 组有数据 |
 | **phmdc** | PHM2019 铝搭接件（外部平台） | 8 件 | 20 MHz 原始波形 + 光学实测**裂纹长度真值** |
 
 三者的关系：`main` 提供在线场景，`l1` 提供跨机构/跨模态的公开数据，`phmdc` 是唯一**有定量真值**的平台，用来回答「这个指标到底对不对」。
@@ -34,12 +34,12 @@
 
 **主指标**：`HI = unity01(累积 AE hits)`（C1/C3/C4 记作 `HI_hit`，C2 记作 `HI_AE`），自归一化曲线，`t85` = 达终值 85% 时的寿命分数。
 
-| 批次 | 组数 | t85 中位 |
-| --- | --- | --- |
-| C1 恒幅+FBG+DFOS | 5 | **89.1%** |
-| C2 恒幅+DFOS | 9 | **92.1%** |
-| C3 变幅 VA | 5 | **94.0%** |
-| C4 谱载 | 10 | **89.6%** |
+| 批次 | 试验类型 | 组数 | 传感 | t85 中位 |
+| --- | --- | --- | --- | --- |
+| C1 恒幅+FBG+DFOS | 恒幅 | 5 | AE + FBG + DFOS + PZT | **89.1%** |
+| C2 恒幅+DFOS | 恒幅 | 9 | AE + DFOS | **92.1%** |
+| C3 变幅VA+FBG | 变幅 VA | 5 | AE + FBG + PZT | **94.0%** |
+| C4 谱载+FBG | 谱载 | 10 | AE + FBG + PZT | **89.6%** |
 
 **论文复现（Broer 2021）**：Level 1 / 3a / 4 均复现——`HI_F` 5 组全部 0 → 1；L1-04 的 `HI_F` t85 为 94.3%，与论文正文可推出的 > 92.8% 自洽；Level-1 检测点 240.0k / 260.5k 对论文 239.5k / 260.0k（各差 500 cycle）。Level 3b 脱粘未复现。
 
@@ -80,29 +80,111 @@
 
 - 在线语义：选一组数据后看不到任何未来信息，曲线从起点随回放生长；拖进度条 = 在该时刻重新观察。
 - 读数口径：主样本「进度偏差」= 预测进度 − 真实寿命进度（百分点）；L1 显示 `1 − HI`。两者都**不是**剩余寿命裕度。
-- 数据包由脚本生成、**不入库**（见 §5）。
+- 数据包由脚本生成、**不入库**（见 §4.5）。
 
 ## 4. 怎么跑
+
+### 4.1 装依赖
+
+Windows + Anaconda，Python 3.12：
+
+```bat
+conda create -n shm python=3.12
+conda activate shm
+pip install -r requirements.txt
+```
+
+`torch` 只有 `phmdc` 的波形级模型需要；不跑它就把 `requirements.txt` 里那行注释掉。
+
+### 4.2 数据在外接盘
+
+原始数据不放进仓库，唯一配置入口是 `paths.json`（`data_root` 指向外接盘）。仓库里的
+`l1/L1-03` 这类目录是**目录联接（junction）**，只是访问入口，不占磁盘。
+
+```bat
+python shm/paths.py          rem 人读：每条映射 → 外接盘目标，全 OK 说明数据在位
+python shm/paths.py --json   rem 机器可读
+```
+
+新增数据集：数据放外接盘，在 `paths.json` 的 `items` 里加一条即可。
+
+### 4.3 五分钟自检
+
+```bat
+python -m shm.datasets --cross-nf                     rem 数据定义自洽（应打印「不一致 0 条」）
+python run.py --list                                  rem 任务矩阵
+python run.py --dataset main --task cdio --dry-run    rem 只打印要执行的命令
+```
+
+三条都 `exit 0` 就说明环境 + 数据 + 入口都通了。
+
+### 4.4 任务
+
+**所有入口只有 `run.py`**；每个任务都能加 `--dry-run` 先看命令，`--` 之后的参数透传给底层脚本。
 
 ```bat
 set PY=C:\Users\ASUS\.conda\envs\xjtushm\python.exe
 
-%PY% run.py --list                        rem 任务矩阵
-%PY% run.py --dataset main  --task cdio       rem 在线进度预测（示例流）
-%PY% run.py --dataset l1    --task hi-ae      rem 离线复评 HI_AE
-%PY% run.py --dataset phmdc --task step1      rem 特征基线 + LOSO
+%PY% run.py --list                                rem 任务矩阵（按数据集分组）
+
+rem main：只有在线进度预测
+%PY% run.py --dataset main --task cdio            rem 预测示例流
+%PY% run.py --dataset main --task dashboard       rem 看板数据（24 组）
+
+rem l1：常用
+%PY% run.py --dataset l1 --task hi-ae             rem 离线复评 HI_AE（C2 主指标）
+%PY% run.py --dataset l1 --task hi-hit            rem 离线复评 HI_hit（C3/C4 主指标）
+%PY% run.py --dataset l1 --task paper             rem 论文 Level 1 / 4 复现
+%PY% run.py --dataset l1 --task paper-l23         rem 论文 Level 2 / 3 复现
+%PY% run.py --dataset l1 --task crosslab-ae       rem AE 跨批次一致性（28 组）
+%PY% run.py --dataset l1 --task crosslab-ae23     rem 补第 29 组（重，流式读 4.1 GB）
+%PY% run.py --dataset l1 --task crosslab-pzt      rem 导波 PZT 跨批次（17 组，重）
+%PY% run.py --dataset l1 --task level-vs-shape    rem 绝对阈值 vs SNHI 对照（15 组）
+%PY% run.py --dataset l1 --task ae-cache          rem 首次必跑：逐 hit 二进制缓存
+%PY% run.py --dataset l1 --task loc-debias        rem 通道延迟 δ 标定（需 ae-cache）
+
+rem phmdc
+%PY% run.py --dataset phmdc --task step0          rem 数据规整
+%PY% run.py --dataset phmdc --task step1          rem 特征 + LOSO
+%PY% run.py --dataset phmdc --task step4 step5    rem 置换检验 / 不确定性
 ```
 
-数据放在外接盘，仓库里只存 `paths.json` 与代码；路径检查：`python shm/paths.py`。
+> `--task all` 会把**重的任务**（训练、全量重建缓存）一起跑，先 `--dry-run` 看清。
+> L1 的定位相关脚本**先跑一次 `ae-cache`**：它把 9 组 `.pridb`（9.54 GB、1.42 亿命中）固化成二进制缓存，
+> 之后读取从数百秒降到 0.02 秒；缓存可删可重建。
 
-看板数据需要时再导出：
+### 4.5 看板
+
+浏览器打开 `dashboard/index.html`。顶栏选数据集（`疲劳机主样本` + `ReMAP C1–C4` 共 5 个）再选试件。
+数据包不在时先导出：
 
 ```bat
 %PY% run.py --dataset main --task dashboard     rem 24 组主样本
-%PY% l1\restore_dashboard_packages.py           rem 29 组 L1（C1–C4）
+%PY% l1\restore_dashboard_packages.py           rem 29 组 L1（C1–C4）+ 四个清单
 ```
 
-环境：Python 3.12；依赖见 `requirements.txt`（`numpy` / `pandas` / `scipy` / `scikit-learn`；phmdc 的波形级模型另需 `torch`）。
+字段与读数口径见 [`dashboard/README.md`](dashboard/README.md)。
+
+### 4.6 产物位置
+
+| 产物 | 位置 |
+| --- | --- |
+| 主样本结果 | `main/cdio_baseline/results/cdio_summary.csv`（24 行） |
+| L1 结果表 / 缓存 | `l1/results/*.csv`、`l1/results/*.npz`、`l1/*.csv` |
+| L1 论文图 | `l1/figures/fig_*.png` / `.pdf`（300 dpi） |
+| phmdc 结果 | `phmdc/results/*` |
+| 看板数据包 | `dashboard/data/*.js`（53 个包 + 5 个清单，**不入库**） |
+
+`results/`、`figures/`、`dashboard/data/` 都在 `.gitignore` 里，可随时删掉重跑。
+
+### 4.7 常见坑
+
+1. **`-h` 不是所有脚本都有**：`phmdc/step0.py`、`l1/ae_frames.py`、`l1/ae_cycle.py` 没有 argparse，传 `-h` 会直接开跑（后者还会跑全部默认组）。
+2. **脚本导入时会 `chdir` 到自己所在目录**：相对路径参数（如 `--out`）是相对**脚本目录**，不是你的当前目录。
+3. **PowerShell 会吃掉组号前导零**：`--groups "L1-03,L1-04"` 一定要加引号。
+4. **别用 `| Out-Null` / `Select-Object -First N` 截断长命令**：管道提前关闭会让命令报失败退出码，真错误反而看不到。
+5. **拷到别处运行的脚本要设 `PYTHONPATH`**：`set PYTHONPATH=%CD%\l1`。
+6. **图里的中文**：代码已设 `Microsoft YaHei / SimHei`。
 
 ## 5. 读这个项目需要知道的边界
 
@@ -115,7 +197,6 @@ set PY=C:\Users\ASUS\.conda\envs\xjtushm\python.exe
 
 | 想知道什么 | 看哪里 |
 | --- | --- |
-| 怎么装、怎么跑、踩过的坑 | [`QUICKSTART.md`](QUICKSTART.md) |
 | 每个文件干什么 | [`仓库地图.md`](仓库地图.md) |
 | 结论与口径为什么是这样 | [`当前结论与口径.md`](当前结论与口径.md) |
 | 还没闭合的问题 | [`待办与未决问题.md`](待办与未决问题.md) |

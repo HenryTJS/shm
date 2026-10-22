@@ -92,9 +92,9 @@ L1_CAMPAIGNS = {
         # -5/-50 kN 至 100,000 循环后**提到 -6/-60 kN**，共 438,000 循环，且中途因
         # 试验机/PZT 故障停机多次（见 l1/results/l1_conditions.csv 的 anomaly 列）。
         members=['L1-03', 'L1-04', 'L1-05', 'L1-09', 'L1-23'], ae='pridb',
-        # PZT：**全盘递归搜过 E:\l1，一个 PZT 目录都没有**（2026-10-06 实测）。
-        # 旧文档里「新组无 DFOS / PZT」的写法会让人以为老组有 PZT，已更正。
-        fbg=True, dfos=True, pzt=False, clock_shift_days=0, src='survey_groups'),
+        # PZT：目录名是 `PZT-1` / `PZT-2`（L1-04 还有 `PZT-3`），按 `PZT*` 扫。
+        # 旧版写 pzt=False 是因为只认名字恰好为 `PZT` 的目录，已按磁盘实情更正。
+        fbg=True, dfos=True, pzt=True, clock_shift_days=0, src='survey_groups'),
     'L1 恒幅+DFOS': dict(
         members=['L1-49', 'L1-50', 'L1-51', 'L1-52', 'L1-54', 'L1-55',
                  'L1-56', 'L1-59', 'L1-60'], ae='pridb',
@@ -104,12 +104,12 @@ L1_CAMPAIGNS = {
         # 载荷谱 6 级共 345,000 循环；带**预置脱粘**（Damage locations variable.pdf：
         # Lower edge of disbond，只给了 Y=45 mm，无 X）—— 同 C4 的 L1-41 / L1-44。
         members=['L1-06', 'L1-13', 'L1-14', 'L1-24', 'L1-22'], ae='dta',
-        fbg=True, dfos=False, pzt=False, clock_shift_days=0, src='survey_groups',
+        fbg=True, dfos=False, pzt=True, clock_shift_days=0, src='survey_groups',
         fbg_rate_hz=5.0),
     'L1 谱载+FBG': dict(
         members=['L1-25', 'L1-27', 'L1-29', 'L1-30', 'L1-31', 'L1-34',
                  'L1-35', 'L1-36', 'L1-41', 'L1-44'], ae='dta',
-        fbg=True, dfos=False, pzt=False, clock_shift_days=8, src='survey_groups',
+        fbg=True, dfos=False, pzt=True, clock_shift_days=8, src='survey_groups',
         fbg_rate_hz=10.0),
 }
 
@@ -242,9 +242,9 @@ def _scan_files(gid):
     out = dict(exists=bool(d and os.path.isdir(d)), n_files=0, has={}, files={})
     if not out['exists']:
         return out
-    for sub in ('AE', 'FBG', 'LUNA', 'PZT'):
+    for sub, pat in (('AE', 'AE'), ('FBG', 'FBG'), ('LUNA', 'LUNA'), ('PZT', 'PZT*')):
         p = os.path.join(d, sub)
-        n = len(glob.glob(os.path.join(p, '*'))) if os.path.isdir(p) else 0
+        n = sum(len(glob.glob(os.path.join(x, '*'))) for x in glob.glob(os.path.join(d, pat)))
         if n:
             out['has'][sub] = n
             out['n_files'] += n

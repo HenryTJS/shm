@@ -92,13 +92,9 @@ TASKS = {
         'loc-vel-calib':  [['l1/loc_vel_calib.py']],                   # 声速标定（结论：拿错了自由度）
         'loc-debias':     [['l1/loc_debias.py']],                      # 通道延迟 δ 标定（全 9 组）
         'loc-drift':      [['l1/loc_debias_drift.py']],                # δ 是否随寿命漂移（含空间分层对照）
-        'figs':           [['l1/fig_protocol.py'],
-                           ['l1/fig_instrumentation.py'],
-                           ['l1/fig_four_routes.py'],
-                           ['l1/fig_two_systems.py'],
-                           ['l1/four_modal.py']],                       # 论文图 1 至 5
-        'fig-routes':     [['l1/fig_four_routes.py']],                 # 只重画论文 Fig. 2（四条独立路线）
-        'fig-instr':      [['l1/fig_instrumentation.py']],             # 试件与仪器图（非数据图）
+        'figs':           [['l1/figs.py'], ['l1/four_modal.py']],       # 论文图 1 至 5（四张走 figs.py，四模态图单独）
+        'fig-routes':     [['l1/figs.py', '--only', 'routes']],         # 只重画 Fig. 4（四条独立路线）
+        'fig-instr':      [['l1/figs.py', '--only', 'instrumentation']],  # 试件与仪器图（非数据图）
         'tables-45':      [['l1/make_tables_45.py']],                  # 论文表 3/4 的 markdown（含 η² 与 p）
     },
     'phmdc': {
@@ -167,9 +163,9 @@ DESC = {
         'loc-vel-calib':  ('定位声速标定 (已证伪)', 'loc_vel_calib.py：三组最优全部落在搜索边界'),
         'loc-debias':     ('定位通道去偏', 'loc_debias.py：显式建 δ_k，9 组残差 12.07→1.19 等'),
         'loc-drift':      ('δ 随寿命漂移检验', 'loc_debias_drift.py：分窗标定 + 随机基线 + 空间分层'),
-        'figs':           ('论文图 1–5', 'fig_protocol + fig_instrumentation + fig_four_routes + fig_two_systems + four_modal → l1/figures/'),
-        'fig-routes':     ('论文图 Fig. 2', 'fig_four_routes.py → l1/figures/fig_four_routes.png/.pdf'),
-        'fig-instr':      ('试件与仪器图', 'fig_instrumentation.py → l1/figures/fig_instrumentation.png/.pdf'),
+        'figs':           ('论文图 1–5', 'figs.py（四张）+ four_modal.py → l1/figures/'),
+        'fig-routes':     ('论文图 Fig. 4', 'figs.py --only routes → l1/figures/fig_four_routes.png/.pdf'),
+        'fig-instr':      ('试件与仪器图', 'figs.py --only instrumentation → l1/figures/fig_instrumentation.png/.pdf'),
         'tables-45':      ('论文表 3/4', 'make_tables_45.py → 含 η² 与置换 p 的 markdown 草稿'),
     },
     'phmdc': {
