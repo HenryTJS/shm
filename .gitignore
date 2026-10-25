@@ -43,3 +43,7 @@ docs/
 .DS_Store
 *.tmp
 dashboard/data/
+figures_ppt/
+*.pptx
+中期汇报_大纲.md
+大创项目中期检查报告_2026年10月.md
