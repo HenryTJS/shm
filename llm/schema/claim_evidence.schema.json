@@ -1,0 +1,271 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shm.local/schema/claim-evidence/1.0",
+  "title": "SHM Claim–Evidence Graph",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "graph_id",
+    "question",
+    "created_at",
+    "claims",
+    "evidence",
+    "edges",
+    "tool_calls",
+    "verification"
+  ],
+  "properties": {
+    "schema_version": { "const": "1.0" },
+    "graph_id": { "type": "string", "pattern": "^G[0-9]{3,}$" },
+    "question": { "type": "string", "minLength": 1 },
+    "created_at": { "type": "string", "format": "date-time" },
+    "policy": { "$ref": "#/$defs/Policy" },
+    "claims": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Claim" }
+    },
+    "evidence": {
+      "type": "array",
+      "minItems": 1,
+      "items": { "$ref": "#/$defs/Evidence" }
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/Edge" }
+    },
+    "tool_calls": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/ToolCall" }
+    },
+    "verification": { "$ref": "#/$defs/Verification" }
+  },
+  "$defs": {
+    "Policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "require_evidence": { "type": "boolean", "default": true },
+        "allow_unsupported_claims": { "type": "boolean", "default": false },
+        "max_evidence_per_claim": { "type": "integer", "minimum": 1, "default": 8 },
+        "temporal_leakage_check": { "type": "boolean", "default": true },
+        "require_numeric_tool_evidence": { "type": "boolean", "default": true }
+      }
+    },
+    "Scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gid", "modality"],
+      "properties": {
+        "gid": { "type": "string", "minLength": 1 },
+        "campaign": { "type": ["string", "null"] },
+        "modality": {
+          "type": "string",
+          "enum": ["AE", "FBG", "DFOS", "PZT", "MULTI"]
+        },
+        "cycle_min": { "type": ["number", "null"], "minimum": 0 },
+        "cycle_max": { "type": ["number", "null"], "minimum": 0 },
+        "lifetime_min": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "lifetime_max": { "type": ["number", "null"], "minimum": 0, "maximum": 1 }
+      }
+    },
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "title"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["tool", "paper", "standard", "dataset", "human"]
+        },
+        "title": { "type": "string", "minLength": 1 },
+        "tool_name": { "type": ["string", "null"] },
+        "version": { "type": ["string", "null"] },
+        "authors": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "year": { "type": ["integer", "null"], "minimum": 1900, "maximum": 2100 },
+        "venue": { "type": ["string", "null"] },
+        "doi": { "type": ["string", "null"] },
+        "url": { "type": ["string", "null"] },
+        "clause": { "type": ["string", "null"] }
+      }
+    },
+    "Locator": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "file": { "type": ["string", "null"] },
+        "page": { "type": ["integer", "null"], "minimum": 1 },
+        "section": { "type": ["string", "null"] },
+        "table": { "type": ["string", "null"] },
+        "figure": { "type": ["string", "null"] },
+        "row": { "type": ["integer", "null"], "minimum": 1 },
+        "clause": { "type": ["string", "null"] },
+        "char_start": { "type": ["integer", "null"], "minimum": 0 },
+        "char_end": { "type": ["integer", "null"], "minimum": 0 }
+      }
+    },
+    "Evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "evidence_id",
+        "evidence_type",
+        "source",
+        "content",
+        "scope",
+        "retrieved_at"
+      ],
+      "properties": {
+        "evidence_id": { "type": "string", "pattern": "^E[0-9]{3,}$" },
+        "evidence_type": {
+          "type": "string",
+          "enum": ["tool_result", "literature", "standard", "dataset_metadata", "human_note"]
+        },
+        "source": { "$ref": "#/$defs/Source" },
+        "content": {
+          "type": "object",
+          "additionalProperties": true,
+          "description": "Exact structured payload. For tool_result include metric, value, gid; for literature/standard include the quoted text separately in quote."
+        },
+        "quote": { "type": ["string", "null"] },
+        "locator": { "$ref": "#/$defs/Locator" },
+        "scope": { "$ref": "#/$defs/Scope" },
+        "observed_lifetime_fraction": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "retrieved_at": { "type": "string", "format": "date-time" },
+        "content_hash": { "type": ["string", "null"] },
+        "reliability": {
+          "type": "string",
+          "enum": ["primary", "secondary", "context"],
+          "default": "primary"
+        }
+      }
+    },
+    "Claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id",
+        "text",
+        "claim_type",
+        "status",
+        "evidence_ids",
+        "scope",
+        "created_by"
+      ],
+      "properties": {
+        "claim_id": { "type": "string", "pattern": "^C[0-9]{3,}$" },
+        "text": { "type": "string", "minLength": 1 },
+        "claim_type": {
+          "type": "string",
+          "enum": [
+            "numeric",
+            "comparative",
+            "categorical",
+            "method",
+            "recommendation",
+            "limitation"
+          ]
+        },
+        "subject": { "type": ["string", "null"] },
+        "predicate": { "type": ["string", "null"] },
+        "value": {
+          "type": ["number", "string", "boolean", "null"]
+        },
+        "unit": { "type": ["string", "null"] },
+        "comparator": {
+          "type": ["string", "null"],
+          "enum": ["eq", "lt", "le", "gt", "ge", "approx", "in", null]
+        },
+        "tolerance": { "type": ["number", "null"], "minimum": 0 },
+        "status": {
+          "type": "string",
+          "enum": ["supported", "insufficient", "rejected"]
+        },
+        "evidence_ids": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^E[0-9]{3,}$" }
+        },
+        "tool_call_ids": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^T[0-9]{3,}$" }
+        },
+        "scope": { "$ref": "#/$defs/Scope" },
+        "allowed_lifetime_max": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "maximum": 1
+        },
+        "missing_evidence": { "type": ["string", "null"] },
+        "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
+        "created_by": {
+          "type": "string",
+          "enum": ["DataAuditor", "Analyst", "StandardsChecker", "Writer", "Critic", "Human"]
+        }
+      }
+    },
+    "Edge": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["claim_id", "evidence_id", "relation"],
+      "properties": {
+        "claim_id": { "type": "string", "pattern": "^C[0-9]{3,}$" },
+        "evidence_id": { "type": "string", "pattern": "^E[0-9]{3,}$" },
+        "relation": {
+          "type": "string",
+          "enum": ["supports", "contradicts", "context"]
+        }
+      }
+    },
+    "ToolCall": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["tool_call_id", "tool_name", "arguments", "result", "created_at"],
+      "properties": {
+        "tool_call_id": { "type": "string", "pattern": "^T[0-9]{3,}$" },
+        "tool_name": { "type": "string", "minLength": 1 },
+        "arguments": { "type": "object" },
+        "result": { "type": "object" },
+        "created_at": { "type": "string", "format": "date-time" },
+        "elapsed_ms": { "type": ["number", "null"], "minimum": 0 }
+      }
+    },
+    "Verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "checks"],
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["pass", "fail", "needs_review"]
+        },
+        "summary": { "type": ["string", "null"] },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["name", "status", "detail"],
+            "properties": {
+              "name": { "type": "string", "minLength": 1 },
+              "status": {
+                "type": "string",
+                "enum": ["pass", "fail", "skip"]
+              },
+              "detail": { "type": "string" },
+              "claim_id": { "type": ["string", "null"] },
+              "evidence_id": { "type": ["string", "null"] }
+            }
+          }
+        }
+      }
+    }
+  }
+}

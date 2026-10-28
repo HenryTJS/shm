@@ -354,3 +354,20 @@ body{
   .dfosrow{height:210px}
   .dfos-wrap{grid-template-columns:minmax(0,1fr)}
 }
+
+/* --- SNHI 读数条（仅 L1） --- */
+.snhi-strip{
+  flex:0 0 auto;display:flex;align-items:center;gap:14px;
+  padding:4px 10px 6px;border-top:1px solid var(--line2);
+  background:linear-gradient(180deg, rgba(37,212,240,.035), transparent);
+}
+.snhi-title{
+  font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;
+  color:var(--cyan);border:1px solid rgba(37,212,240,.35);
+  padding:1px 5px;border-radius:2px;background:rgba(37,212,240,.06);
+}
+.snhi-item{display:flex;align-items:baseline;gap:5px}
+.snhi-item label{font-family:var(--mono);font-size:9.5px;color:var(--dim)}
+.snhi-item b{font-family:var(--mono);font-size:13px;color:var(--txt);font-weight:500}
+.snhi-item b.na{color:var(--dim)}
+.snhi-note{margin-left:auto;font-size:9.5px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}

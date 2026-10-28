@@ -1,0 +1,7 @@
+gid,lab,level,fatigue_end,impacts,modalities,analysis,note
+L2-04,Delft,L2,1046000,42000 (4 impacts),"AE, LUNA, Dolphicam",main,"PZT absent; AE/LUNA to 1046k; BI_2k covers 2,076–42,076"
+L2-05,Delft,L2,1140000,5000 (1 impact),"AE, LUNA, PZT, Dolphicam",main,"fatigue sum 5k+5k+670k+120k+110k+230k=1,140k"
+L2-07,Delft,L2,540000,before fatigue (4 impacts),"AE, LUNA, PZT, Dolphicam",main,post-impact only; no pre-impact fatigue baseline
+L2-03,Delft,L2,2710000,"5000, 610k, 720k, 1130k, ...","AE (partial), LUNA, PZT, Dolphicam",appendix,AE Part2 not uploaded; AE 2370k may end ~2550k
+L2-06,Delft,L2,0,before QS (4 impacts),"AE (QS), LUNA (QS), PZT, Dolphicam",exclude,QS only; no fatigue
+L2-QS,Delft,L2,0,before QS (1 impact),"AE (QS), PZT",exclude,static baseline; failed 310 kN

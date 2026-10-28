@@ -50,7 +50,8 @@
     'tDmg', 'tTrend', 'dUnit', 'lgD', 'dMarginLbl', 'thLv1', 'thLv2', 'thLv3',
     'dMaxLbl', 'algoInfo',
     'dfosRow', 'tDF', 'vDF', 'cvDFHeat', 'cvDFProf',
-    'cvTrend', 'cvAE', 'cvFO', 'cvST', 'cvEV', 'lgB2', 'lgB3', 'lgC0', 'lgRef', 'lgRefT', 'lgBand'
+    'cvTrend', 'cvAE', 'cvFO', 'cvST', 'cvEV', 'lgB2', 'lgB3', 'lgC0', 'lgRef', 'lgRefT', 'lgBand',
+    'snhiStrip', 'snhi25', 'snhi55', 'snhi85', 'snhiNote'
   ].forEach(function (k) { el[k] = $(k); });
 
   /* 主指标相关文案的**初始默认值** —— 数据包未提供覆盖字段时必须还原，
@@ -331,6 +332,7 @@
     if (f < 0) f = 0; if (f > d.nfr - 1) f = d.nfr - 1;
 
     drawTrend(d, c, f);
+    updateSnhi(d);
     drawAE(d, c, f);
     drawFO(d, c, f);
     drawST(d, c, f);
@@ -339,6 +341,27 @@
     drawGauge(d, c, f);
     drawSide(d, c, f);
     drawStatus(d, c, f);
+  }
+
+  /* ---- SNHI 读数条（仅 L1） ---- */
+  function updateSnhi(d) {
+    if (!el.snhiStrip) return;
+    var on = isCycle();
+    el.snhiStrip.style.display = on ? '' : 'none';
+    if (!on) return;
+    var m = d.meta || {};
+    function put(node, v) {
+      if (!node) return;
+      var ok = v != null && isFinite(v);
+      node.textContent = ok ? Number(v).toFixed(1) + '%' : '—';
+      node.classList.toggle('na', !ok);
+    }
+    put(el.snhi25, m.t25);
+    put(el.snhi55, m.t55);
+    put(el.snhi85, m.t85);
+    if (el.snhiNote) {
+      el.snhiNote.textContent = 'HI 达 25 / 55 / 85% 时的寿命分数 · 离线复评';
+    }
   }
 
   /* ---- 主趋势 D(t) ---- */

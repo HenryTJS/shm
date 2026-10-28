@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SHM-ONLINE · 跨机构对齐</title>
+<link rel="stylesheet" href="assets/dashboard.css">
+<link rel="stylesheet" href="assets/alignment.css">
+</head>
+<body class="align-body">
+<div class="align-app">
+
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark"><span></span></div>
+      <div class="brand-text">
+        <b>SHM-ONLINE</b>
+        <i>跨机构对齐 · Cross-institution alignment</i>
+      </div>
+    </div>
+
+    <div class="topbar-center">
+      <div class="equip">
+        <label>视图</label>
+        <div class="equip-val">两条轴 / 一条寿命轴 + 一个无量纲指标</div>
+      </div>
+      <div class="equip">
+        <label>数据</label>
+        <div class="equip-val">ReMAP · 29 AE / 17 GW · 2 所大学</div>
+      </div>
+    </div>
+
+    <div class="topbar-right">
+      <span class="align-state"><i></i>OFFLINE DESCRIPTOR</span>
+      <a class="btn align-back" href="index.html">返回在线看板</a>
+    </div>
+  </header>
+
+  <main class="align-main">
+
+    <section class="panel method">
+      <div class="phead">
+        <div class="ptitle"><i></i>PROTOCOL<b>两条轴</b></div>
+        <div class="ptag">NO RETRAINING</div>
+      </div>
+      <div class="method-body">
+        <div class="method-fig">
+          <img src="assets/fig_protocol.png" alt="Two axes of the cross-institution alignment protocol">
+        </div>
+        <div class="method-txt">
+          <div class="formula">
+            <span>lifetime fraction</span>
+            <b>= state index × documented interval / n<sub>f</sub></b>
+          </div>
+          <div class="formula">
+            <span>SNHI<sub>x</sub></span>
+            <b>= lifetime fraction at which the self-normalised cumulative curve reaches x% of its final value</b>
+          </div>
+          <ul>
+            <li><b>横向：</b>采集文档里的间隔和失效循环数，不看墙钟时间。</li>
+            <li><b>纵向：</b>累积曲线除以自身终值，不用绝对阈值。</li>
+            <li><b>边界：</b>SNHI 是完成记录后的离线描述量；前向报警是另一层。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <div class="align-row">
+      <section class="panel chart-panel">
+        <div class="phead">
+          <div class="ptitle"><i></i>POSITION<b id="chartTitle">AE t85 · 29 specimens</b></div>
+          <div class="seg align-seg">
+            <button data-metric="ae" class="on">AE t85</button>
+            <button data-metric="gw">GW slope</button>
+          </div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="cvAlign"></canvas>
+          <div class="chart-tip" id="chartTip"></div>
+        </div>
+        <div class="chart-foot" id="chartFoot">每个点是一个试件；横线是批内中位。AE：4 批 29 组；GW：3 批 17 组。</div>
+      </section>
+
+      <section class="panel eta-panel">
+        <div class="phead">
+          <div class="ptitle"><i></i>VARIANCE SHARE<b>η² · 机构解释了多少</b></div>
+        </div>
+        <div class="eta-legend">
+          <span><i class="sw-camp"></i>campaign（4 批）</span>
+          <span><i class="sw-univ"></i>university（2 校）</span>
+        </div>
+        <div id="etaRows" class="eta-rows"></div>
+        <div class="eta-note">
+          <b>0.000 / 0.057</b>：AE 在 x=50 / x=85 的校间方差占比。虚线是 permutation 零中位；p 为对应尾概率。
+        </div>
+        <div class="eta-foot">η² = 组间平方和 / 总平方和；组规模固定，20,000 次置换。</div>
+      </section>
+    </div>
+
+    <div class="tables-row">
+      <section class="panel table-panel">
+        <div class="phead">
+          <div class="ptitle"><i></i>BASELINES<b>为什么不是普通归一化</b></div>
+        </div>
+        <div class="table-wrap">
+          <table class="align-table" id="baseTable">
+            <thead><tr><th>规则</th><th>归一化</th><th>给出位置</th><th>批间 pp</th><th>批内 pp</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-note">同一 15 个 C3/C4 试件；批间/批内为寿命分数极差（pp）。SNHI 行高亮。</div>
+      </section>
+
+      <section class="panel table-panel">
+        <div class="phead">
+          <div class="ptitle"><i></i>SENSITIVITY<b>bin 宽度</b></div>
+        </div>
+        <div class="table-wrap">
+          <table class="align-table" id="binTable">
+            <thead><tr><th>bin (cycle)</th><th>批间 pp</th><th>批内 pp</th><th>中位 |Δ|</th><th>最大 |Δ|*</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div class="table-note">* 去掉 1400 / 4500 cycle 两个短记录；15 个 C3/C4 试件。</div>
+      </section>
+    </div>
+
+    <footer class="align-footer">
+      <span>source: <code>l1_hi_crosslab.csv</code> · <code>pzt_crosslab_summary.csv</code> · <code>crosslab_variance.csv</code></span>
+      <span>life axis / SNHI · offline re-evaluation · no future information in online view</span>
+    </footer>
+
+  </main>
+</div>
+
+<script src="data/alignment.js"></script>
+<script src="assets/alignment.js"></script>
+</body>
+</html>

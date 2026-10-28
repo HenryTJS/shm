@@ -1,0 +1,3 @@
+gid,rel,phase,c0,c1,n_hit,t0_s,t1_s,nbin
+L2-07,Fatigue\AI\0K\L2_07.pridb,AI_after_impact,0,160000,78790555,7e-07,247752.8427606,160
+L2-07,Fatigue\AI\160K\L207_160K.pridb,AI_after_impact,160000,540000,175491490,0.0,588765.2790272,380

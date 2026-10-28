@@ -1,0 +1,134 @@
+/* ============================================================
+   跨机构对齐总览
+   复用 dashboard.css 的深色变量与 panel / topbar / btn 样式
+   ============================================================ */
+
+.align-body{overflow:auto;background:
+  radial-gradient(1200px 600px at 18% -10%, rgba(37,212,240,.07), transparent 60%),
+  radial-gradient(900px 500px at 100% 110%, rgba(47,127,224,.07), transparent 60%),
+  linear-gradient(180deg,#06090d 0%, #04070a 100%);}
+
+.align-app{
+  min-height:100vh;width:100%;
+  padding:8px;display:flex;flex-direction:column;gap:8px;
+}
+
+.align-main{
+  width:100%;max-width:1560px;margin:0 auto;
+  display:flex;flex-direction:column;gap:8px;
+}
+
+.align-body .topbar{flex:0 0 auto}
+
+.align-state{
+  display:flex;align-items:center;gap:6px;
+  font-family:var(--mono);font-size:10px;letter-spacing:.08em;color:var(--notice);
+  border:1px solid rgba(255,201,60,.35);background:rgba(255,201,60,.055);
+  padding:4px 8px;border-radius:2px;white-space:nowrap;
+}
+.align-state i{width:6px;height:6px;border-radius:50%;background:var(--notice);
+  box-shadow:0 0 7px var(--notice)}
+
+.align-back{padding:6px 11px;font-size:11.5px;font-weight:500;letter-spacing:.03em;
+  text-decoration:none;color:var(--txt)}
+
+/* ---------------- 方法条 ---------------- */
+.method{flex:0 0 auto}
+.method-body{
+  display:grid;grid-template-columns:1.12fr 1fr;gap:16px;
+  padding:10px 12px 12px;align-items:center;
+}
+.method-fig img{
+  width:100%;display:block;background:#fff;
+  border:1px solid var(--line);border-radius:2px;
+}
+.method-txt{display:flex;flex-direction:column;gap:9px;min-width:0}
+.formula{
+  display:flex;flex-direction:column;gap:3px;
+  border-left:2px solid rgba(37,212,240,.55);padding-left:9px;
+}
+.formula span{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--cyan);text-transform:uppercase}
+.formula b{font-weight:500;font-size:12.5px;color:var(--txt);line-height:1.55}
+.formula sub{font-size:9px}
+.method-txt ul{list-style:none;display:flex;flex-direction:column;gap:5px;margin-top:2px}
+.method-txt li{font-size:11.5px;color:var(--txt2);line-height:1.5}
+.method-txt li b{color:var(--txt);font-weight:600}
+
+/* ---------------- 主图 + η² ---------------- */
+.align-row{
+  display:grid;grid-template-columns:minmax(0,1.65fr) minmax(320px,1fr);
+  gap:8px;height:432px;min-height:0;
+}
+.chart-panel{min-width:0;min-height:0}
+.align-seg button{padding:5px 11px;font-size:11px}
+
+.chart-wrap{position:relative;flex:1;min-height:0;padding:6px 8px 0}
+#cvAlign{width:100%;height:100%;display:block}
+.chart-tip{
+  position:absolute;display:none;pointer-events:none;z-index:4;
+  background:rgba(6,13,19,.96);border:1px solid rgba(37,212,240,.45);
+  color:var(--txt);font-family:var(--mono);font-size:11px;line-height:1.5;
+  padding:5px 8px;border-radius:2px;white-space:nowrap;
+  box-shadow:0 6px 18px rgba(0,0,0,.55);
+}
+.chart-tip b{color:#eaf6ff}
+.chart-foot{
+  flex:0 0 auto;padding:5px 10px 7px;border-top:1px solid var(--line2);
+  font-size:10.5px;color:var(--dim);letter-spacing:.02em;
+}
+
+/* ---------------- η² ---------------- */
+.eta-panel{min-width:0}
+.eta-legend{display:flex;gap:14px;padding:8px 11px 2px;font-size:10.5px;color:var(--txt2)}
+.eta-legend i{display:inline-block;width:8px;height:8px;margin-right:5px;border-radius:1px}
+.sw-camp{background:#2f7fe0;box-shadow:0 0 6px rgba(47,127,224,.5)}
+.sw-univ{background:#ff8a1f;box-shadow:0 0 6px rgba(255,138,31,.4)}
+
+.eta-rows{display:flex;flex-direction:column;gap:10px;padding:8px 11px 4px;flex:1}
+.eta-row{display:grid;grid-template-columns:64px 1fr 96px;gap:8px;align-items:center}
+.eta-label{font-family:var(--mono);font-size:10.5px;color:var(--txt2);white-space:nowrap}
+.eta-track{position:relative;height:22px;border-left:1px solid var(--line);
+  background:linear-gradient(90deg, rgba(37,212,240,.045), transparent 75%)}
+.eta-track i{position:absolute;left:0;height:6px;border-radius:1px;min-width:1px}
+.eta-track .camp{top:2px;background:linear-gradient(90deg,#2f7fe0,#25d4f0)}
+.eta-track .univ{top:13px;background:linear-gradient(90deg,#c96b0a,#ff8a1f)}
+.eta-track .null{position:absolute;top:0;bottom:0;width:1px;background:rgba(198,214,226,.55)}
+.eta-vals{font-family:var(--mono);font-size:10px;color:var(--txt2);text-align:right;white-space:nowrap}
+.eta-vals b{color:var(--txt);font-weight:500}
+.eta-vals em{font-style:normal;color:var(--dim)}
+.eta-note{
+  margin:2px 11px 0;padding:7px 8px;border:1px solid var(--line2);
+  background:rgba(37,212,240,.035);font-size:11px;line-height:1.55;color:var(--txt2);
+}
+.eta-note b{color:var(--cyan);font-family:var(--mono)}
+.eta-foot{padding:6px 11px 8px;font-size:9.5px;color:var(--dim);line-height:1.45}
+
+/* ---------------- 表 ---------------- */
+.tables-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.table-panel{min-width:0}
+.table-wrap{padding:6px 10px 0;overflow:auto}
+.align-table{width:100%;border-collapse:collapse;font-size:10.5px}
+.align-table th{
+  text-align:left;font-weight:600;color:var(--dim);font-size:9px;
+  letter-spacing:.08em;text-transform:uppercase;padding:5px 6px;
+  border-bottom:1px solid var(--line);
+}
+.align-table td{padding:6px;border-bottom:1px solid var(--line2);color:var(--txt2);white-space:nowrap}
+.align-table td:first-child{color:var(--txt)}
+.align-table tr.snhi td{background:rgba(37,212,240,.07);color:var(--txt)}
+.align-table tr.snhi td:first-child{color:var(--cyan);font-weight:600}
+.align-table tr:last-child td{border-bottom:none}
+.table-note{padding:5px 10px 8px;font-size:9.5px;color:var(--dim);line-height:1.45}
+
+.align-footer{
+  display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;
+  padding:3px 6px 8px;color:var(--dim);font-size:9.5px;letter-spacing:.02em;
+}
+.align-footer code{font-family:var(--mono);color:#7fa3bd;font-size:9.5px}
+
+@media (max-width:1100px){
+  .align-row{grid-template-columns:1fr;height:auto}
+  .chart-panel{height:390px}
+  .method-body{grid-template-columns:1fr}
+  .tables-row{grid-template-columns:1fr}
+}

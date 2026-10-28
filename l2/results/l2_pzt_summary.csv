@@ -1,0 +1,2 @@
+gid,modality,t50,t85,n_states,note
+L2-07,PZT,31.422498739567573,73.31408193231613,55,state index mapped linearly to 0-540k

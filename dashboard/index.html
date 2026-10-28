@@ -39,6 +39,7 @@
     </div>
 
     <div class="topbar-right">
+      <a class="btn" href="alignment.html" style="padding:5px 10px;font-size:11px;letter-spacing:.04em;text-decoration:none">跨机构对齐</a>
       <div class="sys-state" id="sysState">
         <span class="dot"></span><b id="sysStateText">待机</b>
       </div>
@@ -139,6 +140,13 @@
         </div>
       </div>
       <canvas id="cvTrend"></canvas>
+      <div class="snhi-strip" id="snhiStrip" style="display:none">
+        <span class="snhi-title">SNHI</span>
+        <span class="snhi-item"><label>25%</label><b id="snhi25">--</b></span>
+        <span class="snhi-item"><label>55%</label><b id="snhi55">--</b></span>
+        <span class="snhi-item"><label>85%</label><b id="snhi85">--</b></span>
+        <span class="snhi-note" id="snhiNote">HI 达 25 / 55 / 85% 时的寿命分数 · 离线复评</span>
+      </div>
     </section>
 
     <!-- 分级预警 -->

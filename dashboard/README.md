@@ -33,6 +33,7 @@ python -m http.server 8080 --directory dashboard
 | 趋势图 | 主指标 + 证据曲线、阈值带、锚点、90% 区间（主样本） |
 | 分级预警 | 三级灯、各级触发时刻、证据条（e_ae / e_st / risk） |
 | 多源面板 | ① AE 事件率 + 峰值 ② FBG 通道 ③ 应变或 DFOS ④ 证据层分解 |
+| SNHI 读数 | 仅 L1：趋势图下方显示 HI 达 25 / 55 / 85% 时的寿命分数（SNHI25/55/85），随试件切换 |
 | 空间分布 | 仅 L1：应变相对基线的空间偏离热图 + 当前分布 |
 | 底栏 | 事件日志、通道健康表 |
 
@@ -86,3 +87,15 @@ L1 链路是回放归档导出器，分组真源在 `shm/datasets.L1_CAMPAIGNS`�
 - L1 的主曲线是**离线量**（自归一化用到全寿命终值），界面据此标注，不当在线能力用。
 - C4 的 L1-30 / L1-34 / L1-36 的 AE 只覆盖寿命的一小段（帧长 60 s / 30 s），包内脚注已声明，**不要与全寿命曲线并列比较**。
 - 看板只做回放与读数，不重新训练、不引入未来信息。
+
+## 8. 跨机构对齐页
+
+顶栏「跨机构对齐」进入 `alignment.html`，把论文里的两条轴做成一张总览：
+
+- 左：协议图 + 寿命轴 / SNHI 公式；
+- 中：C1–C4 的 AE t85（29 组）与 C1/C3/C4 的导波斜率（17 组），批内中位线、Lab A/B 分隔；
+- 右：AE t50、AE t85、GW slope 的 η²（campaign / university）与 permutation 零中位；
+- 下：绝对阈值 / z-score / min–max / SNHI 的基线表，以及 bin 宽度敏感性表。
+
+数据由 `data/alignment.js` 预计算（源：`l1_hi_crosslab.csv`、`pzt_crosslab_summary.csv`、`crosslab_variance.csv`），前端只画图，不在浏览器重算。
+
