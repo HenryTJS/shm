@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 项目根(含 shm)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 仓库根
 os.chdir(os.path.dirname(os.path.abspath(__file__)))                            # l1/
 
 ROOT = os.path.dirname(os.path.abspath(__file__))   # <项目根>\l1
@@ -38,8 +38,8 @@ os.makedirs(FIG, exist_ok=True)
 
 sys.path.insert(0, ROOT)                            # 使 l1_meta 可导入
 from l1_meta import load_meta                       # noqa: E402
-from shm.datasets import campaign_members           # noqa: E402
-# 组名单**唯一来源 = shm/datasets**（原来在这里硬编码 4 组，新试件会被静默漏掉）
+from datasets import campaign_members           # noqa: E402
+# 组名单**唯一来源 = datasets**（原来在这里硬编码 4 组，新试件会被静默漏掉）
 GROUPS = campaign_members('C1')
 META = {g: load_meta(g) for g in GROUPS}
 GAP_S = 300.0        # FBG 测量块间隔阈值

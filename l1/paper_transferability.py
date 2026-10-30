@@ -261,7 +261,7 @@ def analyze(gid, log):
 
 def main(argv):
     ap = argparse.ArgumentParser()
-    from shm.datasets import campaign_members
+    from datasets import campaign_members
     default = campaign_members('C3') + campaign_members('C4')
     ap.add_argument('--groups', nargs='*', default=default)
     a = ap.parse_args(argv)
@@ -318,7 +318,7 @@ def _summary(mrows, rrows):
     L.append('   ⚠️ 「有效载荷级」= 段列表里点掉 (a) **冲击前基准段**（note=pristine）'
              '与 (b) **试机段**（循环数 < %.0f%% n_f）' % (MIN_LEVEL_FRAC * 100))
     try:
-        from shm.datasets import campaign_members as _cm
+        from datasets import campaign_members as _cm
         _have = {r['组号'] for r in mrows}
         _skip = [g for g in (_cm('C3') + _cm('C4')) if g not in _have]
         L.append('   ⚠️ 被排除的组: %s' % (', '.join(_skip) or '无'))

@@ -15,8 +15,8 @@ import time
 import numpy as np
 import pandas as pd
 
-from .config import BASE_DIR, CHUNK_SIZE
-from .data_loader import DataLoader
+from config import BASE_DIR, CHUNK_SIZE
+from data_loader import DataLoader
 
 
 # ========== 改造2: StreamSimulator 改为逐块流式读取 ==========

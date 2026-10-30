@@ -1,12 +1,12 @@
 # -*- coding: utf-8 -*-
-"""把 `dashboard/data/L1-*.js` 按 `shm/datasets.L1_CAMPAIGNS` 归成 **C1–C4 四个数据集清单**。
+"""把 `dashboard/data/L1-*.js` 按 `datasets.L1_CAMPAIGNS` 归成 **C1–C4 四个数据集清单**。
 
 为什么单独做一步
 ----------------
 L1 的数据包是回放归档字节码产出的（`l1/restore_dashboard_packages.py`），
 那套导出器的清单是“三批”（`l1` / `l1v2` / `l1v3`），而看板现在要按
 **C1 恒幅+FBG+DFOS / C2 恒幅+DFOS / C3 变幅VA+FBG / C4 谱载+FBG** 分开选。
-分组真源是 `shm/datasets.py` 的 `L1_CAMPAIGNS`（含 2026-10-09 补入的 L1-22 / L1-23）。
+分组真源是 `datasets.py` 的 `L1_CAMPAIGNS`（含 2026-10-09 补入的 L1-22 / L1-23）。
 
 产物
 ----
@@ -24,7 +24,7 @@ PROJ = os.path.dirname(HERE)
 if PROJ not in sys.path:
     sys.path.insert(0, PROJ)
 
-from shm.datasets import CAMPAIGN_ALIAS, L1_CAMPAIGNS  # noqa: E402
+from datasets import CAMPAIGN_ALIAS, L1_CAMPAIGNS  # noqa: E402
 
 DASH = os.path.join(PROJ, 'dashboard', 'data')
 FIELDS = ('gid', 'nfr', 'dur', 'n', 'meta', 'foCols', 'spec', 'warn')

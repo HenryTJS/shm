@@ -239,7 +239,7 @@ def _data_l1_prof():
     if root not in sys.path:
         sys.path.insert(0, root)
     try:
-        from shm import paths
+        import paths
         p = os.path.join(paths.data_root(), 'l1')
         if os.path.isdir(p):
             return p
@@ -258,7 +258,7 @@ def _data_l1_cov():
     if os.path.dirname(HERE) not in sys.path:
         sys.path.insert(0, os.path.dirname(HERE))
     try:
-        from shm import paths
+        import paths
         p = os.path.join(paths.data_root(), 'l1')
         if os.path.isdir(p):
             return p

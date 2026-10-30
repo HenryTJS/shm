@@ -65,22 +65,25 @@ window.SHM_DATA["<gid>"] = {
 | `meta` | `t25/t55/t85`、锚点 `b2/b3`、`c0Pct`、`aeEvents`、`nFo`、`truncPct`（主样本预测中止点） |
 | 主样本特有 | `lo`/`hi`（90% 区间 ×1000）、`spec.excluded` |
 | L1 特有 | `unit:'cycle'`、`frameDt`、`chans`（AE/FBG/DFOS/引擎）、`dfos`（空间分布与块级序列）、`ax`（面板纵轴） |
-| 二进制 | 数值数组写成 `{"i16"|"i32"|"f32": "<base64>"}`（`shm/pkgcodec.py`），前端 `hydrateAll()` 解码；旧纯数组包仍可加载 |
+| 二进制 | 数值数组写成 `{"i16"|"i32"|"f32": "<base64>"}`（`dashboard/pkgcodec.py`），前端 `hydrateAll()` 解码；旧纯数组包仍可加载 |
 
 ## 6. 重建数据包
 
 `dashboard/data/` 由脚本生成、**不入库**（`.gitignore` 已忽略），换机器后按下面重建：
 
 ```bat
-set PY=C:\Users\ASUS\.conda\envs\xjtushm\python.exe
+rem 主样本 24 组：留一预测 → 合并原始信号出包
+cd main
+python run.py --task dashboard
 
-%PY% main\cdio_baseline\build_dashboard_all.py --write   rem 主样本 24 组
-%PY% l1\restore_dashboard_packages.py                    rem L1 29 组（C1–C4）
-%PY% l1\build_campaign_index.py                          rem C1–C4 四个清单
+rem L1 29 组（C1–C4）+ 四个清单
+cd ..\l1
+python run.py --task dashboard
 ```
 
 主样本链路是两步：`export_dashboard.py` 逐组留一预测 → `build_dashboard_all.py` 合并原始信号出包。
-L1 链路是回放归档导出器，分组真源在 `shm/datasets.L1_CAMPAIGNS`。
+L1 链路是回放归档导出器（`l1/restore_dashboard_packages.py`），分组真源在仓库根的 `datasets.L1_CAMPAIGNS`。
+编码格式的唯一实现是 `dashboard/pkgcodec.py`。
 
 ## 7. 使用边界
 

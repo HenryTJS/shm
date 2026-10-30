@@ -1,0 +1,11 @@
+{
+  "dataset": "PHM2019 step1_features",
+  "model": "RandomForest(max_depth=4, n=400)",
+  "split": "leave-one-specimen-out",
+  "rows": 92,
+  "features": 36,
+  "mae_mm": 1.4159997857754565,
+  "rmse_mm": 1.8824469523545722,
+  "global_mean_mae_mm": 1.8720982986767485,
+  "n_specimens": 8
+}

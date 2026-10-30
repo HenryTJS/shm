@@ -29,23 +29,30 @@ import io
 import os
 import sys
 
+# ---- 路径前缀：本文件在 main/attic/ 下 ----
+# attic（eval_common / pipeline）← main（config / streaming / damage_index）← 仓库根（paths.py）
+_HERE0 = os.path.dirname(os.path.abspath(__file__))
+for _p in (os.path.dirname(os.path.dirname(_HERE0)), os.path.dirname(_HERE0), _HERE0):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 import numpy as np
 import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))        # main/
 ROOT = HERE
 CWD0 = os.getcwd()                                       # 调用时的目录（chdir 之前）
-sys.path.insert(0, os.path.dirname(HERE))                # 项目根（含 shm）
+sys.path.insert(0, os.path.dirname(HERE))                # 仓库根
 sys.path.insert(0, HERE)                                 # main/（含 eval_common）
 os.chdir(HERE)                                           # main/
 
 import eval_common as ec                                                       # noqa: E402
 from eval_common import (GROUPS, DEFAULT, cfg_id, run_cfg, table_for,          # noqa: E402
                          per_group_metrics, ref_map, onset_of, LOW, DROP, HOLD_FRAC)
-from shm.streaming import StreamSimulator, ChunkedDataReader                   # noqa: E402
-from shm.damage_index import OnlineDamageIndex, _AmpChannel                    # noqa: E402
-from shm.config import EXT_BLOCK_PTS, FO_PARAMS, GRADE_GATE                    # noqa: E402
-from shm.paths import repo_rel                                                 # noqa: E402
+from streaming import StreamSimulator, ChunkedDataReader                   # noqa: E402
+from damage_index import OnlineDamageIndex, _AmpChannel                    # noqa: E402
+from config import EXT_BLOCK_PTS, FO_PARAMS, GRADE_GATE                    # noqa: E402
+from paths import repo_rel                                                 # noqa: E402
 
 # ==========================================================================
 # 段 1/7  原 main/evaluate_baselines.py（349 行，正文逐字保留；改名 main→bl_main, OUT→BL_OUT）
@@ -98,9 +105,9 @@ sys.path.insert(0, os.path.dirname(ROOT))
 sys.path.insert(0, ROOT)
 os.chdir(ROOT)
 
-from shm.streaming import StreamSimulator                        # noqa: E402
-from shm.damage_index import OnlineDamageIndex                   # noqa: E402
-from shm.config import EXT_BLOCK_PTS                             # noqa: E402
+from streaming import StreamSimulator                        # noqa: E402
+from damage_index import OnlineDamageIndex                   # noqa: E402
+from config import EXT_BLOCK_PTS                             # noqa: E402
 from eval_common import ref_map, onset_of, LOW, DROP, HOLD_FRAC  # noqa: E402
 
 GROUPS = ['016', '017', '018', '019', '020']       # 有 b2/b3 标签
@@ -847,7 +854,7 @@ def labels_main():
   - **Kurtosis / Skewness** 尾部抬升显著（Kurtosis 在 025 上 1.7~3.1 倍）；
   - 原始量级列（RMS/Std/Variance/MeanSquare/MAV/RootMAV）趋势**反向**（ρ≈-0.11~-0.22），
     频域 6 列无一致趋势 → 均不采用。
-故新增可选证据 `e_shape`（见 `shm/damage_index.py`），本脚本量化其效果与代价。
+故新增可选证据 `e_shape`（见 `main/damage_index.py`），本脚本量化其效果与代价。
 
 口径
 ----
@@ -889,12 +896,12 @@ import numpy as np
 import pandas as pd
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(ROOT))          # 项目根(含 shm)
+sys.path.insert(0, os.path.dirname(ROOT))          # 仓库根
 sys.path.insert(0, ROOT)                           # main/(含 eval_common)
 os.chdir(ROOT)                                     # main/
 
-from shm.streaming import ChunkedDataReader        # noqa: E402
-from shm.damage_index import OnlineDamageIndex     # noqa: E402
+from streaming import ChunkedDataReader        # noqa: E402
+from damage_index import OnlineDamageIndex     # noqa: E402
 from eval_common import per_group_metrics          # noqa: E402
 
 DEF_GROUPS = ['016', '017', '018', '019', '020', '023', '024', '025', '026']
@@ -1018,7 +1025,7 @@ def acol_main():
 背景
 ----
 `main/001..027` 名义上都是全寿命，但实测只有一部分可用。本脚本**不改动正式配置**
-（`shm/config.py` / `main/eval_common.py` 的 GROUPS），只对候选组做三项体检，
+（`main/config.py` / `main/eval_common.py` 的 GROUPS），只对候选组做三项体检，
 用于判断"能否纳入正式范围"：
 
   1. **时间列语义**：采样间隔 dt、总时长 —— 判断是否纯加载时间（含停机则不可用）
@@ -1057,7 +1064,7 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 CC_ROOT = os.path.dirname(HERE)
 sys.path.insert(0, CC_ROOT)
-from shm.damage_index import _AmpChannel      # noqa: E402
+from damage_index import _AmpChannel      # noqa: E402
 
 BLK = 500                 # 与主样本一致（EXT_BLOCK_PTS=500）
 # 校准段用**固定块号**，与 OnlineDamageIndex 的 stiff_cal_lo/hi 默认值一致。
@@ -1286,13 +1293,13 @@ import numpy as np
 import pandas as pd
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, os.path.dirname(ROOT))          # 项目根(含 shm)
+sys.path.insert(0, os.path.dirname(ROOT))          # 仓库根
 os.chdir(ROOT)
 
 import eval_common as ec                            # noqa: E402
-from shm.streaming import StreamSimulator           # noqa: E402
-from shm.damage_index import OnlineDamageIndex      # noqa: E402
-from shm.config import FO_PARAMS                    # noqa: E402
+from streaming import StreamSimulator           # noqa: E402
+from damage_index import OnlineDamageIndex      # noqa: E402
+from config import FO_PARAMS                    # noqa: E402
 
 FUS_CACHE = os.path.join(ROOT, 'cache', '_fusion_cache')
 RESDIR = os.path.join(ROOT, 'results')
@@ -1443,9 +1450,9 @@ sys.path.insert(0, os.path.dirname(ROOT))
 os.chdir(ROOT)
 
 import eval_common as ec                            # noqa: E402
-from shm.streaming import StreamSimulator           # noqa: E402
-from shm.damage_index import OnlineDamageIndex      # noqa: E402
-from shm.config import EXT_BLOCK_PTS, GRADE_GATE   # noqa: E402
+from streaming import StreamSimulator           # noqa: E402
+from damage_index import OnlineDamageIndex      # noqa: E402
+from config import EXT_BLOCK_PTS, GRADE_GATE   # noqa: E402
 
 GRD_CACHE = os.path.join(ROOT, 'cache', '_grade_cache')
 RESDIR = os.path.join(ROOT, 'results')

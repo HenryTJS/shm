@@ -421,7 +421,7 @@ def _data_l1():
     if root not in sys.path:
         sys.path.insert(0, root)
     try:
-        from shm import paths
+        import paths
         p = os.path.join(paths.data_root(), 'l1')
         if os.path.isdir(p):
             return p

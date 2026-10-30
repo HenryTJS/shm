@@ -6,9 +6,9 @@
 原来「这个组属于哪个批次 / 有哪些传感器 / 文件是什么格式 / n_f 是多少 /
 AE 时钟要不要平移」散落在至少 6 个地方：
 
-    shm/config.py          DEFAULT_GROUPS（主样本 5 组）+ 常量
+    main/config.py         DEFAULT_GROUPS（主样本 5 组）+ 常量
     l1/survey_groups.py    C3_VA / C4_SP / CAMPAIGN / CLOCK_SHIFT_DAYS
-    l1/ae_cycle.py         N_F（14 组硬编码）+ 数据根走 shm.paths
+    l1/ae_cycle.py         N_F（14 组硬编码）+ 数据根走 paths
     l1/ae_hi.py            N_F（又一份 14 组硬编码）
     l1/ae_frames.py        CLOCK_SHIFT（天数）
     l1/l1_meta.py          n_f 靠逐组 PDF 解析（盘不在时静默返回 None）
@@ -22,9 +22,9 @@ AE 时钟要不要平移」散落在至少 6 个地方：
 - **不新增事实**：能推断的就扫盘推断（传感器/格式/文件数），
   能读表的就读权威表（`l1/results/l1_specimen_meta.csv`），
   只有**表里推不出来的**才写成静态表（C3 与 C4 的归属、时钟平移、采样率）。
-- **可自检**：`python -m shm.datasets` 会把静态表与盘上实际情况对一遍，
+- **可自检**：`python datasets.py` 会把静态表与盘上实际情况对一遍，
   不一致就报出来（这是本模块存在的意义）。
-- 依赖只有标准库 + `shm.paths`（不 import `l1/*`，保持依赖方向干净）。
+- 依赖只有标准库 + `paths`（不 import `l1/*`，保持依赖方向干净）。
 
 数据集
 ------
@@ -34,9 +34,9 @@ AE 时钟要不要平移」散落在至少 6 个地方：
 
 用法
 ----
-    python -m shm.datasets                      # 总表 + 自检
-    python -m shm.datasets --dataset l1
-    from shm.datasets import groups, meta, n_f
+    python datasets.py                          # 总表 + 自检
+    python datasets.py --dataset l1
+    from datasets import groups, meta, n_f
     groups('l1')                 # 盘上实际存在的组
     meta('L1-31')['n_f']         # 966000
     meta('L1-31')['campaign']    # 'L1 谱载+FBG'（短别名 C4）
@@ -50,11 +50,11 @@ import re
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-REPO = os.path.dirname(HERE)
+REPO = HERE                        # 本文件就在仓库根
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
 
-from shm.paths import data_root                                   # noqa: E402
+from paths import data_root                                       # noqa: E402
 
 META_CSV = os.path.join(REPO, 'l1', 'results', 'l1_specimen_meta.csv')
 
@@ -64,7 +64,7 @@ DATASETS = {
         label='main  主样本（内部疲劳机，016-020）',
         target='main',                       # data_root/<target>/<gid>
         pattern=r'^\d{3}$',
-        official=['016', '017', '018', '019', '020'],   # = shm.config.DEFAULT_GROUPS
+        official=['016', '017', '018', '019', '020'],   # = main/config.py 的 DEFAULT_GROUPS
     ),
     'l1': dict(
         label='l1  ReMAP / TU-Delft L1（29 组；按模态分 4 组，见 L1_CAMPAIGNS）',
@@ -217,7 +217,7 @@ def cross_check_nf():
     """与 `l1/ae_cycle.py` 的硬编码 `N_F` 对一遍（迁移期体检用）。
 
     两边完全一致才说明本模块的推法与既有口径同源。不一致就列出来。
-    （依赖方向：l1 → shm，所以这里只能用惰性导入，且只作显式诊断用。）
+    （依赖方向：l1 → 仓库根，所以这里只能用惰性导入，且只作显式诊断用。）
     """
     try:
         from l1.ae_cycle import N_F as REF

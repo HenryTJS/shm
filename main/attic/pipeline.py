@@ -21,6 +21,13 @@
 import argparse
 import os
 import sys
+
+# ---- 路径前缀：本文件在 main/attic/ 下 ----
+# attic（eval_common / pipeline）← main（config / streaming / damage_index）← 仓库根（paths.py）
+_HERE0 = os.path.dirname(os.path.abspath(__file__))
+for _p in (os.path.dirname(os.path.dirname(_HERE0)), os.path.dirname(_HERE0), _HERE0):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 import time
 import traceback
 import warnings
@@ -36,12 +43,12 @@ plt.rcParams['font.sans-serif'] = ['Microsoft YaHei', 'SimHei', 'DejaVu Sans']
 plt.rcParams['axes.unicode_minus'] = False
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch   # noqa: E402
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 项目根（含 shm）
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 仓库根
 os.chdir(os.path.dirname(os.path.abspath(__file__)))                            # main/
 
-from shm.data_loader import DataLoader                                          # noqa: E402
-from shm.streaming import StreamSimulator                                       # noqa: E402
-from shm.damage_index import OnlineDamageIndex                                  # noqa: E402
+from data_loader import DataLoader                                          # noqa: E402
+from streaming import StreamSimulator                                       # noqa: E402
+from damage_index import OnlineDamageIndex                                  # noqa: E402
 
 # ==========================================================================
 # 段 1/3  原 main/prepare_data.py（411 行，正文逐字保留；改名 main→prep_main, TASKS→PREP_TASKS）
@@ -59,10 +66,10 @@ import numpy as np
 import pandas as pd
 
 warnings.filterwarnings('ignore')
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 项目根(含 shm)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 仓库根
 os.chdir(os.path.dirname(os.path.abspath(__file__)))                            # main/
 
-from shm.data_loader import DataLoader   # weaklabels 用
+from data_loader import DataLoader   # weaklabels 用
 
 ROOT = os.path.dirname(os.path.abspath(__file__))   # <项目根>\main
 GROUPS = ['016', '017', '018', '019', '020']   # 主样本 5 组
@@ -1089,10 +1096,10 @@ plt.rcParams['axes.unicode_minus'] = False
 from concurrent.futures import ProcessPoolExecutor
 from matplotlib.patches import FancyBboxPatch, FancyArrowPatch
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 项目根
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 仓库根
 os.chdir(os.path.dirname(os.path.abspath(__file__)))                            # main/
-from shm.streaming import StreamSimulator
-from shm.damage_index import OnlineDamageIndex
+from streaming import StreamSimulator
+from damage_index import OnlineDamageIndex
 from eval_common import GROUPS, GROUPS_EVAL, ref_map, ref_stage, onset_of, LOW, DROP, HOLD_FRAC
 
 ROOT = os.path.dirname(os.path.abspath(__file__))
@@ -1464,10 +1471,10 @@ plt.rcParams['axes.unicode_minus'] = False
 from concurrent.futures import ProcessPoolExecutor
 from scipy import stats as sp_stats
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 项目根
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 仓库根
 os.chdir(os.path.dirname(os.path.abspath(__file__)))                            # main/
-from shm.streaming import StreamSimulator
-from shm.damage_index import OnlineDamageIndex
+from streaming import StreamSimulator
+from damage_index import OnlineDamageIndex
 from eval_common import (PARS, DEFAULT, GROUPS, cfg_id, T7CACHE,
                          per_group_metrics, run_cfg, table_for, summary_row)
 

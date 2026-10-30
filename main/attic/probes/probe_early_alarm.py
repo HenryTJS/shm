@@ -6,7 +6,7 @@
 两阶段口径下 023 的 b1 = 39.5、024 的 b1 = 65.5，而在线 A 级预警分别在
 11.2 与 30.6，偏差 −28.3 与 −34.9，判为「E 过早」。
 
-D 的风险由三部分合成（见 shm/damage_index.py 文件头）：
+D 的风险由三部分合成（见 main/damage_index.py 文件头）：
     e_ae     = max(e_dmg, e_full, e_shape)      声发射主源
     e_strain = estrain_w × 应变 std 相对滚动低分位发散    应变辅证
     risk     = max(e_ae, e_strain)（fusion=max）
@@ -32,13 +32,20 @@ D 的风险由三部分合成（见 shm/damage_index.py 文件头）：
 import os
 import sys
 
+# ---- 路径前缀：本文件在 main/attic/ 下 ----
+# attic（eval_common / pipeline）← main（config / streaming / damage_index）← 仓库根（paths.py）
+_HERE0 = os.path.dirname(os.path.abspath(__file__))
+for _p in (os.path.dirname(os.path.dirname(_HERE0)), os.path.dirname(_HERE0), _HERE0):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 import numpy as np
 
 _HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.dirname(_HERE))
 
 import pipeline as P                                          # noqa: E402
-from shm.damage_index import OnlineDamageIndex                # noqa: E402
+from damage_index import OnlineDamageIndex                # noqa: E402
 from eval_common import onset_of, ref_stage, HOLD_FRAC        # noqa: E402
 
 

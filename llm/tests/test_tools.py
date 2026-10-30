@@ -31,6 +31,11 @@ class TestTools(unittest.TestCase):
         r = self.tb.dataset_overview()
         self.assertEqual(r["result"]["n_specimens"], 29)
 
+    def test_compare_campaigns(self):
+        r = self.tb.compare_campaigns("C1", "C3", "t85")
+        self.assertAlmostEqual(r["result"]["delta"], 4.8, places=3)
+        self.assertEqual(r["evidence"]["content"]["metric"], "delta_campaign_t85_pct")
+
     def test_tool_evidence_passes_validator(self):
         look = self.tb.lookup("L1-03", "t85")
         comp = self.tb.compare_to_campaign("L1-03", "t85")

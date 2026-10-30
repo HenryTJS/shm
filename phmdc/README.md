@@ -71,13 +71,15 @@
 ## 7. 怎么跑
 
 ```bat
-set PY=C:\Users\ASUS\.conda\envs\xjtushm\python.exe
-
-%PY% run.py --dataset phmdc --task step0        rem 数据规整 → labels.csv / index.csv
-%PY% run.py --dataset phmdc --task step1        rem 特征 + LOSO
-%PY% run.py --dataset phmdc --task step2        rem 波形级模型（需 torch）
-%PY% run.py --dataset phmdc --task step3        rem 外推 / 预后
-%PY% run.py --dataset phmdc --task step4 step5  rem 置换检验 / 不确定性
+cd phmdc
+python run.py --list                       rem 任务矩阵
+python run.py --task step0                 rem 数据规整 → labels.csv / index.csv
+python run.py --task step1                 rem 特征 + LOSO
+python run.py --task step2                 rem 波形级模型（需 torch）
+python run.py --task step3                 rem 外推 / 预后
+python run.py --task step4 step5           rem 置换检验 / 不确定性
 ```
+
+`--task` 可给多个；`--dry-run` 只打印命令；`--` 之后的参数透传给底层脚本。
 
 产物在 `phmdc/results/`。全部实验记录（含被否掉的路线与逐配置结果）见 `docs/details.md` 附录 D。

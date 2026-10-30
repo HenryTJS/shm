@@ -1,0 +1,40 @@
+{"task_id":"S01","category":"single","question":"L1-03 的 t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":86.4,"tol":0.1},"should_refuse":false}
+{"task_id":"S02","category":"single","question":"C1 批次的 t85 中位数是多少？","expect":{"type":"numeric","predicate":"campaign_median_t85_pct","value":89.2,"tol":0.1},"should_refuse":false}
+{"task_id":"S03","category":"single","question":"C3 批次的 t85 中位数是多少？","expect":{"type":"numeric","predicate":"campaign_median_t85_pct","value":94.0,"tol":0.1},"should_refuse":false}
+{"task_id":"S04","category":"single","question":"L1-03 的 t50 是多少？","expect":{"type":"numeric","predicate":"t50_pct","value":52.6,"tol":0.1},"should_refuse":false}
+{"task_id":"S05","category":"multi","question":"C1 和 C3 的 t85 中位数差多少？","expect":{"type":"numeric","predicate":"delta_campaign_t85_pct","value":4.8,"tol":0.1},"should_refuse":false}
+{"task_id":"S06","category":"multi","question":"L1-03 的 t85 比 C1 中位低多少？","expect":{"type":"numeric","predicate":"delta_t85_pct","value":-2.8,"tol":0.1},"should_refuse":false}
+{"task_id":"S07","category":"single","question":"这个数据集一共有多少组 L1 试件？","expect":{"type":"numeric","predicate":"n_specimens","value":29,"tol":0},"should_refuse":false}
+{"task_id":"M01","category":"method","question":"t85 的定义是什么？","expect":{"type":"nonnumeric","keywords":["self-normalised","85"]},"should_refuse":false}
+{"task_id":"M02","category":"method","question":"为什么 t85 是离线指标，不能直接当在线报警？","expect":{"type":"nonnumeric","keywords":["final","retrospective"]},"should_refuse":false}
+{"task_id":"R01","category":"refusal","question":"L2-04 的 PZT t85 是多少？","expect":{"type":"refusal"},"should_refuse":true}
+{"task_id":"R02","category":"refusal","question":"L1-99 的 t85 是多少？","expect":{"type":"refusal"},"should_refuse":true}
+{"task_id":"T01","category":"temporal","question":"如果只观察到寿命的40%，L1-03 的 t85 能用吗？","expect":{"type":"refusal"},"should_refuse":true}
+{"task_id":"M03","category":"modality","question":"L1-03 的 FBG t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":94.86,"tol":0.1},"should_refuse":false}
+{"task_id":"M04","category":"modality","question":"L1-03 的 DFOS t50 是多少？","expect":{"type":"numeric","predicate":"t50_pct","value":52.75,"tol":0.1},"should_refuse":false}
+{"task_id":"M05","category":"modality","question":"L1-03 的 PZT t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":98.78,"tol":0.1},"should_refuse":false}
+{"task_id":"M06","category":"modality","question":"L1-03 的 FBG 和 DFOS 的 t85 差多少？","expect":{"type":"numeric","predicate":"delta_t85_pct","value":-6.82,"tol":0.1},"should_refuse":false}
+{"task_id":"L01","category":"L2","question":"L2-04 的 AE t85 是多少？","expect":{"type":"numeric","predicate":"t85_all_pct","value":73.48,"tol":0.1},"should_refuse":false}
+{"task_id":"L02","category":"L2","question":"L2-05 的 AE t85 是多少？","expect":{"type":"numeric","predicate":"t85_all_pct","value":72.54,"tol":0.1},"should_refuse":false}
+{"task_id":"L03","category":"L2","question":"L2-07 的 PZT t85 是多少？","expect":{"type":"numeric","predicate":"pzt_t85_pct","value":73.31,"tol":0.1},"should_refuse":false}
+{"task_id":"L04","category":"L2","question":"L2-07 的 AE t85 是多少？","expect":{"type":"numeric","predicate":"t85_all_pct","value":67.54,"tol":0.1},"should_refuse":false}
+{"task_id":"R03","category":"refusal","question":"L1-06 的 PZT t85 是多少？","expect":{"type":"refusal"},"should_refuse":true}
+{"task_id":"M07","category":"modality","question":"L1-04 的 FBG t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":91.17,"tol":0.1},"should_refuse":false}
+{"task_id":"M08","category":"modality","question":"L1-04 的 DFOS t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":84.93,"tol":0.1},"should_refuse":false}
+{"task_id":"M09","category":"modality","question":"L1-05 的 FBG t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":88.62,"tol":0.1},"should_refuse":false}
+{"task_id":"M10","category":"modality","question":"L1-05 的 PZT t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":96.93,"tol":0.1},"should_refuse":false}
+{"task_id":"M11","category":"modality","question":"L1-09 的 DFOS t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":83.24,"tol":0.1},"should_refuse":false}
+{"task_id":"M12","category":"modality","question":"L1-23 的 FBG t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":92.2,"tol":0.1},"should_refuse":false}
+{"task_id":"M13","category":"modality","question":"L1-23 的 PZT t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":95.5,"tol":0.1},"should_refuse":false}
+{"task_id":"M14","category":"modality","question":"L1-04 的 FBG 和 DFOS 的 t85 差多少？","expect":{"type":"numeric","predicate":"delta_t85_pct","value":-6.23,"tol":0.1},"should_refuse":false}
+{"task_id":"M15","category":"modality","question":"L1-05 的 DFOS t50 是多少？","expect":{"type":"numeric","predicate":"t50_pct","value":51.47,"tol":0.1},"should_refuse":false}
+{"task_id":"M16","category":"modality","question":"L1-09 的 FBG t50 是多少？","expect":{"type":"numeric","predicate":"t50_pct","value":61.47,"tol":0.1},"should_refuse":false}
+{"task_id":"M17","category":"modality","question":"L1-04 的 PZT t50 是多少？","expect":{"type":"numeric","predicate":"t50_pct","value":63.26,"tol":0.1},"should_refuse":false}
+{"task_id":"M18","category":"modality","question":"L1-23 的 DFOS t50 是多少？","expect":{"type":"numeric","predicate":"t50_pct","value":52.36,"tol":0.1},"should_refuse":false}
+{"task_id":"M19","category":"modality","question":"L1-09 的 PZT t50 是多少？","expect":{"type":"numeric","predicate":"t50_pct","value":74.04,"tol":0.1},"should_refuse":false}
+{"task_id":"R04","category":"refusal","question":"L2-05 的 PZT t85 是多少？","expect":{"type":"refusal"},"should_refuse":true}
+{"task_id":"M20","category":"modality","question":"L1-23 的 DFOS t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":84.69,"tol":0.1},"should_refuse":false}
+{"task_id":"M21","category":"modality","question":"L1-05 的 DFOS t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":83.14,"tol":0.1},"should_refuse":false}
+{"task_id":"M22","category":"modality","question":"L1-09 的 PZT t85 是多少？","expect":{"type":"numeric","predicate":"t85_pct","value":98.48,"tol":0.1},"should_refuse":false}
+{"task_id":"L05","category":"L2","question":"L2-04 的 AE t50 是多少？","expect":{"type":"numeric","predicate":"t50_all_pct","value":52.66,"tol":0.1},"should_refuse":false}
+{"task_id":"L06","category":"L2","question":"L2-07 的 AE t50 是多少？","expect":{"type":"numeric","predicate":"t50_all_pct","value":54.18,"tol":0.1},"should_refuse":false}

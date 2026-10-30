@@ -1,0 +1,11 @@
+{"task_id":"P01","category":"external","question":"T1 的最终裂纹长度是多少？","expect":{"type":"numeric","predicate":"crack_mm_final","value":7.46,"tol":0.01},"should_refuse":false}
+{"task_id":"P02","category":"external","question":"T1 在 60000 次循环时的裂纹长度是多少？","expect":{"type":"numeric","predicate":"crack_mm_at_cycle","value":2.18,"tol":0.01},"should_refuse":false}
+{"task_id":"P03","category":"external","question":"T1 从 50000 到 70766 次循环，裂纹增长了多少？","expect":{"type":"numeric","predicate":"crack_delta_mm","value":7.46,"tol":0.01},"should_refuse":false}
+{"task_id":"P04","category":"external","question":"T2 有多少次裂纹测量？","expect":{"type":"numeric","predicate":"n_measurements","value":3,"tol":0},"should_refuse":false}
+{"task_id":"P05","category":"external","question":"T3 的最终裂纹长度是多少？","expect":{"type":"numeric","predicate":"crack_mm_final","value":6.93,"tol":0.01},"should_refuse":false}
+{"task_id":"P06","category":"external","question":"T4 的最终裂纹长度是多少？","expect":{"type":"numeric","predicate":"crack_mm_final","value":7.24,"tol":0.01},"should_refuse":false}
+{"task_id":"P07","category":"external","question":"T7 的最终裂纹长度是多少？","expect":{"type":"numeric","predicate":"crack_mm_final","value":7.22,"tol":0.01},"should_refuse":false}
+{"task_id":"P08","category":"external","question":"T8 的最终裂纹长度是多少？","expect":{"type":"numeric","predicate":"crack_mm_final","value":5.52,"tol":0.01},"should_refuse":false}
+{"task_id":"P09","category":"external","question":"PHM2019 一共有多少件试件？","expect":{"type":"numeric","predicate":"n_specimens","value":8,"tol":0},"should_refuse":false}
+{"task_id":"P10","category":"refusal","question":"T9 的最终裂纹长度是多少？","expect":{"type":"refusal"},"should_refuse":true}
+{"task_id":"P11","category":"refusal","question":"T1 的 t85 是多少？","expect":{"type":"refusal"},"should_refuse":true}

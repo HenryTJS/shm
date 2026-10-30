@@ -10,7 +10,7 @@
 
 用法::
 
-    from shm import paths
+    import paths                           # 仓库根在 sys.path 上即可
     paths.data_root()                      # 外接盘数据根，如 'E:\\shm_data'
     paths.items()                          # paths.json 的 items
     paths.link_paths(paths.items()[0])     # 展开通配后，仓库内的目录列表
@@ -19,8 +19,8 @@
 
 命令行自检::
 
-    python shm/paths.py
-    python shm/paths.py --json
+    python paths.py
+    python paths.py --json
 """
 from __future__ import annotations
 
@@ -32,7 +32,7 @@ import stat as _stat
 import subprocess
 import sys
 
-PROJ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PROJ = os.path.dirname(os.path.abspath(__file__))
 CONFIG = os.path.join(PROJ, 'paths.json')
 ENV_KEY = 'SHM_DATA_ROOT'
 _REPARSE = getattr(_stat, 'FILE_ATTRIBUTE_REPARSE_POINT', 0x400)

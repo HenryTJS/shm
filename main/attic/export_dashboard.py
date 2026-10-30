@@ -12,8 +12,8 @@
 导出字段已包含**应变 `st`** 与**光纤 `fo`**（前端 FBG / STRAIN 面板直接消费）。
 
 严格复用正式口径(见 README):
-  - 流式入口 : shm.streaming.StreamSimulator     (逐点, 零未来信息)
-  - 损伤模型 : shm.damage_index.OnlineDamageIndex (默认参数 = 正式方法)
+  - 流式入口 : streaming.StreamSimulator     (逐点, 零未来信息)
+  - 损伤模型 : damage_index.OnlineDamageIndex (默认参数 = 正式方法)
 
 输出:
   <项目根>/dashboard/data/{gid}.js   每组一个数据包 (window.SHM_DATA[gid] = {...})
@@ -32,19 +32,26 @@ import json
 import os
 import sys
 
+# ---- 路径前缀：本文件在 main/attic/ 下 ----
+# attic（eval_common / pipeline）← main（config / streaming / damage_index）← 仓库根（paths.py）
+_HERE0 = os.path.dirname(os.path.abspath(__file__))
+for _p in (os.path.dirname(os.path.dirname(_HERE0)), os.path.dirname(_HERE0), _HERE0):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+
 import numpy as np
 
 ROOT = os.path.dirname(os.path.abspath(__file__))   # <项目根>\main
-PROJ = os.path.dirname(ROOT)                        # 项目根
-sys.path.insert(0, PROJ)                     # 项目根(含 shm)
+PROJ = os.path.dirname(ROOT)                        # 仓库根
+sys.path.insert(0, PROJ)                     # 仓库根
 sys.path.insert(0, ROOT)                     # main/(eval_common)
 os.chdir(ROOT)
 
 from eval_common import ref_map                      # noqa: E402
-from shm.config import EXT_BLOCK_PTS, GRADE_GATE     # noqa: E402
-from shm.damage_index import OnlineDamageIndex       # noqa: E402
-from shm.streaming import StreamSimulator            # noqa: E402
-from shm.paths import repo_rel                       # noqa: E402
+from config import EXT_BLOCK_PTS, GRADE_GATE     # noqa: E402
+from damage_index import OnlineDamageIndex       # noqa: E402
+from streaming import StreamSimulator            # noqa: E402
+from paths import repo_rel                       # noqa: E402
 
 OUTDIR = os.path.join(PROJ, 'dashboard', 'data')   # 看板在项目根(与 main/l1 同级)
 STEP = 5                 # 降采样步长(点): 10Hz → 2Hz 帧
@@ -108,7 +115,7 @@ def _pack(gid):
     _m = SPEC_META.get(gid, ('', '', ''))
     sim = StreamSimulator(gid)
     n = sim.load_data()
-    di = OnlineDamageIndex(GRADE_GATE.get(gid, {}))   # 逐组级别闸门(见 shm/config.py)
+    di = OnlineDamageIndex(GRADE_GATE.get(gid, {}))   # 逐组级别闸门(见 main/config.py)
     nfr = (n + STEP - 1) // STEP
 
     T = np.zeros(nfr, dtype=np.float64)

@@ -50,10 +50,10 @@ A_THRESHOLD = 62.0            # 幅值阈值下限（dB），b 值基线；L1-41
 BINS = np.arange(60.0, 101.0, 1.0)     # 熵的分箱
 
 # AE 时钟相对 FBG 日历的实测平移（天）：L1 谱载+FBG 组慢 8 天，L1 变幅VA+FBG 组同步
-# **唯一来源 = shm.datasets** 的分组表（原来这里又硬编码了一份）
+# **唯一来源 = datasets** 的分组表（原来这里又硬编码了一份）
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
-from shm.datasets import L1_CAMPAIGNS, clock_shift_days            # noqa: E402
+from datasets import L1_CAMPAIGNS, clock_shift_days            # noqa: E402
 
 CLOCK_SHIFT = {g: clock_shift_days(g)
                for d in L1_CAMPAIGNS.values() for g in d['members']}
@@ -284,7 +284,7 @@ def _data_l1():
     if REPO not in sys.path:
         sys.path.insert(0, REPO)
     try:
-        from shm import paths
+        import paths
         p = os.path.join(paths.data_root(), 'l1')
         if os.path.isdir(p):
             return p

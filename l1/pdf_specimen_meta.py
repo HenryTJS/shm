@@ -73,7 +73,7 @@ def data_root():
     if REPO not in sys.path:
         sys.path.insert(0, REPO)
     try:
-        from shm import paths
+        import paths
         r = paths.data_root()
         if r and os.path.isdir(os.path.join(r, 'l1')):
             return os.path.join(r, 'l1')
@@ -395,7 +395,7 @@ def _batch_map():
     try:
         if REPO not in sys.path:
             sys.path.insert(0, REPO)
-        from shm.datasets import campaign_members
+        from datasets import campaign_members
         for k in ('C1', 'C2', 'C3', 'C4'):
             for g in campaign_members(k):
                 out[g] = k

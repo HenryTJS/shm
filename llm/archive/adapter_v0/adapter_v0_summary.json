@@ -1,0 +1,11 @@
+{
+  "dataset": "PHM2019 step1_features",
+  "rows": 92,
+  "features": 36,
+  "device": "cuda",
+  "split": "leave-one-specimen-out",
+  "mae_mm": 3.999776030242767,
+  "rmse_mm": 6.317970028176627,
+  "global_mean_mae_mm": 1.8720982888808542,
+  "n_specimens": 8
+}

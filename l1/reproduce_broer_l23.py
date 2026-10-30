@@ -86,9 +86,9 @@ FIG = os.path.join(HERE, 'figures')
 os.makedirs(RES, exist_ok=True)
 os.makedirs(FIG, exist_ok=True)
 
-sys.path.insert(0, os.path.dirname(HERE))           # 使 shm 可导入
-from shm.datasets import campaign_members           # noqa: E402
-# 组名单**唯一来源 = shm/datasets**（原来在这里硬编码 4 组 ⇒ 新试件会被静默漏掉）
+sys.path.insert(0, os.path.dirname(HERE))           # 使 paths 可导入
+from datasets import campaign_members           # noqa: E402
+# 组名单**唯一来源 = datasets**（原来在这里硬编码 4 组 ⇒ 新试件会被静默漏掉）
 GROUPS = campaign_members('C1')
 
 # --- 论文判据默认参数 -------------------------------------------------------

@@ -49,12 +49,12 @@ try:                                   # 头部时间 / FBG 时间戳解析复�
 except Exception:                      # noqa: BLE001
     dta_start_time = fbg_stamps = None
 
-# 4 个模态分组的成员：**唯一来源 = shm.datasets**（原来这里又抄了一份四组名单）
-# 'C1' 至 'C4' 只是短别名；语义名（模态 + 格式 + 加载谱）见 shm/datasets.py。
+# 4 个模态分组的成员：**唯一来源 = datasets**（原来这里又抄了一份四组名单）
+# 'C1' 至 'C4' 只是短别名；语义名（模态 + 格式 + 加载谱）见 datasets.py。
 _REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if _REPO not in sys.path:
     sys.path.insert(0, _REPO)
-from shm.datasets import (ALIAS_OF, L1_CAMPAIGNS,                  # noqa: E402
+from datasets import (ALIAS_OF, L1_CAMPAIGNS,                  # noqa: E402
                             campaign_members)
 
 C1_CA1 = campaign_members('C1')                                        # L1 恒幅+FBG+DFOS
@@ -72,7 +72,7 @@ def data_dir():
     """数据根下的 l1 目录：优先 paths.json 的 data_root（外接盘），否则仓库内 l1/。"""
     try:
         sys.path.insert(0, REPO)
-        from shm import paths                      # noqa: PLC0415
+        import paths                      # noqa: PLC0415
         r = paths.data_root()
         if r and os.path.isdir(os.path.join(r, 'l1')):
             return os.path.join(r, 'l1')

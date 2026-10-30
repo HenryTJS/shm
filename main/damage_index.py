@@ -25,7 +25,7 @@ T7 参数化: 全部可调参数集中在 __init__ kwargs(默认=v6 配置)。
   e_fo 引入前的行为一致(fo 不在默认掩码内), 保证历史结果可复现。
 """
 import numpy as np
-from .config import EXT_BLOCK_PTS
+from config import EXT_BLOCK_PTS
 
 # --- 形状/比值证据的默认配置(v9.1, 2026-09-20 起为项目默认口径) ---
 # 默认列 = `PeakFactor`(Peak/RMS): 逐列对照(9 组)中唯一同时做到

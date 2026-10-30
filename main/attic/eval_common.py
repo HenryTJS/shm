@@ -15,15 +15,22 @@
 """
 import os
 import sys
+
+# ---- 路径前缀：本文件在 main/attic/ 下 ----
+# attic（eval_common / pipeline）← main（config / streaming / damage_index）← 仓库根（paths.py）
+_HERE0 = os.path.dirname(os.path.abspath(__file__))
+for _p in (os.path.dirname(os.path.dirname(_HERE0)), os.path.dirname(_HERE0), _HERE0):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 import hashlib
 import numpy as np
 import pandas as pd
 from concurrent.futures import ProcessPoolExecutor
 
-sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 项目根(含 shm)
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))  # 仓库根
 os.chdir(os.path.dirname(os.path.abspath(__file__)))                            # main/
-from shm.streaming import StreamSimulator
-from shm.damage_index import OnlineDamageIndex, SHAPE_DEFAULTS
+from streaming import StreamSimulator
+from damage_index import OnlineDamageIndex, SHAPE_DEFAULTS
 
 GROUPS = ['016', '017', '018', '019', '020']   # 主样本 5 组
 ROOT = os.path.dirname(os.path.abspath(__file__))

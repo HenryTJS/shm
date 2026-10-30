@@ -22,8 +22,12 @@
       "comparator": "eq",
       "tolerance": 0.05,
       "status": "supported",
-      "evidence_ids": ["E001"],
-      "tool_call_ids": ["T001"],
+      "evidence_ids": [
+        "E001"
+      ],
+      "tool_call_ids": [
+        "T001"
+      ],
       "scope": {
         "gid": "L1-03",
         "campaign": "C1",
@@ -49,8 +53,12 @@
       "comparator": "lt",
       "tolerance": 0.1,
       "status": "supported",
-      "evidence_ids": ["E002"],
-      "tool_call_ids": ["T002"],
+      "evidence_ids": [
+        "E002"
+      ],
+      "tool_call_ids": [
+        "T002"
+      ],
       "scope": {
         "gid": "L1-03",
         "campaign": "C1",
@@ -76,7 +84,9 @@
       "comparator": null,
       "tolerance": null,
       "status": "supported",
-      "evidence_ids": ["E003"],
+      "evidence_ids": [
+        "E003"
+      ],
       "tool_call_ids": [],
       "scope": {
         "gid": "ALL",
@@ -90,7 +100,8 @@
       "allowed_lifetime_max": null,
       "missing_evidence": null,
       "confidence": 0.95,
-      "created_by": "Writer"
+      "created_by": "Writer",
+      "support_quote": "The fraction at which the curve reaches x percent of its final value is denoted t_x."
     },
     {
       "claim_id": "C004",
@@ -103,7 +114,9 @@
       "comparator": null,
       "tolerance": null,
       "status": "supported",
-      "evidence_ids": ["E004"],
+      "evidence_ids": [
+        "E004"
+      ],
       "tool_call_ids": [],
       "scope": {
         "gid": "ALL",
@@ -117,7 +130,8 @@
       "allowed_lifetime_max": null,
       "missing_evidence": null,
       "confidence": 0.95,
-      "created_by": "Writer"
+      "created_by": "Writer",
+      "support_quote": "It uses C(1), the final value of the completed record. It is therefore a retrospective descriptor."
     }
   ],
   "evidence": [
@@ -226,7 +240,12 @@
         "title": "A Confound-Aware Benchmark for Cross-Laboratory Fatigue Monitoring",
         "tool_name": null,
         "version": null,
-        "authors": ["C. Yang", "H. Gou", "K. Li", "J. Tang"],
+        "authors": [
+          "C. Yang",
+          "H. Gou",
+          "K. Li",
+          "J. Tang"
+        ],
         "year": 2026,
         "venue": "IWSHM 2027 (under review)",
         "doi": null,
@@ -270,7 +289,12 @@
         "title": "A Confound-Aware Benchmark for Cross-Laboratory Fatigue Monitoring",
         "tool_name": null,
         "version": null,
-        "authors": ["C. Yang", "H. Gou", "K. Li", "J. Tang"],
+        "authors": [
+          "C. Yang",
+          "H. Gou",
+          "K. Li",
+          "J. Tang"
+        ],
         "year": 2026,
         "venue": "IWSHM 2027 (under review)",
         "doi": null,
@@ -308,25 +332,56 @@
     }
   ],
   "edges": [
-    { "claim_id": "C001", "evidence_id": "E001", "relation": "supports" },
-    { "claim_id": "C002", "evidence_id": "E002", "relation": "supports" },
-    { "claim_id": "C003", "evidence_id": "E003", "relation": "supports" },
-    { "claim_id": "C004", "evidence_id": "E004", "relation": "supports" }
+    {
+      "claim_id": "C001",
+      "evidence_id": "E001",
+      "relation": "supports"
+    },
+    {
+      "claim_id": "C002",
+      "evidence_id": "E002",
+      "relation": "supports"
+    },
+    {
+      "claim_id": "C003",
+      "evidence_id": "E003",
+      "relation": "supports"
+    },
+    {
+      "claim_id": "C004",
+      "evidence_id": "E004",
+      "relation": "supports"
+    }
   ],
   "tool_calls": [
     {
       "tool_call_id": "T001",
       "tool_name": "l1_hi_lookup",
-      "arguments": { "gid": "L1-03", "variant": "cum_hits", "metric": "t85_pct" },
-      "result": { "t85_pct": 86.4, "n_f": 152458 },
+      "arguments": {
+        "gid": "L1-03",
+        "variant": "cum_hits",
+        "metric": "t85_pct"
+      },
+      "result": {
+        "t85_pct": 86.4,
+        "n_f": 152458
+      },
       "created_at": "2026-10-27T19:35:00+08:00",
       "elapsed_ms": 3.2
     },
     {
       "tool_call_id": "T002",
       "tool_name": "campaign_delta",
-      "arguments": { "gid": "L1-03", "campaign": "C1", "metric": "t85_pct" },
-      "result": { "specimen": 86.4, "campaign_median": 89.2, "delta": -2.8 },
+      "arguments": {
+        "gid": "L1-03",
+        "campaign": "C1",
+        "metric": "t85_pct"
+      },
+      "result": {
+        "specimen": 86.4,
+        "campaign_median": 89.2,
+        "delta": -2.8
+      },
       "created_at": "2026-10-27T19:35:00+08:00",
       "elapsed_ms": 4.1
     }

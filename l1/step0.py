@@ -38,7 +38,7 @@ L1 恒幅+DFOS 组**没有 FBG**，且原始体量比 L1 恒幅+FBG+DFOS 组大�
 **函数体逐字保留**（只把入口改名成 `*_c1` / `*_c2`），公共脚手架（import / 路径常量 /
 `print_header` / 统一的 `main`）只写一份；顺带删掉全仓无引用的死函数
 `load_ae_vallenae`（`process_ae_c1` 早已改走 `ae_io.read_hits_vallenae`），
-并把两组的组名单改由 `shm.datasets.L1_CAMPAIGNS` 派生。见 `docs/details.md` §33。
+并把两组的组名单改由 `datasets.L1_CAMPAIGNS` 派生。见 `docs/details.md` §33。
 """
 
 import argparse
@@ -54,16 +54,16 @@ import pandas as pd
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = HERE                    # 输出根；--root 可在 main() 里改写
 PROJ = os.path.dirname(HERE)
-sys.path.insert(0, PROJ)       # shm
+sys.path.insert(0, PROJ)       # 仓库根（paths / datasets）
 sys.path.insert(0, HERE)       # ae_io / l1_meta 等同级模块
-from shm.paths import repo_rel  # noqa: E402  产物里只写相对路径，见该函数
+from paths import repo_rel  # noqa: E402  产物里只写相对路径，见该函数
 
 # 原来 step0.py 的全局设置（保留：同一批数据在 pandas 下有大量 NaN 语义警告）
 warnings.filterwarnings('ignore')
 
-from shm.datasets import campaign_members                      # noqa: E402
+from datasets import campaign_members                      # noqa: E402
 
-# 两组的组名单：**唯一来源 = shm.datasets**（'C1'/'C2' 是短别名，语义名见那里）
+# 两组的组名单：**唯一来源 = datasets**（'C1'/'C2' 是短别名，语义名见那里）
 C1_GROUPS = campaign_members('C1')      # L1 恒幅+FBG+DFOS
 C2_GROUPS = campaign_members('C2')      # L1 恒幅+DFOS
 

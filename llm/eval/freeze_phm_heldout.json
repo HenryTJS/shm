@@ -1,0 +1,19 @@
+{
+  "tag": "phm_heldout",
+  "created_at": "2026-10-29T19:08:45+08:00",
+  "git_head": "c98108a7320e0c38731a44faf99658d1930c1d44",
+  "git_status_short": "M llm/README.md\n M llm/examples/L1-03_t85.json\n M llm/examples/invalid_missing_evidence.json\n M llm/examples/invalid_temporal_leakage.json\n M llm/rag.py\n M llm/schema/claim_evidence.schema.json\n M llm/tests/test_tools.py\n M llm/tools.py\n M llm/validate.py\n?? llm/adapter_v0.py\n?? llm/adapter_v0_rf.py\n?? llm/adapters/\n?? llm/agent.py\n?? llm/eval/\n?? llm/out/\n?? llm/results/",
+  "model": "deepseek-chat",
+  "files": {
+    "llm/agent.py": "ca1e05ef0f2c20843ca34f090bd3ab51c57229c0945eec73aefc967b1b475f1a",
+    "llm/tools.py": "6f539ae0c282b6e93656cf33fc892917a022009c2893c8f2409ce568b85d6dbb",
+    "llm/rag.py": "f338cb2c161c4662ccab15e642ab98ad1162ce28ceb6cb93fc9e484b1097d1cc",
+    "llm/adapters/base.py": "658baf6ba3ae5df041a9f666122aed11044755ff05b738d37410cdd0e9c8659e",
+    "llm/adapters/l1.py": "5ccb8137134b9b86e3b8d545edc6105e0bdfa983c0e9a68606739387e207b658",
+    "llm/adapters/phm2019.py": "b6cfc1311b867f0ecc10c44327b0cda977386a325177a6f371e1e799836358c0",
+    "llm/adapters/registry.py": "209913565886519165aa5484c13eaed50d3798aa39d2dba1eb32b26e2e4c3aca",
+    "llm/eval/run_eval.py": "5eff3557002f3a9d694ba3f66c9bdf24ee4946e87faf6248dc7e5c28cc45c2d1"
+  },
+  "tasks": "llm\\eval\\tasks_phm_heldout.jsonl",
+  "tasks_sha256": "7c11654f745349e4a00656ae915cc1fd0465825515316150f05405491aa51f78"
+}

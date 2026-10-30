@@ -167,7 +167,7 @@ def tidy(path, frame_s=None):
       3. 短 AE 窗口组（`SHORT_AE`）把硬编码的“600 s 帧”改成真实帧长 + 脚注声明窗口
       4. 无 FBG 有效通道的组（`nFo=0`）把 FBG 面板文案改成“无有效通道”    并顺带把数值数组编码成 base64（前端 `hydrateAll()` 解码）。返回（KB, 改动列表）。
     """
-    from shm.pkgcodec import encode_package
+    from pkgcodec import encode_package
     d = _read_pkg(path)
     meta, labels, chg = d.get('meta') or {}, d.get('labels') or {}, []
 
@@ -256,6 +256,7 @@ def main():
 
     sys.path.insert(0, SHIM)
     sys.path.insert(0, PROJ)
+    sys.path.insert(0, os.path.join(PROJ, 'dashboard'))   # pkgcodec.py
     sys.path.insert(0, HERE)
     os.makedirs(a.out, exist_ok=True)
 
@@ -303,7 +304,7 @@ def main():
             print(f'  [收尾] {g:9s} {kb:6.0f} KB  {"、".join(chg) or "无改动"}')
 
     print('\n完成。看板入口在 dashboard/index.html（data/index_c1..c4.js）。')
-    # 数据包 → C1–C4 四个数据集清单（分组真源是 shm/datasets.L1_CAMPAIGNS）
+    # 数据包 → C1–C4 四个数据集清单（分组真源是 datasets.L1_CAMPAIGNS）
     try:
         import build_campaign_index
         build_campaign_index.main()

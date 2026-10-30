@@ -3,11 +3,15 @@
 """全局配置（精简）：连续损伤度 D(t) 体系的必要常量
 
 四阶段划分(stage_divider)体系已弃用(2026-09-06)，相关配置一并移除。
-保留被 shm 模块实际引用的：BASE_DIR / CHUNK_SIZE / EXT_BLOCK_PTS / DEFAULT_GROUPS。
+保留被主样本模块（damage_index / data_loader / streaming）实际引用的：
+BASE_DIR / CHUNK_SIZE / EXT_BLOCK_PTS / DEFAULT_GROUPS。
+
+⚠️ 本文件与 damage_index.py / data_loader.py / streaming.py 同属主样本链路，
+   导入它们时要把 `main/` 放进 sys.path。
 """
 import os
 
-# 项目根 = shm 的上级；主样本数据/产物在 <项目根>\main\ 下（2026-09-10 结构重组）
+# 仓库根 = 本文件的上级；主样本数据/产物在 <项目根>\main\ 下（2026-09-10 结构重组）
 _PROJ = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_DIR = os.path.join(_PROJ, 'main')
 

@@ -56,7 +56,7 @@ ROOT = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(ROOT)                   # 仓库根（本脚本在仓库内，ROOT = phmdc/）
 if PROJ not in sys.path:
     sys.path.insert(0, PROJ)
-from shm.paths import repo_rel                 # noqa: E402  产物里只写相对路径，见该函数
+from paths import repo_rel                 # noqa: E402  产物里只写相对路径，见该函数
 
 SPECIMENS = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'T8']
 TRAIN = ['T1', 'T2', 'T3', 'T4', 'T5', 'T6']

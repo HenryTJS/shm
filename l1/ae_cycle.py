@@ -128,11 +128,11 @@ AE_PAUSE_FRAC = 0.05        # 长停录段内局部 AE 率低于组内中位的�
 AE_PAUSE_WIN = 10           # 局部中位的半窗（帧，**以 600 s 帧为基准**）；细格按帧长等比缩放
 FILL = 'holdgap'            # 默认口径；可改 'mean' 复现旧结果
 
-# 总循环数（失效循环数 n_f）：**唯一来源 = shm.datasets**
+# 总循环数（失效循环数 n_f）：**唯一来源 = datasets**
 # （原来 ae_cycle / ae_hi 各硬编码一份、l1_meta 又靠 PDF 解析，现已合并到一处）
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
-from shm.datasets import N_F                                        # noqa: E402
+from datasets import N_F                                        # noqa: E402
 
 
 def _file_dt(path):
@@ -463,7 +463,7 @@ def _data_l1():
     if REPO not in sys.path:
         sys.path.insert(0, REPO)
     try:
-        from shm import paths
+        import paths
         p = os.path.join(paths.data_root(), 'l1')
         if os.path.isdir(p):
             return p

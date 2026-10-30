@@ -64,11 +64,11 @@ import numpy as np
 HERE = os.path.dirname(os.path.abspath(__file__))
 RES = os.path.join(HERE, 'results')
 
-# n_f：**唯一来源 = shm.datasets**（这里原本还有一份重复的硬编码，已删）
+# n_f：**唯一来源 = datasets**（这里原本还有一份重复的硬编码，已删）
 REPO = os.path.dirname(HERE)
 if REPO not in sys.path:
     sys.path.insert(0, REPO)
-from shm.datasets import N_F                                        # noqa: E402
+from datasets import N_F                                        # noqa: E402
 
 # 帧格候选 (tag, 帧长s)：先用 600 s 生产口径，有效帧不足则回落到 60 s 细格。
 # 见模块 docstring「帧格回落」。
@@ -197,8 +197,8 @@ def main(argv):
     if rows:
         import csv
         # ⚠️ 同名互覆护栏（2026-10-08）：带组名只跑**子集**时，绝不能覆盖全量交付产物
-        # `l1_ae_hi.csv` —— 这个坑在 `docs/待办与未决问题.md` §7 记了很久，实测真的会踩
-        # （子集跑一次就把 14 行缩成 3 行）。子集结果改写 `_l1_ae_hi_partial.csv`。
+        # `l1_ae_hi.csv` —— 这个坑实测真的会踩（子集跑一次就把 14 行缩成 3 行）。
+        # 子集结果改写 `_l1_ae_hi_partial.csv`。
         all_g = sorted(_groups_with_frames())
         subset = sorted(r['组号'] for r in rows)
         full = bool(all_g) and subset == all_g

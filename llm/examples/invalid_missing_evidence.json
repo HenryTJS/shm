@@ -98,7 +98,8 @@
       "allowed_lifetime_max": null,
       "missing_evidence": null,
       "confidence": 0.95,
-      "created_by": "Writer"
+      "created_by": "Writer",
+      "support_quote": "The fraction at which the curve reaches x percent of its final value is denoted t_x."
     },
     {
       "claim_id": "C004",
@@ -127,7 +128,8 @@
       "allowed_lifetime_max": null,
       "missing_evidence": null,
       "confidence": 0.95,
-      "created_by": "Writer"
+      "created_by": "Writer",
+      "support_quote": "It uses C(1), the final value of the completed record. It is therefore a retrospective descriptor."
     }
   ],
   "evidence": [

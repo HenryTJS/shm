@@ -66,13 +66,27 @@ def _chunks(text: str, size: int = 800, overlap: int = 120) -> list[tuple[int, i
     return out
 
 
+def _page_text(page) -> str:
+    """Prefer column-wise extraction for two-column PDFs."""
+    try:
+        w, h = float(page.width), float(page.height)
+        if w > 450:
+            left = page.crop((0, 0, w / 2, h)).extract_text() or ""
+            right = page.crop((w / 2, 0, w, h)).extract_text() or ""
+            if left.strip() and right.strip():
+                return left + "\n" + right
+        return page.extract_text() or ""
+    except Exception:
+        return ""
+
+
 def _pdf_chunks(path: str, source_type: str) -> list[dict[str, Any]]:
     title = os.path.splitext(os.path.basename(path))[0]
     out = []
     with pdfplumber.open(path) as pdf:
         for pno, page in enumerate(pdf.pages, start=1):
             try:
-                text = page.extract_text() or ""
+                text = _page_text(page)
             except Exception:
                 continue
             for a, b, piece in _chunks(text):

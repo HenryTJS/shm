@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 from datetime import datetime
 from typing import Any
@@ -51,6 +52,10 @@ def _num(v: Any) -> float | None:
     if isinstance(v, bool) or not isinstance(v, (int, float)):
         return None
     return float(v)
+
+
+def _norm(s: Any) -> str:
+    return re.sub(r"\s+", " ", str(s or "")).strip().lower()
 
 
 def _scope_ok(claim_scope: dict, ev_scope: dict) -> tuple[bool, str]:
@@ -137,6 +142,9 @@ def validate_graph(graph: dict, schema: dict) -> Report:
         cid = c["claim_id"]
         eids = c.get("evidence_ids") or []
 
+        if c["status"] == "rejected":
+            rep.add("claim_status", "fail", "claim rejected by critic", cid)
+
         if c["status"] == "supported":
             if not eids:
                 rep.add("claim_evidence", "fail", "supported claim has no evidence", cid)
@@ -189,6 +197,24 @@ def validate_graph(graph: dict, schema: dict) -> Report:
                 if ev_max is not None and float(ev_max) > allowed + 1e-9:
                     rep.add("temporal_leakage", "fail",
                             f"evidence lifetime_max {ev_max} > allowed {allowed}", cid, eid)
+
+        # non-numeric claims must quote a phrase that actually appears in a
+        # literature/standard evidence item; a bare citation is not enough.
+        if c["status"] == "supported" and c["claim_type"] in (
+                "method", "limitation", "recommendation", "categorical"):
+            sq = _norm(c.get("support_quote"))
+            if not sq:
+                rep.add("support_quote", "fail",
+                        "non-numeric claim needs support_quote", cid)
+            else:
+                candidates = [e_by_id[e] for e in eids if e in e_by_id]
+                ok = any(
+                    ev["evidence_type"] in ("literature", "standard")
+                    and sq in _norm(ev.get("quote"))
+                    for ev in candidates
+                )
+                rep.add("support_quote", "pass" if ok else "fail",
+                        "exact phrase found" if ok else "phrase not found in cited quote", cid)
 
         # numeric claims (including numeric comparative claims) require a
         # tool result with matching metric/value.

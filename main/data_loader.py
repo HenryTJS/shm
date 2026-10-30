@@ -8,7 +8,7 @@ import os
 import numpy as np
 import pandas as pd
 
-from .config import BASE_DIR
+from config import BASE_DIR
 
 
 def ts_to_seconds(t_series):

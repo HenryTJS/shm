@@ -17,7 +17,7 @@
   est  = 累计应变绝对增量（应变单源）
   risk = 两者均值
 
-数值数组写包时用 base64(Int16/Int32/Float32) 编码（`shm/pkgcodec.py`），
+数值数组写包时用 base64(Int16/Int32/Float32) 编码（`pkgcodec.py`），
 前端 `dashboard.js hydrateAll()` 解码；旧包（纯数组）仍兼容。
 
 输入  D:\\同步\\5-2 CDIO项目实践（2）\\final_code\\_work\\processed\\main\\*_aligned.csv
@@ -37,11 +37,13 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.abspath(os.path.join(HERE, "..", ".."))
-if PROJ not in sys.path:
-    sys.path.insert(0, PROJ)
-from shm.pkgcodec import encode_package  # noqa: E402
+DASHBOARD = os.path.join(PROJ, "dashboard")          # pkgcodec.py 在这里
+for _p in (PROJ, DASHBOARD):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
+from pkgcodec import encode_package  # noqa: E402
 
-DASH = os.path.abspath(os.path.join(HERE, "..", "..", "dashboard", "data"))
+DASH = os.path.join(DASHBOARD, "data")
 SRC = r"D:\同步\5-2 CDIO项目实践（2）\final_code\_work\processed\main"
 WINDOW_S = 0.1594
 TARGET_PTS = 8000

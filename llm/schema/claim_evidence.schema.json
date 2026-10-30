@@ -204,6 +204,10 @@
           "maximum": 1
         },
         "missing_evidence": { "type": ["string", "null"] },
+        "support_quote": {
+          "type": ["string", "null"],
+          "description": "Exact phrase copied from a literature/standard quote; required for non-numeric claims."
+        },
         "confidence": { "type": ["number", "null"], "minimum": 0, "maximum": 1 },
         "created_by": {
           "type": "string",
