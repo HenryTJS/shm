@@ -17,6 +17,7 @@
 | [`main/`](main/README.md) | 内部电液伺服疲劳机主样本，27 组（看板 24 组），AE + 应变 + 5 路 FBG | 在线寿命进度基线（累积能量口径） | `cd main` → `python run.py --list` |
 | [`l1/`](l1/README.md) | ReMAP / TU-Delft + UPatras 公开集，29 组，分 C1–C4 四批 | 离线损伤复评、跨机构归一化、论文复现 | `cd l1` → `python run.py --list` |
 | [`phmdc/`](phmdc/README.md) | PHM2019 铝搭接件（外部平台），8 件，20 MHz Lamb 波 | 有**定量真值**的方法标定与统计验证 | `cd phmdc` → `python run.py --list` |
+| [`morpho/`](morpho/README.md) | MORPHO FOD7（H2020），发动机风扇叶片前缘替身板，5 类传感；另有 5 板 50 kHz 导波派生集 | 复杂几何 + 多模态同步 + 到破坏的完整疲劳史 | `cd morpho` → `python run.py --list` |
 | [`l2/`](l2/README.md) | Delft Level 2 多筋板（外部结构验证，进行中） | AE t50/t85 与 PZT 对照 | 见 l2 README |
 | [`llm/`](llm/README.md) | 证据约束的 SHM 助手（skill + 工具 + RAG + claim–evidence 校验） | 可追溯、可审计的结论问答 | 见 llm README |
 | [`dashboard/`](dashboard/README.md) | 纯前端数字大屏（`index.html`，双击即开） | 24 组在线回放 + 29 组离线复评 | 双击 `dashboard/index.html` |
@@ -101,10 +102,13 @@ python run.py --task paper                     rem 论文 Level 1 / 4 复现
 
 cd ..\phmdc
 python run.py --task step3 step4               rem 外推 / 置换检验
+
+cd ..\morpho
+python run.py --task prepare                   rem 7.96 GB HDF5 → 分模态 CSV
 ```
 
 各文件夹的任务清单、结果与边界见 [`main/README.md`](main/README.md)、[`l1/README.md`](l1/README.md)、
-[`phmdc/README.md`](phmdc/README.md)。
+[`phmdc/README.md`](phmdc/README.md)、[`morpho/README.md`](morpho/README.md)。
 
 ### 3.5 看板
 
@@ -128,6 +132,7 @@ python run.py --task dashboard                 rem 29 组 L1（C1–C4）+ 四�
 | 主样本结果 | `main/cdio_baseline/results/` |
 | L1 结果表 / 缓存 / 图 | `l1/results/`、`l1/figures/` |
 | phmdc 结果 | `phmdc/results/` |
+| morpho 解包后的 CSV | `morpho/data/processed/`（= `E:\morpho\processed`，约 120 MB） |
 | 看板数据包 | `dashboard/data/`（不入库） |
 
 `results/`、`figures/`、`dashboard/data/` 都在 `.gitignore` 里，可随时删掉重跑。

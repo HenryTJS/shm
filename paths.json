@@ -56,6 +56,12 @@
       "link": "phmdc/T[1-8]",
       "target": "phmdc",
       "备注": "PHM2019 铝搭接件波形 + 裂纹长度真值"
+    },
+    {
+      "name": "MORPHO 发动机风扇叶片 FOD 板（单一 HDF5，7.96 GB）",
+      "link": "morpho/data",
+      "target": "morpho",
+      "备注": "H2020 MORPHO 数据集：1_Impedance / 2_FBG / 3_Impact / 4_MTS / 5_Active 五类，全部在 MORPHO_FOD7.h5 内。初级处理产物写在 data_root/morpho/processed（见 morpho/prepare.py）"
     }
   ],
   "_未搬迁（留在 D 盘，体量小或可重建）": [

@@ -3,6 +3,7 @@ main/[0-9][0-9][0-9]/
 main/aligned/
 main/weak_labels/
 phmdc/T[1-9]/
+morpho/data/
 *.pridb
 *.lvm
 *.tdms
