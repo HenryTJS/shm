@@ -1,0 +1,133 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shm.local/skills/audit/0.1.0",
+  "title": "audit skill contract",
+  "type": "object",
+  "required": [
+    "input",
+    "output"
+  ],
+  "properties": {
+    "input": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "graph"
+      ],
+      "properties": {
+        "graph": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "output": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "skill",
+        "version",
+        "status",
+        "data",
+        "warnings",
+        "evidence",
+        "report",
+        "computation"
+      ],
+      "properties": {
+        "skill": {
+          "const": "audit"
+        },
+        "version": {
+          "const": "0.1.0"
+        },
+        "status": {
+          "enum": [
+            "ok",
+            "insufficient",
+            "error"
+          ]
+        },
+        "data": {
+          "type": "object",
+          "required": [
+            "graph",
+            "n_claims",
+            "n_evidence",
+            "n_failed",
+            "failed_checks"
+          ],
+          "properties": {
+            "graph": {
+              "type": "string"
+            },
+            "n_claims": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "n_evidence": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "n_failed": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "failed_checks": {
+              "type": "array",
+              "items": {
+                "type": "object"
+              }
+            }
+          }
+        },
+        "warnings": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "evidence": {
+          "type": "array",
+          "items": {
+            "type": "object"
+          }
+        },
+        "report": {
+          "type": "string"
+        },
+        "computation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "formula",
+            "inputs"
+          ],
+          "properties": {
+            "kind": {
+              "enum": [
+                "read",
+                "derived",
+                "validated",
+                "computed"
+              ]
+            },
+            "formula": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "inputs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

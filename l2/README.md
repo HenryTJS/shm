@@ -1,6 +1,6 @@
 # L2 外部结构验证（Delft Level 2）
 
-状态：**进行中**。已跑 L2-04 / L2-05 / L2-07 的 AE；LUNA 连续疲劳段经检查受载荷循环调制，暂不用于 SNHI；PZT 已跑 L2-07。
+状态：**可做的已完成，剩余为数据限制**。AE 三块、PZT L2-07 已完成；L2-05 的 PZT 只覆盖约 20%，L2-04 无 PZT，LUNA 连续疲劳段受载荷循环调制，均不进入全寿命 t85。
 
 ## 口径
 
@@ -31,6 +31,23 @@
 
 `_Processed.txt` 是时间戳 × 光纤位置应变；连续疲劳行随载荷循环上下振荡（0–500 µε），并夹 snap-through 尖峰。按 L1 的 local 指标直接累积会把载荷循环当成损伤，**不用于 SNHI**。仅 QS 保持段可用于 DFOS 对照。
 
+## 跨模态完成度（新增）
+
+| gid | AE t85 | PZT t85 | PZT 覆盖 | 状态 |
+|---|---:|---:|---:|---|
+| L2-04 | 73.48 | — | 0% | 无 PZT，只有 AE |
+| L2-05 | 72.54 | — | 20.2% | PZT 只到约 230k/1,140k，t85 无定义 |
+| L2-07 | 67.54 | 73.31 | 100% | AE 与 PZT 均完整，差 5.8 pp |
+
+逐行数据见 `results/l2_crossmodal_summary.csv`。
+
+## 尚未完成（数据限制，不是待写代码）
+
+1. **L2-05 的全寿命 PZT t85**：PZT 只覆盖约 20.2%，不能外推到 1,140k；不写这个数。
+2. **L2-04 的 PZT**：试件没有 PZT，无法补。
+3. **LUNA 的疲劳段 SNHI**：连续应变被载荷循环调制（0–500 µε）并夹 snap-through 尖峰，直接累积会把载荷当损伤；只保留 QS 保持段的对照。
+4. **L2 跨模态置信区间**：只有 3 块板，不做 bootstrap；避免用 3 个点造区间。
+
 ## 文件
 
 - `l2_ae_scan.py`：AE `.pridb` 流式分箱
@@ -39,3 +56,4 @@
 - `l2_freeze.py`：主表
 - `l2_manifest.csv`、`l2_main_table.csv`、`l2_pzt_summary.csv`
 - `l2_curves_all.png`、`l2_pzt_L2-07.png`
+- `l2_crossmodal_summary.csv`：三块板的 AE/PZT 完成度与缺口

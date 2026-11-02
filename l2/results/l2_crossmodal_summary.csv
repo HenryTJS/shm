@@ -1,0 +1,4 @@
+gid,fatigue_end,ae_t85,pzt_t85,pzt_coverage_pct,status
+L2-04,1045500,73.48,,0.0,no PZT; AE only
+L2-05,1139500,72.54,,20.2,PZT covers ~20% of fatigue life; t85 not defined
+L2-07,539500,67.54,73.31,100.0,AE + PZT complete

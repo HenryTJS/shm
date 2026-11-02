@@ -1,0 +1,4 @@
+metric,vs_stiffness_rho,vs_stiffness_p,vs_load_rho,vs_load_p,partial_vs_stiffness_rho,partial_p,n
+rms_norm,0.1857,0.42,-0.0151,0.948,0.3649,0.104,21
+peak_norm,-0.6636,0.00104,0.7564,7.26e-05,-0.0299,0.898,21
+env_shift_us,-0.6468,0.00153,0.6726,0.000836,-0.0831,0.72,21

@@ -19,6 +19,133 @@
 
 ---
 
+## 0. 当前方案（2026-11）
+
+### 0.1 目标
+
+不是“一个 metric 吃所有数据集”，也不是“一个模型做所有任务”。
+
+目标是：
+
+> **有限原语 + LLM 组合 + 确定性执行 + 验证器**：  
+> 给一个没见过的任务、数据字典和原语文档，LLM 生成 workflow；executor 执行；verifier 决定能不能交。
+
+任务分三类：
+
+| 类型 | 例子 | 适配方式 |
+|---|---|---|
+| 同任务族、新数据 | L2 / C1-C2 的 t85 | reader + profile，core 不改 |
+| 新任务族、同原语 | MORPHO 载荷混杂、PHM 裂纹回归 | LLM 组合原语，新增 workflow |
+| 新原语/新物理量 | 图像、振动、视频 | 先补原语，不硬套 |
+
+**没有数据字典或没有 cycle 轴时，不猜，直接 `unsupported`。**
+
+### 0.2 总体架构
+
+```text
+数据字典 + 原语文档 + 任务
+        |
+        v
+  Planner（LLM）
+        |
+        v
+  workflow JSON（DAG）
+        |
+        v
+  Executor（确定性 Python）
+        |
+        v
+  Verifier（schema / 数值 / 证据 / 拒答）
+        |
+        v
+  artifact.md + claims.json + evidence.json
+```
+
+### 0.3 原语库（计划）
+
+第一版只做表格/时序数据：
+
+```text
+load_table, select_columns, filter_rows, groupby_agg,
+join_tables, sort, window, cumsum, normalize,
+interpolate_at, corr, partial_corr, regress,
+compare_groups, refuse
+```
+
+每个原语必须有：
+
+- 输入/输出 schema；
+- 参数和单位；
+- 失败条件；
+- evidence 输出；
+- golden case。
+
+### 0.4 API 教师 + 本地学生
+
+```text
+API planner
+  -> 生成 workflow 候选
+  -> executor 执行
+  -> verifier 过滤
+  -> 形成训练集
+  -> 训练本地 3B QLoRA planner
+  -> 本地推理
+```
+
+- API 只接收 **schema / 任务 / 原语文档**，不接收原始信号；
+- API 是教师和上限 baseline，不是最终唯一大脑；
+- 本地 3B 是最终可离线、可训练、可 ablation 的 planner；
+- 8 GB 显存优先 3B；7B 4-bit 很紧，不保证；
+- 不训练原始波形编码器，先训练 **workflow planner**。
+
+### 0.5 留出任务
+
+不拿已知任务自欺。第一轮 held-out：
+
+| 任务 | 给什么 | 不给什么 |
+|---|---|---|
+| L2 test-stop t85 | L2 原始 AE/cycle 字典 | L2 专用 skill |
+| MORPHO 载荷混杂 | active_features / mts 字典 | load_confound skill |
+| PHM2019 裂纹回归 | 特征表 + crack_mm | PHM 专用 skill |
+
+成功标准：
+
+- workflow 合法；
+- 能执行；
+- 数值在容差内；
+- 证据完整；
+- 该拒答就拒答；
+- **0 次“算错但不说”**。
+
+### 0.6 当前状态
+
+| 模块 | 状态 |
+|---|---|
+| `adapters/raw.py` | 已完成：只读原始目录，不读 results |
+| `skills/check` | 已完成：原始模态覆盖，不报 t85 |
+| `skills/metric` | 部分完成：L1 DTA（C3/C4）可算；C1/C2、L2 未接 |
+| `skills/compare` | 暂停：没有 raw campaign metric，返回 unsupported |
+| `skills/audit` | 已完成：claim–evidence 校验 |
+| workflow schema / executor / verifier | **未开始** |
+| API planner | **未开始** |
+| 本地 3B QLoRA | **未开始** |
+| case 级评测 | **未开始**；旧 40/11/16 问答评测已删除 |
+
+当前能诚实的说法：
+
+> **这是一个 raw-only 的 SHM 工具层，加一个 L1-DTA 的 metric 原型；还不是 workflow 合成系统。**
+
+### 0.7 实施顺序
+
+1. 原语 + executor + verifier（不碰模型）；
+2. 3 个 held-out workflow，人工跑通；
+3. API 教师生成候选 workflow，verifier 过滤；
+4. 训练 3B QLoRA planner；
+5. 比较规则 / API / 本地学生；
+6. 通过后再接 L2、C1/C2、MORPHO、PHM。
+
+---
+
 ## 1. 为什么要做成 skill，而不是一个“万能问答”
 
 上一版的问题是：
@@ -34,30 +161,30 @@ skill 化的目标是：
 2. **数字来自工具**，不是 LLM 记忆；
 3. **每个结论有 evidence**，可以审计；
 4. **可以组合成工作流**，而不是堆 prompt；
-5. **换数据集只加 Adapter**，不改主逻辑。
+5. **同任务族换数据只加 reader + profile；新任务族必须新原语或新 workflow**，不能靠加 Adapter 冒充通用。
 
 ---
 
 ## 2. 目标 skill 清单
 
-先做 3 个 MVP，再做后面 3 个。
+当前可用 3 个（`check` / `metric` / `audit`），`compare` 暂停。
 
-### MVP
+### 当前
 
 | skill | 命令示例 | 输出 |
 |---|---|---|
-| `check` | `shm check --dataset L1 --specimen L1-03` | 模态覆盖、缺失、寿命终点、数据质量告警 |
-| `compare` | `shm compare --a C1 --b C3 --metric t85` | 差值、范围、可比性限制、证据 |
-| `audit` | `shm audit --report draft.md --data L1` | 每个 claim 的出处、无证据/不一致项 |
+| `check` | `python llm\skills\check\run.py --dataset L1 --gid L1-03` | 原始模态覆盖、缺失；t85 交给 metric |
+| `metric` | `python llm\skills\metric\run.py --dataset L1 --gid L1-06` | 从 raw DTA/FBG 算 t50/t85；v0 只支持 C3/C4 |
+| `audit` | `python llm\skills\audit\run.py --graph llm\examples\L1-03_t85.json` | 每个 claim 的出处、无证据/不一致项 |
+| `compare` | 暂停到 raw metric 扩展到 campaign | 当前返回 `unsupported` |
 
-### 后续
+### 后续（workflow 层）
 
-| skill | 用途 |
+| 能力 | 用途 |
 |---|---|
-| `metric` | t50/t85/SNHI/阈值等单指标查询与计算 |
-| `diagnose` | AE/FBG/DFOS/PZT 多模态不一致诊断 |
-| `plan` | 下一步试验/检查/补充对照建议 |
-
+| `diagnose` | 项目/数据/证据缺口诊断 |
+| `recommend` | 下一步读什么、补什么、跑什么 |
+| `probe` | 生成验证 case、边界测试、反驳问题 |
 ---
 
 ## 3. 当前已实现的代码
@@ -66,13 +193,9 @@ skill 化的目标是：
 
 ```text
 llm/
-├─ agent.py          ← DeepSeek planner + writer + critic + validator
-├─ tools.py          ← L1/L2 指标、批次、跨模态工具
 ├─ adapters/
 │  ├─ base.py        ← DatasetAdapter 接口
-│  ├─ l1.py          ← L1/L2 适配器
-│  ├─ phm2019.py     ← PHM2019 外部适配器
-│  └─ registry.py    ← 数据集注册表
+│  └─ raw.py         ← 只读原始数据的 RawL1/L2/PHM2019 adapter
 ├─ rag.py            ← 文献 RAG（TF-IDF，本地 PDF）
 ├─ rag_index.pkl     ← 已构建索引（可用 rag.py 重建）
 ├─ validate.py       ← claim–evidence 结构/语义校验
@@ -82,23 +205,17 @@ llm/
 │  ├─ L1-03_t85.json
 │  ├─ invalid_missing_evidence.json
 │  └─ invalid_temporal_leakage.json
-├─ eval/
-│  ├─ tasks.jsonl              ← 40 条 L1/L2 开发集
-│  ├─ tasks_phm.jsonl          ← 11 条 PHM 开发集
-│  ├─ tasks_phm_heldout.jsonl  ← 16 条半独立 held-out
-│  ├─ run_eval.py
-│  ├─ run_baseline.py
-│  ├─ results.csv
-│  ├─ results_phm.csv
-│  ├─ results_phm_heldout.csv
-│  ├─ baselines.csv
-│  ├─ baselines_phm.csv
-│  ├─ HELDOUT_GUIDE.md
-│  └─ freeze_run.py
 ├─ tests/
-│  ├─ test_validate.py
-│  └─ test_tools.py
-└─ archive/          ← 不参与主链路的实验与草稿
+│  └─ test_validate.py
+└─ skills/
+   ├─ README.md
+   ├─ common.py
+   ├─ registry.json
+   ├─ check/
+   ├─ metric/
+   ├─ compare/
+   ├─ audit/
+   └─ tests/
 ```
 
 ---
@@ -147,32 +264,25 @@ SHM/PHM 最危险的不是“答错”，而是“用未来数据回答早期问
 
 ---
 
-## 6. 评测现状（必须带 caveat）
+## 6. 评测现状
 
-| 数据 | 结果 | 性质 |
-|---|---:|---|
-| L1/L2 40 条 | 40/40 | 内部开发集，偏简单 |
-| PHM2019 11 条 | 11/11 | 内部开发集 |
-| PHM2019 held-out 16 条 | 16/16 | 用户改写后的半独立集 |
-| KB-only 40 条 | 5/40 | 弱基线 |
-| RAG-only 40 条 | 6/40 | 弱基线 |
-| KB-only PHM 11 条 | 3/11 | 弱基线 |
-| RAG-only PHM 11 条 | 3/11 | 弱基线 |
+旧评测（`llm/eval/`：40 条 L1/L2、11 条 PHM、16 条 held-out、所有 baseline 与结果）已全部删除，不再保留。
 
-这些数字只能说明：
+删除原因：
 
-- 工具链路能跑；
-- 证据门能拦住缺证据/时间泄漏；
-- Agent 在**当前任务集**上比弱 KB/RAG 基线好。
+- 这些题和答案来自结果表，不能证明 `metric` 从原始曲线计算；
+- 部分题过易，存在 ceiling effect；
+- 继续保留会诱导 skill 读结果表。
 
-不能说明：
+当前只有：
 
-- 跨机构泛化；
-- 通用 SHM 智能；
-- 方法创新；
-- 在未见 campaign 上有效。
+- `skills/tests/` 的 10 条契约测试：输入输出、缺模态、结果目录禁令、computation 字段、metric raw；
+- 核心测试 `llm/tests/` 5 条（validator）。
 
-PHM held-out 是用户改写后的 16 条，仍不是完全独立第三方评测。
+新的评测分两层：
+
+1. **契约测试**：现在已有 10 条；
+2. **case 级评测**：等 workflow/executor/verifier 建好后，用 L2、MORPHO、PHM 三个 held-out case，不用问答集。
 
 ---
 
@@ -228,48 +338,47 @@ cd D:\shm
 python llm\validate.py llm\examples\L1-03_t85.json
 
 # 2. 单元测试
-python -m unittest llm.tests.test_validate llm.tests.test_tools -v
+python -m unittest llm.tests.test_validate -v
 
 # 3. 重建 RAG 索引（可选）
 python llm\rag.py build
 python llm\rag.py query "t85 definition" -k 5
 
-# 4. Agent（需要 DEEPSEEK_API_KEY）
-$env:DEEPSEEK_API_KEY="sk-..."
-python llm\agent.py "L1-03 的 t85 是多少？比 C1 中位低多少？"
-
-# 5. 评测
-python llm\eval\run_eval.py
-python llm\eval\run_baseline.py
-```
+# 4. skill 契约
+python llm\skills\check\run.py --dataset L1 --gid L1-03
+python llm\skills\metric\run.py --dataset L1 --gid L1-06
+python llm\skills\audit\run.py --graph llm\examples\L1-03_t85.json
+python -m unittest discover -s llm\skills\tests -v
 
 ---
 
 ## 10. 清理说明
 
-已归档/删除：
+已删除：
 
-- `archive/adapter_v0/`：MLP/RF adapter 实验（MLP 负结果、RF 1.416 mm），不参与主链路；
-- `archive/drafts/`：机械草稿题与生成脚本，不参与正式评测；
-- `eval/out/`、`out/`、`__pycache__/`：生成文件，已删除。
+- `llm/eval/`：旧 40 条、11 条、16 条任务及全部 baseline/结果；
+- `llm/archive/`：旧 adapter v0 与草稿题；
+- `out/`、`__pycache__/`：生成文件。
 
 保留：
 
-- 主链路：`agent.py`、`tools.py`、`rag.py`、`validate.py`、`adapters/`；
-- schema、examples、tests；
-- 评测集与结果；
+- `skills/`：check / metric / audit 契约与测试；compare 暂停；
+- `adapters/raw.py`：只读原始数据的 adapter；
+- `schema/`、`examples/`、`validate.py`、`rag.py`；
 - `rag_index.pkl`（可重建）。
 
 ---
 
 ## 11. 下一步
 
-1. 把 `check` / `compare` / `audit` 做成真正的 skill 目录（`SKILL.md + run.py + schema + tests`）；
-2. 把 16 条 PHM held-out 扩成 case 级审计，不再做单跳问答；
-3. 加人工 checklist 基线；
-4. 专利交底书先写“时间门 + 证据校验”；
-5. 不再扩 B（跨模态大模型），除非拿到更多四模态试件。
+1. `check` / `metric` / `audit` 已落地；`metric` 先补 C1/C2 `.pridb` 和 L2 test-stop；
+2. 建 `workflow/`：原语、executor、verifier，不碰模型；
+3. 用 API 教师生成候选 workflow，verifier 过滤；
+4. 训练 3B QLoRA planner，做规则 / API / 本地 ablation；
+5. 用 L2、MORPHO、PHM 三个 held-out case 评测；
+6. 恢复 `compare` 只在 raw campaign metric 可用后；
+7. 专利交底书先写“时间门 + 证据校验”。
 
 一句话：
 
-> **这不是“大模型回答 SHM 问题”，而是“用 LLM 编排一组可审计的 SHM skill”。**
+> **这不是“大模型回答 SHM 问题”，而是“用 LLM 组合原语、用工具算数、用 verifier 决定能不能交”。**

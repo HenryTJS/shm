@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://shm.local/skills/result/0.1.0",
+  "title": "SHM Skill Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["skill", "version", "status", "data", "warnings", "evidence", "computation", "report"],
+  "properties": {
+    "skill": { "type": "string", "enum": ["check", "compare", "audit"] },
+    "version": { "const": "0.1.0" },
+    "status": {
+      "type": "string",
+      "enum": ["ok", "insufficient", "unsupported", "not_found", "error"]
+    },
+    "data": { "type": "object" },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "evidence": { "type": "array", "items": { "type": "object" } },
+    "computation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "formula", "inputs"],
+      "properties": {
+        "kind": { "enum": ["read", "derived", "validated", "computed"] },
+        "formula": { "type": ["string", "null"] },
+        "inputs": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "report": { "type": "string" }
+  }
+}
