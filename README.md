@@ -19,7 +19,7 @@
 | [`phmdc/`](phmdc/README.md) | PHM2019 铝搭接件（外部平台），8 件，20 MHz Lamb 波 | 有**定量真值**的方法标定与统计验证 | `cd phmdc` → `python run.py --list` |
 | [`morpho/`](morpho/README.md) | MORPHO FOD7（H2020），发动机风扇叶片前缘替身板，5 类传感；另有 5 板 50 kHz 导波派生集 | 复杂几何 + 多模态同步 + 到破坏的完整疲劳史 | `cd morpho` → `python run.py --list` |
 | [`l2/`](l2/README.md) | Delft Level 2 多筋板（外部结构验证，进行中） | AE t50/t85 与 PZT 对照 | 见 l2 README |
-| [`llm/`](llm/README.md) | 证据约束的 SHM 助手（skill + 工具 + RAG + claim–evidence 校验） | 可追溯、可审计的结论问答 | 见 llm README |
+| [`aircraft/`](../aircraft/README.md) | 证据约束的 SHM 助手（skill + 工具 + RAG + claim–evidence 校验） | 可追溯、可审计的结论分析 | 见 aircraft/README.md |
 | [`dashboard/`](dashboard/README.md) | 纯前端数字大屏（`index.html`，双击即开） | 24 组在线回放 + 29 组离线复评 | 双击 `dashboard/index.html` |
 | `docs/` | 论文、申报书、文献与投稿材料 | — | 本地保留，不入库 |
 | `figures_ppt/` | 汇报与论文用图 | — | 本地保留，不入库 |
