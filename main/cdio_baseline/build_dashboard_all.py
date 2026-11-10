@@ -37,7 +37,8 @@ import pandas as pd
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.abspath(os.path.join(HERE, "..", ".."))
-DASHBOARD = os.path.join(PROJ, "dashboard")          # pkgcodec.py 在这里
+AIRCRAFT = os.environ.get("AIRCRAFT_ROOT", r"D:/aircraft")
+DASHBOARD = os.path.join(AIRCRAFT, "dashboard")   # pkgcodec.py 在这里
 for _p in (PROJ, DASHBOARD):
     if _p not in sys.path:
         sys.path.insert(0, _p)

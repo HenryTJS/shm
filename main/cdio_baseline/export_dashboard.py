@@ -4,7 +4,7 @@
 
 输入：D:\\同步\\5-2 CDIO项目实践（2）\\final_code\\_work\\processed\\main\\*_aligned.csv
       每份含 u（真实记录进度 %）、ae_time_s、ae_SpectralEnergy、ae_Peak。
-输出：dashboard/data/cdio/<gid>.js  （window.SHM_LIFE[gid]）
+输出：D:/aircraft/dashboard/data/cdio/<gid>.js  （window.SHM_LIFE[gid]）
       main/cdio_baseline/results/cdio_summary.csv
 
 留一（exclude_ids=[gid]）保证不是"自己预测自己"。
@@ -25,7 +25,8 @@ from live_predictor import LiveLifePredictor  # noqa: E402
 
 SRC = r"D:\同步\5-2 CDIO项目实践（2）\final_code\_work\processed\main"
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUT = os.path.abspath(os.path.join(HERE, "..", "..", "dashboard", "data", "cdio"))
+AIRCRAFT = os.environ.get("AIRCRAFT_ROOT", r"D:/aircraft")
+OUT = os.path.abspath(os.path.join(AIRCRAFT, "dashboard", "data", "cdio"))
 RES = os.path.join(HERE, "results")
 COLS = ["u", "life_pct", "ae_time_s", "ae_SpectralEnergy", "ae_Peak"]
 TARGET_PTS = 1200

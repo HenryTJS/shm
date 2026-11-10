@@ -28,8 +28,8 @@
 
 产物
 ----
-    dashboard/data/{L1-xx}.js
-    dashboard/data/index_l1.js  |  index_l1v2.js  |  index_l1v3.js
+    D:/aircraft/dashboard/data/{L1-xx}.js
+    D:/aircraft/dashboard/data/index_l1.js  |  index_l1v2.js  |  index_l1v3.js
 """
 from __future__ import annotations
 
@@ -43,7 +43,8 @@ import types
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJ = os.path.dirname(HERE)
-DASH = os.path.join(PROJ, 'dashboard', 'data')
+AIRCRAFT = os.environ.get('AIRCRAFT_ROOT', r'D:/aircraft')
+DASH = os.path.join(AIRCRAFT, 'dashboard', 'data')
 SHIM = os.path.join(HERE, '_recover_shim')
 
 BATCHES = {
@@ -256,7 +257,7 @@ def main():
 
     sys.path.insert(0, SHIM)
     sys.path.insert(0, PROJ)
-    sys.path.insert(0, os.path.join(PROJ, 'dashboard'))   # pkgcodec.py
+    sys.path.insert(0, os.path.join(AIRCRAFT, 'dashboard'))   # pkgcodec.py
     sys.path.insert(0, HERE)
     os.makedirs(a.out, exist_ok=True)
 
@@ -303,7 +304,7 @@ def main():
             kb, chg = tidy(fp, SHORT_AE.get(g))
             print(f'  [收尾] {g:9s} {kb:6.0f} KB  {"、".join(chg) or "无改动"}')
 
-    print('\n完成。看板入口在 dashboard/index.html（data/index_c1..c4.js）。')
+    print('\n完成。看板入口在 D:/aircraft/dashboard/index.html（data/index_c1..c4.js）。')
     # 数据包 → C1–C4 四个数据集清单（分组真源是 datasets.L1_CAMPAIGNS）
     try:
         import build_campaign_index

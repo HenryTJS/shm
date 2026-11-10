@@ -120,7 +120,7 @@ python run.py --task paper -- --groups L1-03    rem '--' 之后透传给底层�
 | 结果表 | `l1/results/*.csv`、`l1/*.csv`（如 `AE特征概览.csv`） |
 | 中间缓存 | `l1/results/*.npz`（帧、循环轴、FBG 剖面、AE 逐 hit 缓存） |
 | 论文图 | `l1/figures/fig_*.png` / `.pdf`（300 dpi） |
-| 看板数据包 | `../dashboard/data/`（由 `--task dashboard` 生成，不入库） |
+| 看板数据包 | `../../aircraft/dashboard/data/`（由 `--task dashboard` 生成，不入库） |
 
 ## 7. 脚本索引
 

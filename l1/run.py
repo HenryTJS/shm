@@ -116,7 +116,7 @@ DESC = {
     'fig-routes':     ('论文图 Fig. 4', 'figs.py --only routes → l1/figures/fig_four_routes.png/.pdf'),
     'fig-instr':      ('试件与仪器图', 'figs.py --only instrumentation → l1/figures/fig_instrumentation.png/.pdf'),
     'tables-45':      ('论文表 3/4', 'make_tables_45.py → 含 η² 与置换 p 的 markdown 草稿'),
-    'dashboard':      ('看板回放包（29 组）', 'restore_dashboard_packages.py → dashboard/data/ + C1–C4 清单'),
+    'dashboard':      ('看板回放包（29 组）', 'restore_dashboard_packages.py → D:/aircraft/dashboard/data/ + C1–C4 清单'),
 }
 
 

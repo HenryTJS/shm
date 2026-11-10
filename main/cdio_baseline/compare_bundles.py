@@ -7,7 +7,7 @@
 用法
 ----
     python main/cdio_baseline/compare_bundles.py \
-        --a dashboard/data/cdio --b dashboard/data/cdio_24 --drop 001,002,015
+        --a D:/aircraft/dashboard/data/cdio --b D:/aircraft/dashboard/data/cdio_24 --drop 001,002,015
 """
 from __future__ import annotations
 

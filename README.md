@@ -20,7 +20,7 @@
 | [`morpho/`](morpho/README.md) | MORPHO FOD7（H2020），发动机风扇叶片前缘替身板，5 类传感；另有 5 板 50 kHz 导波派生集 | 复杂几何 + 多模态同步 + 到破坏的完整疲劳史 | `cd morpho` → `python run.py --list` |
 | [`l2/`](l2/README.md) | Delft Level 2 多筋板（外部结构验证，进行中） | AE t50/t85 与 PZT 对照 | 见 l2 README |
 | [`aircraft/`](../aircraft/README.md) | 证据约束的 SHM 助手（skill + 工具 + RAG + claim–evidence 校验） | 可追溯、可审计的结论分析 | 见 aircraft/README.md |
-| [`dashboard/`](dashboard/README.md) | 纯前端数字大屏（`index.html`，双击即开） | 24 组在线回放 + 29 组离线复评 | 双击 `dashboard/index.html` |
+| [`aircraft/dashboard/`](../aircraft/dashboard/README.md) | 纯前端数字大屏（`index.html`，双击即开；已迁入 aircraft） | 24 组在线回放 + 29 组离线复评 | 双击 `../aircraft/dashboard/index.html` |
 | `docs/` | 论文、申报书、文献与投稿材料 | — | 本地保留，不入库 |
 | `figures_ppt/` | 汇报与论文用图 | — | 本地保留，不入库 |
 
@@ -112,7 +112,7 @@ python run.py --task prepare                   rem 7.96 GB HDF5 → 分模态 CS
 
 ### 3.5 看板
 
-浏览器打开 `dashboard/index.html`。顶栏选数据集（`疲劳机主样本` + `ReMAP C1–C4` 共 5 个）再选试件。
+浏览器打开 `../aircraft/dashboard/index.html`。顶栏选数据集（`疲劳机主样本` + `ReMAP C1–C4` 共 5 个）再选试件。
 数据包不在时先导出：
 
 ```bat
@@ -123,7 +123,7 @@ cd ..\l1
 python run.py --task dashboard                 rem 29 组 L1（C1–C4）+ 四个清单
 ```
 
-字段与读数口径见 [`dashboard/README.md`](dashboard/README.md)。
+字段与读数口径见 [`../aircraft/dashboard/README.md`](../aircraft/dashboard/README.md)。
 
 ## 4. 产物位置
 
@@ -133,9 +133,9 @@ python run.py --task dashboard                 rem 29 组 L1（C1–C4）+ 四�
 | L1 结果表 / 缓存 / 图 | `l1/results/`、`l1/figures/` |
 | phmdc 结果 | `phmdc/results/` |
 | morpho 解包后的 CSV | `morpho/data/processed/`（= `E:\morpho\processed`，约 120 MB） |
-| 看板数据包 | `dashboard/data/`（不入库） |
+| 看板数据包 | `../aircraft/dashboard/data/`（不入库） |
 
-`results/`、`figures/`、`dashboard/data/` 都在 `.gitignore` 里，可随时删掉重跑。
+`results/`、`figures/`、`../aircraft/dashboard/data/` 都在 `.gitignore` 里，可随时删掉重跑。
 
 ## 5. 常见坑
 

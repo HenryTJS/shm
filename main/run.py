@@ -38,7 +38,7 @@ TASKS = {
 # task -> (名称, 说明)
 DESC = {
     'cdio':      ('在线进度预测（示例流）', 'live_predictor.py --input example_stream.csv'),
-    'dashboard': ('看板数据包（24 组）', 'export_dashboard.py + build_dashboard_all.py --write → dashboard/data/'),
+    'dashboard': ('看板数据包（24 组）', 'export_dashboard.py + build_dashboard_all.py --write → D:/aircraft/dashboard/data/'),
 }
 
 

@@ -10,7 +10,7 @@ L1 的数据包是回放归档字节码产出的（`l1/restore_dashboard_package
 
 产物
 ----
-    dashboard/data/index_c1.js ... index_c4.js   （window.SHM_DATASETS["c1"] ... ["c4"]）
+    D:/aircraft/dashboard/data/index_c1.js ... index_c4.js   （window.SHM_DATASETS["c1"] ... ["c4"]）
     数据集名：ReMAP C1 / ReMAP C2 / ReMAP C3 / ReMAP C4
 """
 from __future__ import annotations
@@ -26,7 +26,8 @@ if PROJ not in sys.path:
 
 from datasets import CAMPAIGN_ALIAS, L1_CAMPAIGNS  # noqa: E402
 
-DASH = os.path.join(PROJ, 'dashboard', 'data')
+AIRCRAFT = os.environ.get('AIRCRAFT_ROOT', r'D:/aircraft')
+DASH = os.path.join(AIRCRAFT, 'dashboard', 'data')
 FIELDS = ('gid', 'nfr', 'dur', 'n', 'meta', 'foCols', 'spec', 'warn')
 KIND = {'C1': '', 'C2': '', 'C3': '变幅 VA', 'C4': '谱载'}
 
